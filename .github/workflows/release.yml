@@ -31,7 +31,7 @@ jobs:
 
       - uses: pnpm/action-setup@v6
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.toolchain == 'node-18' && '18' || matrix.toolchain == 'node-22' && '22' || '20' }}
           cache: pnpm
