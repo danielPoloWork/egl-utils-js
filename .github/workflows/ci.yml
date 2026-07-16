@@ -40,7 +40,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.toolchain == 'node-18' && '18' || matrix.toolchain == 'node-22' && '22' || '20' }}
           cache: pnpm
@@ -81,7 +81,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with: { node-version: '20', cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm prettier --check . && pnpm eslint . --max-warnings 0
@@ -95,7 +95,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: pnpm/action-setup@v4
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.toolchain == 'node-18' && '18' || matrix.toolchain == 'node-22' && '22' || '20' }}
           cache: pnpm
