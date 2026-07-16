@@ -1,0 +1,7 @@
+# pnpm settings (single-package repo — no `packages` list needed).
+# esbuild's postinstall compiles/links its platform binary; pnpm >= 10 blocks
+# dependency build scripts unless allow-listed here. pnpm is pinned to v10
+# (packageManager field): pnpm 11 requires Node >= 22.13, which would break
+# the Node 18/20 cells of the CI matrix (spec §1.1 floor is Node >= 18).
+onlyBuiltDependencies:
+  - esbuild

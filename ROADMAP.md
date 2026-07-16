@@ -31,7 +31,7 @@ is computed at delivery time from the issue's labels/flags via
 
 The thinnest slice that compiles, tests, and ships under the full quality bar.
 
-- [ ] 1.1 Lay down the build system (tsup (esbuild) — dual ESM/CJS + .d.ts generated from JSDoc types (ADR-001)) and a buildable skeleton under
+- [x] 1.1 Lay down the build system (tsup (esbuild) — dual ESM/CJS + .d.ts generated from JSDoc types (ADR-001)) and a buildable skeleton under
       `src/main/javascript/it/d4np/utils/`. _(route: frontier-reasoning/high — sets-pattern: the exports map and dual-build shape every later item inherits; dual-package hazard lives here)_
 - [ ] 1.2 Wire the test framework (Vitest (+ fast-check property tests; Playwright browser smoke from M6)) with one passing smoke test under
       `src/test/javascript/it/d4np/utils/`. _(route: standard/medium)_
@@ -133,9 +133,9 @@ progress · ✅ done · ❎ N/A.
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 | Objective & business context | 1.1 | ⏳ |
-| §2 | Functional requirements | 1.1, 1.2 | ⏳ |
+| §1 | Objective & business context | 1.1 | 🚧 |
+| §2 | Functional requirements | 1.1, 1.2 | 🚧 |
 | §3 | Non-functional requirements | 1.3, 1.4 | ⏳ |
-| §4 | Logical architecture | 1.1 | ⏳ |
+| §4 | Logical architecture | 1.1 | 🚧 |
 | §5 | Public interface | 1.2 | ⏳ |
 | §6 | Verification & test strategy | 1.2, 1.4 | ⏳ |

@@ -1,0 +1,64 @@
+{
+  "name": "egl-utils-js",
+  "version": "0.0.0",
+  "description": "Universal JavaScript async, data, and event utilities for Node.js and modern browsers",
+  "keywords": [
+    "utilities",
+    "async",
+    "abort-signal",
+    "events",
+    "tree-shakeable",
+    "esm",
+    "cjs"
+  ],
+  "license": "MIT",
+  "author": "Daniel Polo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danielPoloWork/egl-utils-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/danielPoloWork/egl-utils-js/issues"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@10.34.5",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.cjs"
+    },
+    "./storage": {
+      "types": "./dist/types/storage.d.ts",
+      "import": "./dist/esm/storage.js",
+      "require": "./dist/cjs/storage.cjs"
+    },
+    "./sanitize": {
+      "types": "./dist/types/sanitize.d.ts",
+      "import": "./dist/esm/sanitize.js",
+      "require": "./dist/cjs/sanitize.cjs"
+    },
+    "./errors": {
+      "types": "./dist/types/errors.d.ts",
+      "import": "./dist/esm/errors.js",
+      "require": "./dist/cjs/errors.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsup && tsc -p tsconfig.build.json",
+    "test": "node -e \"console.log('no test framework yet - vitest lands with roadmap item 1.2')\"",
+    "bench": "node -e \"console.log('no benchmark suite yet - vitest bench lands with roadmap item 7.1')\""
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^7.0.2"
+  }
+}
