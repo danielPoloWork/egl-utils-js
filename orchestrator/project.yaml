@@ -1,0 +1,299 @@
+# project.yaml — the single source of truth for one generated project.
+#
+# Filled from the intake interview (Phases 0–5) merged with the resolved `javascript`
+# profile; the spec was IMPORTED from .spec/d4np-js.md (v2.0, reviewed draft) and its three
+# ADRs per Q5.0. Confirmed with the maintainer BEFORE rendering.
+
+# --- EADOS delivery-state layer (M1-B) — OPTIONAL; the renderer ignores it. ---
+schema_version: 1
+# manifest_rev is an OPTIMISTIC-CONCURRENCY counter (#214): bump by 1 every time
+# delivery_state is written back. Absent == rev 0.
+manifest_rev: 0
+domain: software             # development target: software|web|game|mobile -> orchestrator/domains/<domain>.yaml
+# delivery_state holds STATE + cross-link REFS (ids), never content. The maintainer chose the
+# CLASSIC one-shot path (full interview -> scaffold via generate.md); the renderer ignores this
+# block and the workflow's phase ledger is not advanced by the classic path (init.md
+# "Backward compatibility").
+delivery_state:
+  phase: init                # init|design|plan|scaffold|audit|migrate
+  checkpoints: []
+  refs: { rfcs: [], milestones: [], prs: [], releases: [] }
+
+identity:
+  project_name:    "egl-utils-js"   # -> PROJECT_NAME
+  project_slug:    "utils"          # -> PROJECT_SLUG
+  project_title:   "JavaScript Core & Async Utilities Library"  # -> PROJECT_TITLE
+  project_tagline: "Universal JavaScript async, data, and event utilities for Node.js and modern browsers"  # -> PROJECT_TAGLINE
+  project_series:  ""               # no project family
+  project_kind:    library          # -> PROJECT_KIND
+
+ownership:
+  owner:           "danielPoloWork" # gh auth account. -> OWNER
+  maintainer:      "Daniel Polo"    # git user / LICENSE holder. -> MAINTAINER
+  author:          "Daniel Polo"    # LICENSE: (c) 2026 Daniel Polo. -> AUTHOR
+  year:            "2026"           # -> YEAR
+  license_id:      MIT              # matches the LICENSE file already at the repo root. -> LICENSE_ID
+  default_branch:  main             # -> DEFAULT_BRANCH
+  assignee:        "danielPoloWork" # the owner — never @me (Q4.5 / config/defaults.yaml). -> ASSIGNEE
+
+language:
+  lang:            "javascript"     # profile: orchestrator/profiles/javascript.yaml (maintainer's
+                                    # deliberate choice over the TypeScript advisory, Q1.1a — final)
+  lang_name:       "JavaScript (ES2023)"                     # -> LANG_NAME
+  lang_standard:   "ES2023, ESM; Node.js >= 18 LTS runtime floor (spec §1.1)"  # -> LANG_STANDARD
+  secondary_lang:  ""               # none — DOMPurify is an optional npm peer, not an interop surface
+  group_path:      "it/d4np"        # -> GROUP_PATH
+  group_dotted:    "it.d4np"        # -> GROUP_DOTTED
+  namespace:       "egl-utils-js"   # npm package name (maintainer-chosen, unscoped; overrides the
+                                    # profile's @{group_leaf}/{slug} scope pattern). -> NAMESPACE
+  src_ext:         "js"             # -> SRC_EXT
+  comment_lang:    "en"             # Q4.7: all English. -> CODE_COMMENT_LANG
+  public_include_hint: "import { parallelLimit, retry } from 'egl-utils-js';"
+
+# Derived during render:
+#   src_main  = src/main/javascript/it/d4np/utils
+#   src_test  = src/test/javascript/it/d4np/utils
+#   src_bench = src/bench/javascript/it/d4np/utils   (capabilities.bench: true)
+
+toolchain:                   # javascript profile defaults + spec §7 / ADR-001 overrides.
+  build_tool:      "tsup (esbuild) — dual ESM/CJS + .d.ts generated from JSDoc types (ADR-001)"
+  pkg_manager:     "pnpm (locked)"
+  test_framework:  "Vitest (+ fast-check property tests; Playwright browser smoke from M6)"
+  formatter:       "Prettier"
+  linter:          "ESLint (flat config) + tsc --noEmit with checkJs (JSDoc type-check)"
+  sanitizers:      "ESLint --max-warnings 0; vitest --detectOpenHandles (leak/handle)"
+  coverage_tool:   "Vitest coverage (v8) / c8"
+  coverage_target: 95        # spec NFR-03 (>= 95% lines/branches) overrides the 80 default.
+  doc_tool:        "JSDoc / TypeDoc (from JSDoc types)"
+  version_file:    "version.js"
+  version_const_hint: "export const VERSION = 'X.Y.Z'"
+  package_ecosystem: "npm"
+  commands:
+    build:        "pnpm build"
+    test:         "pnpm test"
+    format_check: "pnpm prettier --check ."
+    lint:         "pnpm eslint . --max-warnings 0 && pnpm tsc --noEmit"
+    bench:        "pnpm bench"
+
+ci:                          # from profiles/javascript.yaml (matches spec §7: Node 18/20/22).
+  tier1_platforms: "Linux (Node.js 18, 20, 22)"
+  matrix:
+    - { os: ubuntu-24.04, toolchain: node-18, preset: default }
+    - { os: ubuntu-24.04, toolchain: node-20, preset: default }
+    - { os: ubuntu-24.04, toolchain: node-22, preset: default }
+  setup_steps: |
+    - uses: pnpm/action-setup@v4
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.toolchain == 'node-18' && '18' || matrix.toolchain == 'node-22' && '22' || '20' }}
+        cache: pnpm
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+  extra_jobs: |
+    lint:
+      name: lint / eslint + prettier
+      runs-on: ubuntu-24.04
+      steps:
+        - uses: actions/checkout@v6
+        - uses: pnpm/action-setup@v4
+        - uses: actions/setup-node@v4
+          with: { node-version: '20', cache: pnpm }
+        - run: pnpm install --frozen-lockfile
+        - run: pnpm prettier --check . && pnpm eslint . --max-warnings 0
+  # Browser smoke (Playwright: Chromium/Firefox/WebKit) for the /storage, cookie, and /sanitize
+  # entries arrives with Milestone 6 (spec §7) — flagged in the hand-off, not day-zero CI.
+
+governance:
+  posture: standard                               # Q0.5 (defaulted, accepted)
+  scopes: [api, async, events, data, validation, web, crypto, storage, sanitize, errors, build, tests, docs, ci]
+  # Two distinct version fields — do not swap them:
+  version_start: "pre-1.0 milestone-driven"       # Q4.4 default; releases via changesets (spec §7)
+  start_version: "0.0.0"
+  house_rules: ""                                 # config/house-rules.md is empty — no §14 overlay
+  capabilities:
+    bench:      true                              # spec NFR-04: vitest bench vs pinned baselines
+    threading:  false                             # single-threaded event loop (profile)
+    public_api: true                              # named-exports public surface (spec §3)
+    i18n:       false                             # Q4.7: all English
+    packaging:  true                              # npm publish with provenance from CI OIDC (spec §7)
+    service:    false
+    announce:   false                             # Q4.8 default off
+    layered:    false                             # library keeps the flat shape (Q5.4a)
+    api_spec:   false                             # library — no OpenAPI/IDL stub
+
+i18n:
+  default_lang: "en"
+  targets: []
+
+announce:
+  channels: []
+
+spec:                         # IMPORTED from .spec/d4np-js.md v2.0 + ADR-001/002/003 (Q5.0),
+                              # mapped onto the six-section shape; the roadmap (Q5.7) was the
+                              # one gap and is co-authored below. Package renamed d4np-js ->
+                              # egl-utils-js per the maintainer's Q0.3/npm-name decisions
+                              # (base error class D4npError -> EglError accordingly).
+  provenance:       import
+  objective: |
+    A universal JavaScript utilities library (Node.js >= 18 and modern evergreen browsers)
+    providing async combinators with first-class AbortSignal cancellation, pure data-manipulation
+    functions, typed event helpers, and web/crypto/storage utilities — published on npm as
+    egl-utils-js with named exports only, dual ESM/CJS via an exports map, zero runtime
+    dependencies in the root entry, and a typed error hierarchy (EglError base with stable
+    .code). Pure by default, stateful by contract: the data and async modules never mutate
+    inputs; events, storage, http, and cookie modules are labeled stateful (spec §1, §3).
+  functional_reqs:
+    - "F1 delay(ms, {signal?}) — Promise resolved after ms; rejects AbortError on signal"
+    - "F2 timeout(promise, ms, opts?) — rejects TimeoutError via AbortSignal.timeout; underlying operation receives the signal"
+    - "F3 retry(fn, {retries, minDelay, maxDelay, signal, onAttempt}) — exponential backoff + full jitter; RetryExhaustedError carries .attempts/.errors[]"
+    - "F4 parallelLimit(tasks, limit, opts?) — bounded concurrency; fail-fast default aborts pending via shared signal; {settle: true} returns PromiseSettledResult[]"
+    - "F5 asyncQueue(opts?) — FIFO serial queue; push returns task Promise; onIdle(), size; abort drains pending with AbortError"
+    - "F6 EventEmitter<EventMap> — minimal typed emitter (on/once/off/emit); per-listener exception isolation reported via 'error'"
+    - "F7 debounce(fn, delay, {leading, maxWait}) — trailing-edge default; .cancel()/.flush()"
+    - "F8 throttle(fn, interval) — at most one call per interval; .cancel()"
+    - "F9 deepClone(obj) — thin wrapper over native structuredClone; unsupported types throw CloneError naming the offending path (ADR-002)"
+    - "F10 deepMerge(target, source) — recursive merge returning a new object; arrays replaced not concatenated; {arrayMerge} option"
+    - "F11 pick(obj, keys) / omit(obj, keys) — new filtered objects; type-narrowing JSDoc signatures"
+    - "F12 groupBy(array, iteratee) — returns Map<K, T[]> (avoids prototype-key pitfalls)"
+    - "F13 uniq(array, iteratee?) — SameValueZero uniqueness with optional key extractor"
+    - "F14 isObject(val) / isEmpty(val) — type-guard signatures"
+    - "F15 validateEmail(email) — linear-time, backtracking-free RFC 5322 practical subset; length caps (64/255) enforced before matching; ReDoS-resistant"
+    - "F16 httpClient — fetch wrapper; AbortController-based default+per-request timeouts merged with caller signals; auth callback attaches Bearer per request (no token storage); JSON parsing with content-type checks; non-2xx rejects HttpError{status, body}"
+    - "F17 urlSearchParams(obj) — flat object to query string; arrays as repeated keys; null/undefined skipped"
+    - "F18 uuid() — UUID v4 via Web Crypto (randomUUID/getRandomValues); never Math.random"
+    - "F19 hashString(str, algorithm='SHA-256') — async Web Crypto subtle.digest; hex output; SHA-256/384/512 only"
+    - "F20 measure(fn, opts?) — sync/async timing on performance.now(); returns {result, ms}"
+    - "F21 localStorageWrapper — safe interface with in-memory fallback; JSON (de)serialization; StorageError on quota"
+    - "F22 sessionStorageWrapper — same contract over sessionStorage"
+    - "F23 cookieHelper — document.cookie read/write/delete with Secure/SameSite/Max-Age/Path; browser-only (warns and no-ops in Node); no HttpOnly claims"
+    - "F24 sanitizeHtml(html, opts?) — allowlist-based, delegates to DOMPurify (optional peer) on the egl-utils-js/sanitize subpath with a curated default profile (ADR-003)"
+    - "F25 parseDuration(str) — '2h'|'30m'|'5s'|'1h30m' to milliseconds; invalid input throws DurationParseError (never NaN)"
+  nonfunctional_reqs:
+    - "NFR-01 Bundle budgets (min+gzip): root entry full import <= 6 kB; any single function <= 1 kB after shaking; /storage <= 2 kB — size-limit gate in CI"
+    - "NFR-02 Tree-shakability: importing one named export pulls zero unrelated modules — agadoo + size-limit scenario builds"
+    - "NFR-03 Coverage >= 95% lines/branches — vitest + c8 gate"
+    - "NFR-04 Performance parity: retry/parallelLimit within 10% of p-retry/p-limit; data functions within 10% of lodash equivalents or faster — vitest bench, pinned baselines, nightly regression gate"
+    - "NFR-05 validateEmail worst-case linear: 10^6 adversarial inputs each < 1 ms — property test in suite"
+    - "NFR-06 Zero runtime dependencies in the root entry (DOMPurify is peer + subpath only) — package.json audit in CI"
+    - "NFR-07 Portability: Node >= 18 LTS; last 2 evergreen Chromium/Firefox + Safari >= 15.4; one Web Crypto surface via conditional-exports shim; TypeScript >= 5.0 consumers resolve types through the exports map (spec §1.1)"
+  architecture: |
+    Flat utilities library behind an npm exports map (ADR-001): the root entry
+    'egl-utils-js' carries the async, data, validation, events, web, and crypto groups;
+    'egl-utils-js/storage' fences off browser-leaning storage/cookie wrappers;
+    'egl-utils-js/sanitize' isolates the DOMPurify-delegating sanitizer (optional peer,
+    ADR-003); 'egl-utils-js/errors' exports the shared typed error classes (EglError base,
+    stable .code). sideEffects: false plus named-exports-only make every function
+    individually shakeable; subpath entries keep peer-dependent and browser-only code out
+    of the root import. Dual-package hazard mitigated by keeping no module-level shared
+    state except error-class identity, checked via .code not cross-realm instanceof.
+    C4 component diagram: spec §4 (mermaid), seeded into docs/specs/01_spec_utils.md.
+  architecture_style: ""      # a library commits to no app architecture (Q5.4)
+  patterns:
+    - { name: "Facade", why: "httpClient and the storage wrappers present small stable surfaces over fetch / Web Storage platform APIs" }
+    - { name: "Adapter", why: "sanitizeHtml adapts DOMPurify behind a curated-allowlist API on a separate entry point (ADR-003)" }
+  pattern_discipline: advisory
+  layers: []
+  public_api:
+    - "Root 'egl-utils-js': delay, timeout, retry, parallelLimit, asyncQueue, EventEmitter, debounce, throttle, deepClone, deepMerge, pick, omit, groupBy, uniq, isObject, isEmpty, validateEmail, httpClient, urlSearchParams, uuid, hashString, measure, parseDuration — named exports only, no default export (ADR-001)"
+    - "'egl-utils-js/storage': localStorageWrapper, sessionStorageWrapper, cookieHelper (browser-leaning entry)"
+    - "'egl-utils-js/sanitize': sanitizeHtml (DOMPurify optional peerDependency; clear runtime error when missing)"
+    - "'egl-utils-js/errors': EglError base + TimeoutError, RetryExhaustedError, AbortError (re-exported convention), HttpError, CloneError, StorageError, DurationParseError — all with stable .code (cross-realm-safe identity)"
+    - "Failure taxonomy per module group and pure/stateful contract table: spec §3; SemVer surface: any exports-map or error-code change is MAJOR-relevant"
+  verification: |
+    Vitest on a Node 18/20/22 matrix; Playwright browser smoke (Chromium/Firefox/WebKit)
+    for the storage/cookie/sanitize entries (from M6); fast-check property tests for
+    validateEmail ReDoS resistance (NFR-05), deepMerge non-mutation, and the parseDuration
+    grammar. Per-PR quality gates: tsc --noEmit (checkJs), ESLint --max-warnings 0,
+    coverage >= 95% (NFR-03), size-limit budgets (NFR-01), agadoo shakeability (NFR-02),
+    publint + arethetypeswrong on the exports map. Nightly vitest bench vs pinned
+    lodash/p-limit/p-retry baselines; > 10% regression fails (NFR-04). Release engineering:
+    changesets-driven SemVer + changelog; npm publish with --provenance from CI OIDC;
+    lockfile-only installs and npm audit gate (spec §7).
+  milestone1_items:
+    - "Wire the packaging gates on the day-zero exports map: publint, arethetypeswrong, size-limit budget skeleton, agadoo (NFR-01/02/06 enforcement from the first PR)"
+  milestones:
+    - number: 2
+      title: "Errors & async core"
+      goal: "The typed error hierarchy and the five AbortSignal-first async combinators (spec §2 items 1-5)"
+      items:
+        - "2.1 errors module on 'egl-utils-js/errors': EglError base with stable .code + TimeoutError, RetryExhaustedError, AbortError re-export, HttpError, CloneError, StorageError, DurationParseError"
+        - "2.2 delay + timeout on AbortSignal.timeout (underlying operation receives the signal)"
+        - "2.3 retry with exponential backoff + full jitter; RetryExhaustedError{attempts, errors[]}"
+        - "2.4 parallelLimit: fail-fast default with shared-signal abort; {settle: true} mode"
+        - "2.5 asyncQueue: FIFO, onIdle()/size, abort drains pending with AbortError"
+        - "2.6 fast-check property suites for combinator invariants; 95% coverage gate holds"
+    - number: 3
+      title: "Data & validation"
+      goal: "Pure data-manipulation and validation functions (spec §2 items 9-15)"
+      items:
+        - "3.1 deepClone: structuredClone wrapper with CloneError diagnostic pre-walk (ADR-002)"
+        - "3.2 deepMerge: new-object merge, arrays replaced, {arrayMerge}; non-mutation property tests"
+        - "3.3 pick/omit with JSDoc type-narrowing signatures"
+        - "3.4 groupBy returning Map + uniq (SameValueZero, optional iteratee)"
+        - "3.5 isObject/isEmpty type guards"
+        - "3.6 validateEmail: linear-time practical subset, 64/255 length caps; ReDoS property test — 10^6 adversarial inputs < 1 ms each (NFR-05)"
+    - number: 4
+      title: "Events"
+      goal: "Typed event emitter and rate-limiting helpers (spec §2 items 6-8)"
+      items:
+        - "4.1 EventEmitter<EventMap>: on/once/off/emit, per-listener exception isolation via 'error'"
+        - "4.2 debounce: trailing default, {leading, maxWait}, .cancel()/.flush()"
+        - "4.3 throttle: one call per interval, .cancel()"
+        - "4.4 fake-timer test suites for debounce/throttle edge cases"
+    - number: 5
+      title: "Web, crypto & diagnostics"
+      goal: "fetch/URL/crypto/timing/duration utilities (spec §2 items 16-20, 25)"
+      items:
+        - "5.1 httpClient: AbortController default+per-request timeouts merged with caller signals; auth() callback -> Bearer; JSON content-type handling; HttpError{status, body}"
+        - "5.2 urlSearchParams: arrays as repeated keys, null/undefined skipped"
+        - "5.3 uuid via Web Crypto (randomUUID/getRandomValues) + conditional-exports crypto shim (spec §1.1)"
+        - "5.4 hashString: subtle.digest SHA-256/384/512, hex output"
+        - "5.5 measure on performance.now() returning {result, ms}"
+        - "5.6 parseDuration grammar + DurationParseError; fast-check grammar property test"
+    - number: 6
+      title: "Storage & sanitize subpaths"
+      goal: "Browser-leaning entries with real-browser CI (spec §2 items 21-24)"
+      items:
+        - "6.1 localStorageWrapper/sessionStorageWrapper with in-memory fallback and StorageError quota surfacing"
+        - "6.2 cookieHelper: document.cookie with Secure/SameSite/Max-Age/Path; Node no-op warning"
+        - "6.3 sanitizeHtml on 'egl-utils-js/sanitize': DOMPurify optional-peer delegation with curated default allowlist (ADR-003)"
+        - "6.4 Playwright browser smoke jobs (Chromium/Firefox/WebKit) for storage/cookie/sanitize in CI"
+        - "6.5 DOMPurify bypass-corpus snapshot tests for the default sanitize profile"
+    - number: 7
+      title: "Benchmarks & release readiness"
+      goal: "NFR enforcement at full strength and the first public release"
+      items:
+        - "7.1 vitest bench suites vs pinned lodash/p-limit/p-retry baselines (NFR-04)"
+        - "7.2 nightly benchmark regression workflow (> 10% fail)"
+        - "7.3 size-limit budgets tightened to final numbers (NFR-01) + shakeability scenario builds (NFR-02)"
+        - "7.4 changesets release pipeline; npm publish --provenance from CI OIDC; lockfile-only + npm audit supply-chain gates"
+        - "7.5 documentation pass: JSDoc API reference, README examples, sanitize non-goals in SECURITY.md"
+        - "7.6 v0.1.0 release readiness review"
+
+# Interview provenance (#169) — written as each phase settled, never retrospectively.
+#   asked — posed and answered; defaulted — assumed from the default and echoed back;
+#   imported — carried in from a validated existing artifact.
+interview:
+  questionnaire_version: 1
+  provenance:
+    identity: asked               # Q0.1-0.3: name chosen (egl-utils-js over the spec's d4np-js);
+                                  # title/tagline carried from .spec/d4np-js.md; kind confirmed.
+    domain: defaulted             # Q0.4: software — accepted.
+    language: asked               # Q1.1 JavaScript+JSDoc (deliberate, over the TS advisory);
+                                  # Q1.3 group path it/d4np; npm name egl-utils-js; Q1.2 none.
+    ownership: defaulted          # Derived from LICENSE (MIT, (c) 2026 Daniel Polo), gh auth
+                                  # (danielPoloWork), git config — echoed at confirmation.
+    toolchain: imported           # Spec §7 + ADR-001 stack, agreeing with the javascript profile;
+                                  # coverage_target 95 from NFR-03.
+    ci: defaulted                 # Straight from profiles/javascript.yaml (coincides with spec §7
+                                  # Node 18/20/22); Playwright browser smoke deferred to M6.
+    governance: defaulted         # Posture standard (Q0.5); scopes proposed from the module
+                                  # architecture; pre-1.0 versioning; packaging on (spec §7);
+                                  # announce off — all echoed at confirmation.
+    i18n: asked                   # Q4.7 asked unconditionally (ADR-0016): all English.
+    announce: defaulted           # Q4.8 default off.
+    spec: imported                # Q5.0 import: .spec/d4np-js.md v2.0 + ADR-001/002/003 mapped
+                                  # onto the six-section shape; gap audit found one gap — the
+                                  # roadmap (Q5.7) — co-authored above; d4np-js -> egl-utils-js
+                                  # rename applied (D4npError -> EglError).
