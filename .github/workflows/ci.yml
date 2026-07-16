@@ -38,7 +38,7 @@ jobs:
       - name: Check out the source tree
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v4
         with: { node-version: '20', cache: pnpm }
       - run: pnpm install --frozen-lockfile
@@ -93,7 +93,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
