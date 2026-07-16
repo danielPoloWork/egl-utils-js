@@ -54,11 +54,15 @@
   },
   "scripts": {
     "build": "tsup && tsc -p tsconfig.build.json",
-    "test": "node -e \"console.log('no test framework yet - vitest lands with roadmap item 1.2')\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
     "bench": "node -e \"console.log('no benchmark suite yet - vitest bench lands with roadmap item 7.1')\""
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.10",
     "tsup": "^8.5.1",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }
