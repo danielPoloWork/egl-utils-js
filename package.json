@@ -60,9 +60,9 @@
     "bench": "node -e \"console.log('no benchmark suite yet - vitest bench lands with roadmap item 7.1')\""
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^3.2.7",
     "tsup": "^8.5.1",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.10"
+    "vitest": "^3.2.7"
   }
 }
