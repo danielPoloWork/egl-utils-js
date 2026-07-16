@@ -24,7 +24,7 @@
   "engines": {
     "node": ">=18"
   },
-  "packageManager": "pnpm@11.13.1",
+  "packageManager": "pnpm@10.34.5",
   "sideEffects": false,
   "files": [
     "dist"
