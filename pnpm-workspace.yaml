@@ -1,0 +1,6 @@
+# pnpm settings (single-package repo — no `packages` list needed).
+# esbuild's postinstall compiles/links its platform binary; pnpm blocks
+# dependency build scripts unless explicitly allowed here (allowBuilds is the
+# pnpm 11 setting; older onlyBuiltDependencies is no longer read).
+allowBuilds:
+  esbuild: true

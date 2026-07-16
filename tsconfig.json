@@ -1,0 +1,18 @@
+{
+  // Type-checking config for JSDoc-typed JavaScript (the project's deliberate
+  // JS-not-TS choice, orchestrator/project.yaml `language`): `tsc --noEmit`
+  // is the type-soundness gate; declarations are emitted by tsconfig.build.json.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2023", "DOM"],
+    "allowJs": true,
+    "checkJs": true,
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/main/javascript/it/d4np/utils/**/*.js"]
+}
