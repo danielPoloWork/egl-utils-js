@@ -6,12 +6,24 @@
  * object, which would defeat tree-shaking (ADR-001).
  *
  * Module groups land by roadmap milestone and are re-exported from here:
- * errors & async combinators (M2), data & validation (M3), events (M4),
- * web, crypto & diagnostics (M5). Browser-leaning storage/cookie helpers and
- * sanitization live on their own subpath entries ('egl-utils-js/storage',
- * 'egl-utils-js/sanitize'), never on the root (spec §4).
+ * errors (below) and async combinators (M2), data & validation (M3), events
+ * (M4), web, crypto & diagnostics (M5). Browser-leaning storage/cookie
+ * helpers and sanitization live on their own subpath entries
+ * ('egl-utils-js/storage', 'egl-utils-js/sanitize'), never on the root
+ * (spec §4).
  *
  * @module egl-utils-js
  */
 
-export {};
+// Shared typed error classes (spec §3, ADR-0003) — importable from the root
+// and from 'egl-utils-js/errors' alike.
+export {
+  EglError,
+  TimeoutError,
+  AbortError,
+  RetryExhaustedError,
+  HttpError,
+  CloneError,
+  StorageError,
+  DurationParseError,
+} from './errors.js';
