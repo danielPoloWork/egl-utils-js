@@ -30,6 +30,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- Typed error taxonomy on `egl-utils-js/errors`, re-exported from the root (roadmap 2.1,
+  ADR-0003): `EglError` base plus `TimeoutError`, `AbortError` (DOM-convention `name`),
+  `RetryExhaustedError{attempts, errors[]}`, `HttpError{status, body}`,
+  `CloneError{path, valueType}`, `StorageError`, `DurationParseError` — each with a stable
+  machine-readable `code` (`EGL_*`, frozen public API); identity is checked via `code`,
+  never cross-realm `instanceof` (the dual-package hazard, ADR-001). 100% covered.
 - Packaging gates wired as a CI `packaging` job and package scripts (roadmap 1.4, packaging
   item): `publint` (publishing config), `arethetypeswrong` (types resolution across the
   exports map, node16 profile), `size-limit` with `.size-limit.json` skeleton budgets at the
