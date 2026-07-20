@@ -1,0 +1,13 @@
+# Normalize line endings: text files are LF in the repo and on checkout, so
+# the Linux CI matrix and Windows development trees agree (stops the recurring
+# "LF will be replaced by CRLF" churn). Binary and lockfile handling explicit.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+pnpm-lock.yaml -diff linguist-generated
