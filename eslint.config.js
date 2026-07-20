@@ -26,8 +26,8 @@ export default [
     },
   },
   {
-    // Tooling configs run on Node only.
-    files: ['*.config.js', 'eslint.config.js'],
+    // Tooling configs and Node scripts run on Node only.
+    files: ['*.config.js', 'eslint.config.js', 'tools/**/*.mjs'],
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: 'module',

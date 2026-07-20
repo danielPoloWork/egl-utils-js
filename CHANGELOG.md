@@ -30,6 +30,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- Packaging gates wired as a CI `packaging` job and package scripts (roadmap 1.4, packaging
+  item): `publint` (publishing config), `arethetypeswrong` (types resolution across the
+  exports map, node16 profile), `size-limit` with `.size-limit.json` skeleton budgets at the
+  NFR-01 values, `agadoo` (tree-shakeability, NFR-02), and a zero-runtime-dependency assertion
+  (NFR-06, `tools/assert-no-runtime-deps.mjs`). Per-function budgets and the final tightening
+  land with roadmap 7.3.
 
 ### Changed
 
@@ -38,6 +44,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   which also brings the `tsc --noEmit` checkJs type gate into CI; the `benchmark` job no
   longer references a non-existent matrix variable; the `lint` job's action pins and setup
   steps are aligned with the other jobs.
+- Declarations are now emitted per format by tsup — `.d.ts` for ESM, `.d.cts` for CJS — with
+  the `exports` map giving each condition its own `types`, so a CJS consumer's types match its
+  runtime module format (fixes the "masquerading as ESM" issue arethetypeswrong flagged). The
+  separate `tsc` declaration step and `tsconfig.build.json` are removed.
+- TypeScript pinned to v5 (was v7): the spec floor is TypeScript >= 5.0, and the declaration
+  toolchain (tsup's dts pipeline) is incompatible with the v7 native port.
 
 ### Deprecated
 

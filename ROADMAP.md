@@ -38,7 +38,7 @@ The thinnest slice that compiles, tests, and ships under the full quality bar.
 - [x] 1.3 Add formatter + linter configs (Prettier, ESLint (flat config) + tsc --noEmit with checkJs (JSDoc type-check)) at the repo root. _(route: fast/low)_
 - [x] 1.4 Stand up the CI matrix (Linux (Node.js 18, 20, 22)) with build + test + format + lint. _(route: standard/medium)_
 - [x] 1.5 Seed the version constant (export const VERSION = 'X.Y.Z') in `version.js`. _(route: fast/low)_
-- [ ] Wire the packaging gates on the day-zero exports map: publint, arethetypeswrong, size-limit budget skeleton, agadoo (NFR-01/02/06 enforcement from the first PR) _(route: standard/high — a misconfigured gate silently passing is false security)_
+- [x] Wire the packaging gates on the day-zero exports map: publint, arethetypeswrong, size-limit budget skeleton, agadoo (NFR-01/02/06 enforcement from the first PR) _(route: standard/high — a misconfigured gate silently passing is false security)_
 
 
 ---
