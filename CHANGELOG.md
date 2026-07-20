@@ -21,6 +21,10 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   suite under `src/test/javascript/it/d4np/utils/`, and `test`/`coverage` scripts replacing
   the placeholder (roadmap 1.2). The hard 95% coverage gate (NFR-03) turns on with the first
   real module (roadmap 2.6).
+- Formatter and linter wired: Prettier (`.prettierrc`/`.prettierignore`) and ESLint flat
+  config (`eslint.config.js`, correctness-only with `eslint-config-prettier`), plus `format`,
+  `format:check`, and `lint` (`eslint --max-warnings 0 && tsc --noEmit` checkJs) scripts
+  (roadmap 1.3). ESLint pinned to v9 to keep the toolchain runnable on the Node 18 floor.
 
 ### Changed
 

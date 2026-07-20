@@ -1,0 +1,17 @@
+# Not Prettier's to format:
+node_modules
+dist
+coverage
+pnpm-lock.yaml
+
+# The EADOS factory bundle regenerates this repo; never reformat it.
+.eados-core
+
+# Generated governance/docs and CI artifacts carry their own consistency lint
+# (tools/consistency_lint.py parses ROADMAP/CHANGELOG structure); Prettier owns
+# the source and the JS/JSON tooling configs, not this generated prose/YAML.
+docs
+.github
+.spec
+orchestrator
+*.md
