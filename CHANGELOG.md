@@ -27,6 +27,9 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   (roadmap 1.3). ESLint pinned to v9 to keep the toolchain runnable on the Node 18 floor.
 - `.gitattributes` normalizing text files to LF, so the Linux CI matrix and Windows
   development trees agree on line endings (roadmap 1.4).
+- Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
+  version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
+  reads for its version-lockstep check.
 
 ### Changed
 
