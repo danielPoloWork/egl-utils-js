@@ -95,6 +95,38 @@ jobs:
       - name: Lint and type-check
         run: pnpm lint
 
+  # Publishing gates — validate the built package's exports map, types
+  # resolution, bundle budgets, tree-shakeability, and dependency policy
+  # (NFR-01/02/06). Single-job on Node 20: these tools validate the built
+  # artifact (Node-version-independent) and require Node >= 20, while the
+  # library's Node 18 runtime floor is verified by the build/test matrix above.
+  packaging:
+    name: packaging / exports + budgets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: pnpm/action-setup@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build
+        run: pnpm build
+      - name: Validate package publishing config (publint)
+        run: pnpm check:publint
+      - name: Validate types resolution across the exports map (arethetypeswrong)
+        run: pnpm check:exports
+      - name: Enforce bundle-size budgets (NFR-01)
+        run: pnpm size
+      - name: Assert tree-shakeability (NFR-02)
+        run: pnpm check:shakeable
+      - name: Assert zero runtime dependencies (NFR-06)
+        run: pnpm check:deps
+
   # Reproducible performance gate — runs only when the project has a benchmark suite.
   benchmark:
     name: benchmark / reproducible perf

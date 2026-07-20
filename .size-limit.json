@@ -1,0 +1,22 @@
+[
+  {
+    "name": "root — full import (NFR-01: <= 6 kB)",
+    "path": "dist/esm/index.js",
+    "limit": "6 kB"
+  },
+  {
+    "name": "/storage (NFR-01: <= 2 kB)",
+    "path": "dist/esm/storage.js",
+    "limit": "2 kB"
+  },
+  {
+    "name": "/sanitize",
+    "path": "dist/esm/sanitize.js",
+    "limit": "2 kB"
+  },
+  {
+    "name": "/errors",
+    "path": "dist/esm/errors.js",
+    "limit": "1 kB"
+  }
+]

@@ -1,10 +1,9 @@
 import { defineConfig } from 'tsup';
 
 // Dual ESM/CJS build (ADR-001): dist/esm + dist/cjs from the same four entry
-// points the package.json exports map declares. Type declarations are NOT
-// produced here — tsup's dts pipeline expects TypeScript sources; this project
-// is JSDoc-typed JavaScript, so `tsc -p tsconfig.build.json` emits dist/types
-// from the JSDoc annotations (see the build script).
+// points the package.json exports map declares, each with a per-format type
+// declaration (.d.ts for ESM, .d.cts for CJS) so a CJS consumer's types match
+// its runtime format — arethetypeswrong (`pnpm check:exports`) enforces this.
 const entry = {
   index: 'src/main/javascript/it/d4np/utils/index.js',
   storage: 'src/main/javascript/it/d4np/utils/storage.js',
@@ -19,6 +18,8 @@ const shared = {
   target: 'es2022',
   sourcemap: true,
   clean: true,
+  // Emit declarations from the JSDoc-typed sources, per format.
+  dts: true,
 };
 
 export default defineConfig([
@@ -31,7 +32,7 @@ export default defineConfig([
     ...shared,
     format: 'cjs',
     outDir: 'dist/cjs',
-    // package.json is "type": "module", so CommonJS artifacts must be .cjs.
+    // package.json is "type": "module", so CommonJS artifacts must be .cjs/.d.cts.
     outExtension: () => ({ js: '.cjs' }),
   },
 ]);

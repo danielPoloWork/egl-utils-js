@@ -1,7 +1,8 @@
 {
   // Type-checking config for JSDoc-typed JavaScript (the project's deliberate
   // JS-not-TS choice, orchestrator/project.yaml `language`): `tsc --noEmit`
-  // is the type-soundness gate; declarations are emitted by tsconfig.build.json.
+  // is the type-soundness gate; declarations are emitted from these same JSDoc
+  // types by tsup's dts pipeline (see tsup.config.js), per format.
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",
