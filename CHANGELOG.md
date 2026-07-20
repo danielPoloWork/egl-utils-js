@@ -25,8 +25,16 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   config (`eslint.config.js`, correctness-only with `eslint-config-prettier`), plus `format`,
   `format:check`, and `lint` (`eslint --max-warnings 0 && tsc --noEmit` checkJs) scripts
   (roadmap 1.3). ESLint pinned to v9 to keep the toolchain runnable on the Node 18 floor.
+- `.gitattributes` normalizing text files to LF, so the Linux CI matrix and Windows
+  development trees agree on line endings (roadmap 1.4).
 
 ### Changed
+
+- CI matrix consolidated (roadmap 1.4): the `lint` job now invokes the `format:check` and
+  `lint` package scripts (single source of truth) instead of duplicating the commands,
+  which also brings the `tsc --noEmit` checkJs type gate into CI; the `benchmark` job no
+  longer references a non-existent matrix variable; the `lint` job's action pins and setup
+  steps are aligned with the other jobs.
 
 ### Deprecated
 

@@ -78,13 +78,22 @@ jobs:
   lint:
     name: lint / eslint + prettier
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: pnpm/action-setup@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with: { node-version: '20', cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm prettier --check . && pnpm eslint . --max-warnings 0
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # Invoke the package.json scripts so CI and local runs stay congruent
+      # (single source of truth). `lint` is eslint --max-warnings 0 followed by
+      # tsc --noEmit — the JSDoc checkJs type-soundness gate.
+      - name: Check formatting
+        run: pnpm format:check
+      - name: Lint and type-check
+        run: pnpm lint
 
   # Reproducible performance gate — runs only when the project has a benchmark suite.
   benchmark:
@@ -96,8 +105,10 @@ jobs:
       - uses: pnpm/action-setup@v6
       - name: Set up Node.js
         uses: actions/setup-node@v7
+        # Single-job (no matrix): benchmarks run on one Node to keep baselines
+        # comparable. The real suite lands with roadmap 7.1.
         with:
-          node-version: ${{ matrix.toolchain == 'node-18' && '18' || matrix.toolchain == 'node-22' && '22' || '20' }}
+          node-version: '20'
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
