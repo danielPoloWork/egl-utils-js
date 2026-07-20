@@ -17,6 +17,10 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Dual ESM/CJS build system (tsup) with the four-entry `exports` map (root, `/storage`,
   `/sanitize`, `/errors`), `.d.ts` declarations generated from JSDoc types, and buildable
   entry skeletons (roadmap 1.1, ADR-001).
+- Test framework wired: Vitest with v8 coverage reporting, one passing entry-point smoke
+  suite under `src/test/javascript/it/d4np/utils/`, and `test`/`coverage` scripts replacing
+  the placeholder (roadmap 1.2). The hard 95% coverage gate (NFR-03) turns on with the first
+  real module (roadmap 2.6).
 
 ### Changed
 
