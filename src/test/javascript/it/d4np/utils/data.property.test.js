@@ -5,6 +5,8 @@ import {
   deepMerge,
   pick,
   omit,
+  groupBy,
+  uniq,
 } from '../../../../../main/javascript/it/d4np/utils/data.js';
 
 // Property suite (roadmap 2.6 template) for the data module.
@@ -129,6 +131,51 @@ describe('pick / omit — partition laws (spec §2 item 11)', () => {
           expect(deepMerge(picked, omitted)).toEqual(obj);
         },
       ),
+      { numRuns: 100 },
+    );
+  });
+});
+
+describe('groupBy — partition laws (spec §2 item 12)', () => {
+  // Invariant: for any array and any key function, groupBy's groups partition
+  // the input — every element appears in exactly one group (its own key's),
+  // and concatenating the groups (in Map iteration order) reconstructs a
+  // permutation of the input containing every element exactly once.
+  it('partitions the array: every element in exactly one group, none lost', () => {
+    fc.assert(
+      fc.property(fc.array(fc.integer({ min: 0, max: 5 })), (values) => {
+        const groups = groupBy(values, (n) => n % 3);
+        const flattened = [...groups.values()].flat();
+        expect(flattened).toHaveLength(values.length);
+        // Every original element is grouped under its own key.
+        values.forEach((value) => {
+          expect(groups.get(value % 3)).toContain(value);
+        });
+        // Grouping is stable: within each key, relative input order is kept.
+        for (const key of groups.keys()) {
+          const expected = values.filter((v) => v % 3 === key);
+          expect(groups.get(key)).toEqual(expected);
+        }
+      }),
+      { numRuns: 100 },
+    );
+  });
+});
+
+describe('uniq — dedup laws (spec §2 item 13)', () => {
+  // Invariant: uniq is idempotent (applying it twice equals applying it once)
+  // and its result is always a subset of the input with no duplicate keys.
+  it('is idempotent and produces a duplicate-free subset', () => {
+    fc.assert(
+      fc.property(fc.array(fc.integer({ min: -3, max: 3 })), (values) => {
+        const once = uniq(values);
+        const twice = uniq(once);
+        expect(twice).toEqual(once);
+        // Duplicate-free.
+        expect(new Set(once).size).toBe(once.length);
+        // Keeps exactly the first occurrence of each distinct value, in order.
+        expect(once).toEqual(values.filter((v, i) => values.indexOf(v) === i));
+      }),
       { numRuns: 100 },
     );
   });

@@ -64,7 +64,7 @@ Pure data-manipulation and validation functions (spec §2 items 9-15)
 - [x] 3.1 deepClone: structuredClone wrapper with CloneError diagnostic pre-walk (ADR-002) _(route: standard/high)_
 - [x] 3.2 deepMerge: new-object merge, arrays replaced, {arrayMerge}; non-mutation property tests _(route: standard/medium)_
 - [x] 3.3 pick/omit with JSDoc type-narrowing signatures _(route: standard/medium)_
-- [ ] 3.4 groupBy returning Map + uniq (SameValueZero, optional iteratee) _(route: fast/medium)_
+- [x] 3.4 groupBy returning Map + uniq (SameValueZero, optional iteratee) _(route: fast/medium)_
 - [ ] 3.5 isObject/isEmpty type guards _(route: fast/low)_
 - [ ] 3.6 validateEmail: linear-time practical subset, 64/255 length caps; ReDoS property test — 10^6 adversarial inputs < 1 ms each (NFR-05) _(route: frontier-reasoning/high — security: ReDoS resistance is the deliverable)_
 
@@ -134,8 +134,8 @@ progress · ✅ done · ❎ N/A.
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
 | §1 | Objective & business context | 1.1 | 🚧 |
-| §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3 | 🚧 |
+| §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4 | 🚧 |
 | §3 | Non-functional requirements | 1.3, 1.4, 2.6 | 🚧 |
 | §4 | Logical architecture | 1.1 | 🚧 |
-| §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3 | 🚧 |
+| §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3, 3.4 | 🚧 |
 | §6 | Verification & test strategy | 1.2, 1.4, 2.6 | 🚧 |

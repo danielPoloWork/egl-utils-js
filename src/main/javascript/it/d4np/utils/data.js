@@ -369,3 +369,89 @@ export function omit(obj, keys) {
   }
   return /** @type {Omit<T, K>} */ (result);
 }
+
+/**
+ * Group array elements by a key derived from each element, returning a `Map`
+ * (spec §2 item 12). A `Map` — not a plain object — is deliberate: an
+ * arbitrary key (`'__proto__'`, `'constructor'`, a non-string) is just a key,
+ * never a prototype-pollution vector or a collision with `Object.prototype`.
+ *
+ * @example
+ * groupBy(users, (u) => u.role); // Map { 'admin' => [...], 'guest' => [...] }
+ *
+ * @template T
+ * @template K
+ * @param {readonly T[]} array - The elements to group.
+ * @param {(item: T, index: number) => K} iteratee - Derives each element's
+ *   group key.
+ * @returns {Map<K, T[]>} A map from key to the elements sharing it, groups
+ *   and elements both in first-encountered order.
+ * @throws {TypeError} If `array` is not an array or `iteratee` is not a
+ *   function.
+ */
+export function groupBy(array, iteratee) {
+  if (!Array.isArray(array)) {
+    throw new TypeError('groupBy requires an array as its first argument');
+  }
+  if (typeof iteratee !== 'function') {
+    throw new TypeError('groupBy requires a function as its second argument');
+  }
+  /** @type {Map<K, T[]>} */
+  const groups = new Map();
+  array.forEach((item, index) => {
+    const key = iteratee(item, index);
+    const group = groups.get(key);
+    if (group) {
+      group.push(item);
+    } else {
+      groups.set(key, [item]);
+    }
+  });
+  return groups;
+}
+
+/**
+ * Return a new array with duplicate elements removed, keeping the first
+ * occurrence of each (spec §2 item 13). Uniqueness is by
+ * [SameValueZero](https://tc39.es/ecma262/#sec-samevaluezero) — the same
+ * algorithm `Set`/`Map` use, so `NaN` is unique with itself and `+0`/`-0` are
+ * the same value — optionally applied to a key derived by `iteratee` rather
+ * than the element itself.
+ *
+ * @example
+ * uniq([1, 2, 2, NaN, NaN]); // [1, 2, NaN]
+ * uniq([{ id: 1 }, { id: 1 }, { id: 2 }], (x) => x.id); // first two objects, then the third
+ *
+ * @template T
+ * @template [K=T]
+ * @param {readonly T[]} array - The elements to deduplicate.
+ * @param {(item: T, index: number) => K} [iteratee] - Derives the value
+ *   compared for uniqueness; defaults to the element itself.
+ * @returns {T[]} A new array without duplicates.
+ * @throws {TypeError} If `array` is not an array or `iteratee` is given and
+ *   is not a function.
+ */
+export function uniq(array, iteratee) {
+  if (!Array.isArray(array)) {
+    throw new TypeError('uniq requires an array as its first argument');
+  }
+  if (iteratee !== undefined && typeof iteratee !== 'function') {
+    throw new TypeError('uniq requires iteratee to be a function when given');
+  }
+  const defaultIteratee = /** @type {(item: T, index: number) => K} */ (
+    /** @type {(item: T) => unknown} */ ((item) => item)
+  );
+  const identify = iteratee ?? defaultIteratee;
+  /** @type {Set<K>} */
+  const seen = new Set();
+  /** @type {T[]} */
+  const result = [];
+  array.forEach((item, index) => {
+    const key = identify(item, index);
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(item);
+    }
+  });
+  return result;
+}
