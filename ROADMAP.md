@@ -48,7 +48,7 @@ The thinnest slice that compiles, tests, and ships under the full quality bar.
 The typed error hierarchy and the five AbortSignal-first async combinators (spec §2 items 1-5)
 
 - [x] 2.1 errors module on 'egl-utils-js/errors': EglError base with stable .code + TimeoutError, RetryExhaustedError, AbortError re-export, HttpError, CloneError, StorageError, DurationParseError _(route: frontier-reasoning/high — sets-pattern: the failure taxonomy every module builds on; cross-realm .code identity is API design)_
-- [ ] 2.2 delay + timeout on AbortSignal.timeout (underlying operation receives the signal) _(route: frontier-reasoning/high — sets-pattern: fixes the signal-first combinator template items 2.3–2.5 copy)_
+- [x] 2.2 delay + timeout on AbortSignal.timeout (underlying operation receives the signal) _(route: frontier-reasoning/high — sets-pattern: fixes the signal-first combinator template items 2.3–2.5 copy)_
 - [ ] 2.3 retry with exponential backoff + full jitter; RetryExhaustedError{attempts, errors[]} _(route: standard/high)_
 - [ ] 2.4 parallelLimit: fail-fast default with shared-signal abort; {settle: true} mode _(route: standard/high)_
 - [ ] 2.5 asyncQueue: FIFO, onIdle()/size, abort drains pending with AbortError _(route: standard/high)_
@@ -134,7 +134,7 @@ progress · ✅ done · ❎ N/A.
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
 | §1 | Objective & business context | 1.1 | 🚧 |
-| §2 | Functional requirements | 1.1, 1.2, 2.1 | 🚧 |
+| §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2 | 🚧 |
 | §3 | Non-functional requirements | 1.3, 1.4 | 🚧 |
 | §4 | Logical architecture | 1.1 | 🚧 |
 | §5 | Public interface | 1.2, 2.1 | 🚧 |
