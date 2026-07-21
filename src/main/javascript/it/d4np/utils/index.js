@@ -27,3 +27,6 @@ export {
   StorageError,
   DurationParseError,
 } from './errors.js';
+
+// Async combinators (spec §2 items 1–5), signal-first per ADR-0004.
+export { delay, timeout } from './async.js';

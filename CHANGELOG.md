@@ -30,6 +30,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `delay(ms, {signal})` and `timeout(input, ms, {signal})` async combinators (roadmap 2.2,
+  ADR-0004): signal-first cancellation — reject with `AbortError` (`cause` = `signal.reason`),
+  no work on pre-aborted signals, full listener/timer cleanup, late failures absorbed.
+  `timeout` builds on `AbortSignal.timeout` and hands the operation a merged signal (task-
+  function form) so it can actually stop; internal `anySignal` merge covers the Node 18
+  floor's missing `AbortSignal.any`.
 - Typed error taxonomy on `egl-utils-js/errors`, re-exported from the root (roadmap 2.1,
   ADR-0003): `EglError` base plus `TimeoutError`, `AbortError` (DOM-convention `name`),
   `RetryExhaustedError{attempts, errors[]}`, `HttpError{status, body}`,
