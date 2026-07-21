@@ -32,4 +32,4 @@ export {
 export { delay, timeout, retry, parallelLimit, asyncQueue } from './async.js';
 
 // Data-manipulation utilities (spec §2 items 9–13), pure.
-export { deepClone, deepMerge, pick, omit } from './data.js';
+export { deepClone, deepMerge, pick, omit, groupBy, uniq } from './data.js';
