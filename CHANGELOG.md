@@ -30,6 +30,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- Property-based test suites (fast-check) for the combinator invariants (roadmap 2.6, spec §7):
+  retry's attempt-count law, parallelLimit's order/concurrency-cap laws and settle-mode mapping,
+  asyncQueue's FIFO/serial law, and timeout's identity/deadline laws — with explicit `numRuns`
+  and seed-replayable failures. The **NFR-03 coverage gate is now enforced**: `vitest.config.js`
+  thresholds (>= 95% lines/branches) fail `pnpm coverage`, which the CI build matrix now runs on
+  every Node cell; verified non-vacuous via a deliberate violation (85% < 95% → red).
 - `asyncQueue({signal})` FIFO serial task queue (roadmap 2.5): `push(task)` returns a promise
   for the task's outcome, tasks run one at a time in order, `onIdle()` resolves when the queue
   drains, and `size` reports outstanding tasks. Aborting the queue's signal drains the pending

@@ -96,6 +96,7 @@
     "agadoo": "^3.0.0",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
+    "fast-check": "^4.9.0",
     "globals": "^17.7.0",
     "prettier": "^3.9.5",
     "publint": "^0.3.21",

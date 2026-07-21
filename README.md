@@ -52,8 +52,8 @@ setup.
 
 | # | Title | Status |
 |---|---|---|
-| 1 | Project bootstrap & CI | ⏳ in progress |
-| 2 | Errors & async core | ⏳ planned |
+| 1 | Project bootstrap & CI | ✅ done |
+| 2 | Errors & async core | ✅ done |
 | 3 | Data & validation | ⏳ planned |
 | 4 | Events | ⏳ planned |
 | 5 | Web, crypto & diagnostics | ⏳ planned |
