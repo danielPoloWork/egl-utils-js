@@ -30,6 +30,10 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `throttle(fn, interval)` on `egl-utils-js/events`, re-exported from the root (roadmap 4.3):
+  invokes `fn` at most once per `interval` ms — leading edge immediately, trailing edge with the
+  latest args if calls kept arriving — with `.cancel()`/`.flush()`. Implemented as `debounce`
+  with `leading: true` and `maxWait === interval`, sharing one tested state machine.
 - `debounce(fn, delay, {leading, maxWait})` on `egl-utils-js/events`, re-exported from the root
   (roadmap 4.2): trailing-edge by default (fires once after the last call of a burst, with the
   latest `this`/args); `leading: true` also fires on the leading edge without double-invoking a

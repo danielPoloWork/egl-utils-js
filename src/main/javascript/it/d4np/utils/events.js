@@ -371,3 +371,38 @@ export function debounce(fn, delay, options = {}) {
 
   return /** @type {Debounced<F>} */ (Object.assign(debounced, { cancel, flush }));
 }
+
+/**
+ * Create a throttled wrapper of `fn` (spec §2 item 8): `fn` runs at most once
+ * per `interval` milliseconds. It fires on the **leading edge** (immediately
+ * on the first call) and again on the **trailing edge** with the most recent
+ * `this`/arguments if further calls arrived during the interval — so a steady
+ * stream of calls invokes `fn` at a steady one-per-`interval` rate.
+ *
+ * Throttle is exactly {@link debounce} with `leading: true` and
+ * `maxWait === interval`: the `maxWait` guarantee *is* the throttle rate, so
+ * the two share one tested state machine rather than a second copy. The
+ * `.cancel()` (spec item 8) and `.flush()` controls come from that shared
+ * implementation.
+ *
+ * @example
+ * const onScroll = throttle(() => updateHeader(), 100); // ≤ 10 calls/sec
+ * window.addEventListener('scroll', onScroll);
+ * // later: onScroll.cancel();
+ *
+ * @template {(...args: any[]) => any} F
+ * @param {F} fn - The function to throttle.
+ * @param {number} interval - The minimum spacing between calls, in ms.
+ * @returns {Debounced<F>} The throttled function with `cancel`/`flush`.
+ * @throws {TypeError} If `fn` is not a function or `interval` is not a finite
+ *   non-negative number.
+ */
+export function throttle(fn, interval) {
+  if (typeof fn !== 'function') {
+    throw new TypeError('fn must be a function');
+  }
+  if (typeof interval !== 'number' || !Number.isFinite(interval) || interval < 0) {
+    throw new TypeError('interval must be a finite non-negative number of milliseconds');
+  }
+  return debounce(fn, interval, { leading: true, maxWait: interval });
+}
