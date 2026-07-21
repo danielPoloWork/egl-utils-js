@@ -36,3 +36,6 @@ export { deepClone, deepMerge, pick, omit, groupBy, uniq, isObject, isEmpty } fr
 
 // Validation (spec §2 item 15) — linear-time by construction, no regex (ADR-0005).
 export { validateEmail } from './validation.js';
+
+// Typed event helpers (spec §2 items 6–8), stateful by contract (ADR-0006).
+export { EventEmitter } from './events.js';

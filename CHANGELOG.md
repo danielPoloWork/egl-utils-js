@@ -30,6 +30,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `EventEmitter<EventMap>` on `egl-utils-js/events`, re-exported from the root (roadmap 4.1,
+  ADR-0006): a minimal typed emitter — `EventMap` maps each event name to its single payload
+  type, giving every `on`/`once`/`off`/`emit` call site an exact payload type under JSDoc +
+  checkJs. `on`/`once` return an idempotent unsubscribe closure; dispatch is snapshot-based;
+  per-listener exception isolation reports failures to the `'error'` listeners (their own
+  exceptions swallowed — no recursion), and with no `'error'` listener subscribed `emit`
+  throws after all listeners ran (single error or `AggregateError`) — never silently lost.
+  First catalogue pattern implemented: Observer (docs/patterns).
 - `validateEmail(email)` on `egl-utils-js/validation`, re-exported from the root (roadmap 3.6,
   ADR-0005): a practical RFC 5322 subset validated by a hand-rolled single-pass scan with **no
   regular expression anywhere** — linear time by construction (the ReDoS answer, NFR-05) — and
