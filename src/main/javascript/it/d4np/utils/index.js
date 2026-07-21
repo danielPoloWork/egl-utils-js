@@ -33,3 +33,6 @@ export { delay, timeout, retry, parallelLimit, asyncQueue } from './async.js';
 
 // Data-manipulation utilities (spec §2 items 9–14), pure.
 export { deepClone, deepMerge, pick, omit, groupBy, uniq, isObject, isEmpty } from './data.js';
+
+// Validation (spec §2 item 15) — linear-time by construction, no regex (ADR-0005).
+export { validateEmail } from './validation.js';
