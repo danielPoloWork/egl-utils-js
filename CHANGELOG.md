@@ -30,6 +30,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `deepMerge(target, source, {arrayMerge})` on `egl-utils-js/data`, re-exported from the root
+  (roadmap 3.2): recursively merges two plain objects into a **new** object without mutating
+  either input. Arrays are replaced by default (`'replace'`); `'concat'` or a custom
+  `(target, source) => result` function are also accepted; non-plain objects (`Date`, `Map`,
+  class instances) are replaced wholesale, and the source wins every other conflict. Safe
+  against prototype pollution — a `__proto__` key is stored as an own property, never applied
+  to the prototype.
 - `deepClone(value)` on `egl-utils-js/data`, re-exported from the root (roadmap 3.1, ADR-002):
   a thin wrapper over native `structuredClone` (dates, regexes, `Map`/`Set`, typed arrays, and
   cycles ride the platform) that adds diagnostics — on a `DataCloneError` it walks the input and
