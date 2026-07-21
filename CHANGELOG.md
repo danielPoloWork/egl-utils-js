@@ -30,6 +30,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `deepClone(value)` on `egl-utils-js/data`, re-exported from the root (roadmap 3.1, ADR-002):
+  a thin wrapper over native `structuredClone` (dates, regexes, `Map`/`Set`, typed arrays, and
+  cycles ride the platform) that adds diagnostics — on a `DataCloneError` it walks the input and
+  throws `CloneError{path, valueType}` naming the offending value (e.g. `config.handlers[2] is a
+  function`), or rethrows the native error unchanged when it cannot localize the offender.
 - Property-based test suites (fast-check) for the combinator invariants (roadmap 2.6, spec §7):
   retry's attempt-count law, parallelLimit's order/concurrency-cap laws and settle-mode mapping,
   asyncQueue's FIFO/serial law, and timeout's identity/deadline laws — with explicit `numRuns`

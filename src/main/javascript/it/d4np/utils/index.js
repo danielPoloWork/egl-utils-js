@@ -30,3 +30,6 @@ export {
 
 // Async combinators (spec §2 items 1–5), signal-first per ADR-0004.
 export { delay, timeout, retry, parallelLimit, asyncQueue } from './async.js';
+
+// Data-manipulation utilities (spec §2 items 9–13), pure.
+export { deepClone } from './data.js';
