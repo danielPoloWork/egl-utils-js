@@ -29,4 +29,4 @@ export {
 } from './errors.js';
 
 // Async combinators (spec §2 items 1–5), signal-first per ADR-0004.
-export { delay, timeout, retry, parallelLimit } from './async.js';
+export { delay, timeout, retry, parallelLimit, asyncQueue } from './async.js';

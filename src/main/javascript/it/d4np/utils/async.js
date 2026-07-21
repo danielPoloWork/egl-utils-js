@@ -413,3 +413,110 @@ export function parallelLimit(tasks, limit, options = {}) {
     pump();
   });
 }
+
+/**
+ * @typedef {object} AsyncQueue
+ * @property {<R>(task: (signal?: AbortSignal) => Promise<R> | R) => Promise<R>} push
+ *   Enqueue a task; returns a promise for its outcome. Tasks run one at a
+ *   time in FIFO order and receive the queue's `signal`. After the queue is
+ *   aborted, `push` rejects immediately with {@link AbortError}.
+ * @property {() => Promise<void>} onIdle - Resolves the next time the queue is
+ *   empty (nothing running or waiting); resolves immediately if already idle.
+ * @property {number} size - Tasks not yet settled: waiting plus the running one.
+ */
+
+/**
+ * Create a FIFO serial task queue (spec §2 item 5). Tasks run one at a time
+ * in the order pushed; `push` returns a promise for the task's outcome.
+ *
+ * Signal-first per ADR-0004: each task receives the queue's `signal`, and
+ * aborting it **drains the pending tasks** — every queued-but-not-started
+ * task's promise rejects with {@link AbortError}, and any later `push`
+ * rejects immediately. The already-running task received the signal and is
+ * left to stop itself.
+ *
+ * @example
+ * const queue = asyncQueue({ signal });
+ * const first = queue.push((signal) => writeThing(a, { signal }));
+ * const second = queue.push((signal) => writeThing(b, { signal })); // runs after `first`
+ * await queue.onIdle();
+ *
+ * @param {{ signal?: AbortSignal }} [options]
+ * @returns {AsyncQueue}
+ */
+export function asyncQueue(options = {}) {
+  const { signal } = options;
+
+  /**
+   * @typedef {object} QueueItem
+   * @property {(signal?: AbortSignal) => unknown} task
+   * @property {(value: any) => void} resolve
+   * @property {(reason: unknown) => void} reject
+   */
+  /** @type {QueueItem[]} */
+  const queue = [];
+  let running = false;
+  let aborted = signal?.aborted ?? false;
+  /** @type {Array<() => void>} */
+  let idleWaiters = [];
+
+  const settleIdleIfIdle = () => {
+    if (running || queue.length > 0) return;
+    const waiters = idleWaiters;
+    idleWaiters = [];
+    for (const resolveWaiter of waiters) resolveWaiter();
+  };
+
+  const runNext = () => {
+    if (running || queue.length === 0) return;
+    running = true;
+    const item = /** @type {QueueItem} */ (queue.shift());
+    Promise.resolve()
+      .then(() => item.task(signal))
+      .then(item.resolve, item.reject)
+      .finally(() => {
+        running = false;
+        runNext();
+        settleIdleIfIdle();
+      });
+  };
+
+  signal?.addEventListener(
+    'abort',
+    () => {
+      aborted = true;
+      const pending = queue.splice(0, queue.length);
+      for (const item of pending) {
+        item.reject(abortErrorFrom(/** @type {AbortSignal} */ (signal)));
+      }
+      settleIdleIfIdle();
+    },
+    { once: true },
+  );
+
+  return {
+    push(task) {
+      if (typeof task !== 'function') {
+        throw new TypeError('task must be a function');
+      }
+      if (aborted) {
+        return Promise.reject(abortErrorFrom(/** @type {AbortSignal} */ (signal)));
+      }
+      return new Promise((resolve, reject) => {
+        queue.push({ task, resolve, reject });
+        runNext();
+      });
+    },
+    onIdle() {
+      if (!running && queue.length === 0) {
+        return Promise.resolve();
+      }
+      return new Promise((resolve) => {
+        idleWaiters.push(resolve);
+      });
+    },
+    get size() {
+      return queue.length + (running ? 1 : 0);
+    },
+  };
+}

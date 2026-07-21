@@ -51,7 +51,7 @@ The typed error hierarchy and the five AbortSignal-first async combinators (spec
 - [x] 2.2 delay + timeout on AbortSignal.timeout (underlying operation receives the signal) _(route: frontier-reasoning/high — sets-pattern: fixes the signal-first combinator template items 2.3–2.5 copy)_
 - [x] 2.3 retry with exponential backoff + full jitter; RetryExhaustedError{attempts, errors[]} _(route: standard/high)_
 - [x] 2.4 parallelLimit: fail-fast default with shared-signal abort; {settle: true} mode _(route: standard/high)_
-- [ ] 2.5 asyncQueue: FIFO, onIdle()/size, abort drains pending with AbortError _(route: standard/high)_
+- [x] 2.5 asyncQueue: FIFO, onIdle()/size, abort drains pending with AbortError _(route: standard/high)_
 - [ ] 2.6 fast-check property suites for combinator invariants; 95% coverage gate holds _(route: frontier-reasoning/high — sets-pattern: the property-suite template M3/M5 suites copy)_
 
 
@@ -134,7 +134,7 @@ progress · ✅ done · ❎ N/A.
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
 | §1 | Objective & business context | 1.1 | 🚧 |
-| §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2, 2.3, 2.4 | 🚧 |
+| §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2, 2.3, 2.4, 2.5 | 🚧 |
 | §3 | Non-functional requirements | 1.3, 1.4 | 🚧 |
 | §4 | Logical architecture | 1.1 | 🚧 |
 | §5 | Public interface | 1.2, 2.1 | 🚧 |
