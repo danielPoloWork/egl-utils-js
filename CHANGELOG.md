@@ -30,6 +30,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `asyncQueue({signal})` FIFO serial task queue (roadmap 2.5): `push(task)` returns a promise
+  for the task's outcome, tasks run one at a time in order, `onIdle()` resolves when the queue
+  drains, and `size` reports outstanding tasks. Aborting the queue's signal drains the pending
+  tasks (each rejects `AbortError`) and makes later `push` reject immediately; the running task
+  receives the signal and is left to stop itself.
 - `parallelLimit(tasks, limit, {signal, settle})` async combinator (roadmap 2.4): bounded
   concurrency with order-preserving results. Default fail-fast — the first rejection aborts the
   shared signal (pending tasks never launch, in-flight ones stop) and rejects with that error,
