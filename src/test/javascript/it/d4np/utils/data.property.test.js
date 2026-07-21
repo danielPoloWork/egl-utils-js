@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { deepClone, deepMerge } from '../../../../../main/javascript/it/d4np/utils/data.js';
+import {
+  deepClone,
+  deepMerge,
+  pick,
+  omit,
+} from '../../../../../main/javascript/it/d4np/utils/data.js';
 
 // Property suite (roadmap 2.6 template) for the data module.
 
@@ -71,6 +76,59 @@ describe('deepMerge — merge laws (spec §2 item 10)', () => {
           }
         }
       }),
+      { numRuns: 100 },
+    );
+  });
+});
+
+describe('pick / omit — partition laws (spec §2 item 11)', () => {
+  // Invariant: for any object and any subset of its keys, pick(keys) and
+  // omit(keys) partition the object's own enumerable keys — their key sets are
+  // disjoint, and their union equals the original key set.
+  it('pick and omit partition the input key set for any chosen keys', () => {
+    fc.assert(
+      fc.property(
+        fc.dictionary(
+          fc.string().filter((k) => k !== '__proto__'),
+          fc.integer(),
+        ),
+        fc.array(fc.string()),
+        (obj, chosen) => {
+          const picked = pick(obj, /** @type {any} */ (chosen));
+          const omitted = omit(obj, /** @type {any} */ (chosen));
+          const pickedKeys = new Set(Object.keys(picked));
+          const omittedKeys = new Set(Object.keys(omitted));
+
+          // Disjoint.
+          for (const key of pickedKeys) expect(omittedKeys.has(key)).toBe(false);
+          // Union equals the original own-key set.
+          const union = new Set([...pickedKeys, ...omittedKeys]);
+          expect([...union].sort()).toEqual(Object.keys(obj).sort());
+          // pick keeps exactly the chosen keys that exist.
+          const chosenPresent = new Set(Object.keys(obj).filter((k) => chosen.includes(k)));
+          expect([...pickedKeys].sort()).toEqual([...chosenPresent].sort());
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  // Invariant: merging the two halves back together reconstructs the original
+  // object (values unchanged), confirming neither half drops or alters data.
+  it('deepMerge(pick, omit) reconstructs the original object', () => {
+    fc.assert(
+      fc.property(
+        fc.dictionary(
+          fc.string().filter((k) => k !== '__proto__'),
+          fc.integer(),
+        ),
+        fc.array(fc.string()),
+        (obj, chosen) => {
+          const picked = pick(obj, /** @type {any} */ (chosen));
+          const omitted = omit(obj, /** @type {any} */ (chosen));
+          expect(deepMerge(picked, omitted)).toEqual(obj);
+        },
+      ),
       { numRuns: 100 },
     );
   });
