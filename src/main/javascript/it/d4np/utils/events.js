@@ -203,3 +203,171 @@ export class EventEmitter {
     }
   }
 }
+
+/**
+ * @template {(...args: any[]) => any} F
+ * @typedef {((...args: Parameters<F>) => ReturnType<F> | undefined) & {
+ *   cancel: () => void,
+ *   flush: () => ReturnType<F> | undefined,
+ * }} Debounced
+ */
+
+/**
+ * Create a debounced wrapper of `fn` (spec §2 item 7). By default `fn` runs
+ * on the **trailing edge** — once, `delay` ms after the last call of a burst,
+ * with the most recent `this`/arguments. The wrapper returns the result of
+ * the last actual `fn` invocation.
+ *
+ * The `leading`/`maxWait` interplay follows the well-tested lodash semantics:
+ * - `leading: true` also runs `fn` on the **leading edge** (immediately on the
+ *   first call of a burst). A burst of a single call fires **once** (leading
+ *   only) — the trailing invoke is suppressed when no further call arrived
+ *   during the wait, so `leading` never double-invokes a lone call.
+ * - `maxWait` caps how long `fn` can be starved during a *sustained* burst
+ *   (calls arriving faster than `delay`): `fn` is guaranteed to run at least
+ *   every `maxWait` ms. Effective `maxWait` is `max(maxWait, delay)`.
+ *
+ * `.cancel()` drops any pending trailing invocation and resets state.
+ * `.flush()` runs any pending trailing invocation immediately and returns its
+ * result (or the last result if nothing is pending).
+ *
+ * @example
+ * const onResize = debounce(() => layout(), 150);
+ * window.addEventListener('resize', onResize);
+ * // later: onResize.cancel();
+ *
+ * @template {(...args: any[]) => any} F
+ * @param {F} fn - The function to debounce.
+ * @param {number} delay - The quiet period in milliseconds.
+ * @param {{ leading?: boolean, maxWait?: number }} [options]
+ * @returns {Debounced<F>} The debounced function with `cancel`/`flush`.
+ * @throws {TypeError} If `fn` is not a function, or `delay`/`maxWait` is not a
+ *   finite non-negative number.
+ */
+export function debounce(fn, delay, options = {}) {
+  if (typeof fn !== 'function') {
+    throw new TypeError('fn must be a function');
+  }
+  if (typeof delay !== 'number' || !Number.isFinite(delay) || delay < 0) {
+    throw new TypeError('delay must be a finite non-negative number of milliseconds');
+  }
+  const leading = options.leading ?? false;
+  const maxing = options.maxWait !== undefined;
+  let maxWait = 0;
+  if (maxing) {
+    const requested = options.maxWait;
+    if (typeof requested !== 'number' || !Number.isFinite(requested) || requested < 0) {
+      throw new TypeError('maxWait must be a finite non-negative number of milliseconds');
+    }
+    maxWait = Math.max(requested, delay);
+  }
+
+  /** @type {any[] | undefined} */
+  let lastArgs;
+  /** @type {unknown} */
+  let lastThis;
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let timerId;
+  /** @type {number | undefined} */
+  let lastCallTime;
+  let lastInvokeTime = 0;
+  /** @type {ReturnType<F> | undefined} */
+  let result;
+
+  /** @param {number} time @returns {ReturnType<F>} */
+  function invokeFunc(time) {
+    const args = /** @type {Parameters<F>} */ (lastArgs);
+    const thisArg = lastThis;
+    lastArgs = undefined;
+    lastThis = undefined;
+    lastInvokeTime = time;
+    result = fn.apply(thisArg, args);
+    return /** @type {ReturnType<F>} */ (result);
+  }
+
+  /** @param {number} time @returns {boolean} */
+  function shouldInvoke(time) {
+    if (lastCallTime === undefined) return true;
+    const sinceCall = time - lastCallTime;
+    const sinceInvoke = time - lastInvokeTime;
+    // Elapsed the quiet period, a backwards clock jump, or hit the max wait.
+    return sinceCall >= delay || sinceCall < 0 || (maxing && sinceInvoke >= maxWait);
+  }
+
+  /** @param {number} time @returns {number} */
+  function remainingWait(time) {
+    const sinceCall = time - /** @type {number} */ (lastCallTime);
+    const sinceInvoke = time - lastInvokeTime;
+    const waiting = delay - sinceCall;
+    return maxing ? Math.min(waiting, maxWait - sinceInvoke) : waiting;
+  }
+
+  /** @param {number} time @returns {ReturnType<F> | undefined} */
+  function trailingEdge(time) {
+    timerId = undefined;
+    // Only invoke if a call arrived during the wait (lastArgs still set).
+    if (lastArgs) return invokeFunc(time);
+    lastArgs = undefined;
+    lastThis = undefined;
+    return result;
+  }
+
+  function timerExpired() {
+    const time = Date.now();
+    if (shouldInvoke(time)) {
+      trailingEdge(time);
+      return;
+    }
+    timerId = setTimeout(timerExpired, remainingWait(time));
+  }
+
+  /** @param {number} time @returns {ReturnType<F> | undefined} */
+  function leadingEdge(time) {
+    lastInvokeTime = time;
+    timerId = setTimeout(timerExpired, delay);
+    return leading ? invokeFunc(time) : result;
+  }
+
+  /**
+   * @this {unknown}
+   * @param {...any} args
+   * @returns {ReturnType<F> | undefined}
+   */
+  function debounced(...args) {
+    const time = Date.now();
+    const isInvoking = shouldInvoke(time);
+    lastArgs = args;
+    lastThis = this;
+    lastCallTime = time;
+    if (isInvoking) {
+      if (timerId === undefined) {
+        return leadingEdge(lastCallTime);
+      }
+      if (maxing) {
+        // Sustained burst hit maxWait: restart the timer and invoke now.
+        timerId = setTimeout(timerExpired, delay);
+        return invokeFunc(lastCallTime);
+      }
+    }
+    if (timerId === undefined) {
+      timerId = setTimeout(timerExpired, delay);
+    }
+    return result;
+  }
+
+  function cancel() {
+    if (timerId !== undefined) clearTimeout(timerId);
+    lastInvokeTime = 0;
+    lastArgs = undefined;
+    lastCallTime = undefined;
+    lastThis = undefined;
+    timerId = undefined;
+  }
+
+  /** @returns {ReturnType<F> | undefined} */
+  function flush() {
+    return timerId === undefined ? result : trailingEdge(Date.now());
+  }
+
+  return /** @type {Debounced<F>} */ (Object.assign(debounced, { cancel, flush }));
+}
