@@ -295,3 +295,77 @@ export function deepMerge(target, source, options = {}) {
   }
   return /** @type {T & S} */ (mergeObjects(target, source, arrayMerge));
 }
+
+/**
+ * @param {unknown} object
+ * @param {unknown} keys
+ * @param {string} fnName
+ * @returns {void}
+ */
+function assertObjectAndKeys(object, keys, fnName) {
+  if (object === null || typeof object !== 'object') {
+    throw new TypeError(`${fnName} requires an object as its first argument`);
+  }
+  if (!Array.isArray(keys)) {
+    throw new TypeError(`${fnName} requires an array of keys as its second argument`);
+  }
+}
+
+/**
+ * Return a new object with **only** the given keys copied from `obj` — those
+ * present as own enumerable properties (spec §2 item 11). Keys not present on
+ * `obj` are skipped rather than added as `undefined`, and inherited properties
+ * are never copied. The input is not mutated.
+ *
+ * @example
+ * pick({ id: 1, name: 'a', secret: 'x' }, ['id', 'name']); // { id: 1, name: 'a' }
+ *
+ * @template {object} T
+ * @template {keyof T} K
+ * @param {T} obj - The source object.
+ * @param {readonly K[]} keys - The keys to keep.
+ * @returns {Pick<T, K>} A new object with just those keys.
+ * @throws {TypeError} If `obj` is not an object or `keys` is not an array.
+ */
+export function pick(obj, keys) {
+  assertObjectAndKeys(obj, keys, 'pick');
+  const source = /** @type {Record<string, unknown>} */ (obj);
+  /** @type {Record<string, unknown>} */
+  const result = {};
+  for (const key of /** @type {readonly (string | K)[]} */ (keys)) {
+    const name = /** @type {string} */ (key);
+    if (Object.prototype.hasOwnProperty.call(source, name)) {
+      assignOwn(result, name, source[name]);
+    }
+  }
+  return /** @type {Pick<T, K>} */ (result);
+}
+
+/**
+ * Return a new object with the given keys **removed** — every own enumerable
+ * property of `obj` except those listed (spec §2 item 11). The input is not
+ * mutated and inherited properties are never copied.
+ *
+ * @example
+ * omit({ id: 1, name: 'a', secret: 'x' }, ['secret']); // { id: 1, name: 'a' }
+ *
+ * @template {object} T
+ * @template {keyof T} K
+ * @param {T} obj - The source object.
+ * @param {readonly K[]} keys - The keys to drop.
+ * @returns {Omit<T, K>} A new object without those keys.
+ * @throws {TypeError} If `obj` is not an object or `keys` is not an array.
+ */
+export function omit(obj, keys) {
+  assertObjectAndKeys(obj, keys, 'omit');
+  const source = /** @type {Record<string, unknown>} */ (obj);
+  const excluded = new Set(/** @type {readonly (string | K)[]} */ (keys));
+  /** @type {Record<string, unknown>} */
+  const result = {};
+  for (const name of Object.keys(source)) {
+    if (!excluded.has(/** @type {any} */ (name))) {
+      assignOwn(result, name, source[name]);
+    }
+  }
+  return /** @type {Omit<T, K>} */ (result);
+}
