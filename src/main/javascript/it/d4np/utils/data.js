@@ -1,5 +1,5 @@
 /**
- * egl-utils-js — data-manipulation utilities (spec §2 items 9–13, pure).
+ * egl-utils-js — data-manipulation utilities (spec §2 items 9–14, pure).
  *
  * Every function here is pure: inputs are never mutated and there is no
  * ambient state (spec §1, §3). Failures use the EglError taxonomy (ADR-0003).
@@ -454,4 +454,51 @@ export function uniq(array, iteratee) {
     }
   });
   return result;
+}
+
+/**
+ * Type guard for a **plain data object** — the same notion `deepMerge`,
+ * `pick`, and `omit` operate on (spec §2 item 14): prototype is
+ * `Object.prototype` or `null`. Returns `false` for arrays, `null`, `Date`,
+ * `Map`, `Set`, `RegExp`, functions, and class instances — anything that
+ * isn't safely mergeable/mappable field-by-field as generic data.
+ *
+ * @example
+ * isObject({ a: 1 });        // true
+ * isObject([1, 2]);          // false — arrays are not plain objects here
+ * isObject(new Date());      // false — opaque built-in, not plain data
+ * isObject(null);            // false
+ *
+ * @param {unknown} value
+ * @returns {value is Record<string, unknown>}
+ */
+export function isObject(value) {
+  return isPlainObject(value);
+}
+
+/**
+ * Check whether a value is empty (spec §2 item 14). `null` and `undefined`
+ * are empty; strings and arrays are empty when their `length` is `0`; `Map`
+ * and `Set` are empty when their `size` is `0`; a plain object is empty when
+ * it has no own enumerable keys. Any other value (numbers, booleans,
+ * functions, class instances, non-plain objects) is never empty.
+ *
+ * @example
+ * isEmpty(null);        // true
+ * isEmpty('');          // true
+ * isEmpty([]);          // true
+ * isEmpty({});          // true
+ * isEmpty(new Map());   // true
+ * isEmpty({ a: 1 });    // false
+ * isEmpty(0);           // false — a value, not "nothing"
+ *
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+export function isEmpty(value) {
+  if (value === null || value === undefined) return true;
+  if (typeof value === 'string' || Array.isArray(value)) return value.length === 0;
+  if (value instanceof Map || value instanceof Set) return value.size === 0;
+  if (isPlainObject(value)) return Object.keys(value).length === 0;
+  return false;
 }
