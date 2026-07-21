@@ -30,6 +30,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `isObject(value)` and `isEmpty(value)` type guards on `egl-utils-js/data`, re-exported from
+  the root (roadmap 3.5): `isObject` narrows to the plain-object notion `deepMerge`/`pick`/`omit`
+  already use (prototype `Object.prototype` or `null`); `isEmpty` recognizes `null`/`undefined`,
+  zero-length strings/arrays, zero-size `Map`/`Set`, and key-less plain objects as empty,
+  everything else (numbers, booleans, functions, non-plain objects) as not.
 - `groupBy(array, iteratee)` and `uniq(array, iteratee?)` on `egl-utils-js/data`, re-exported
   from the root (roadmap 3.4): `groupBy` returns a `Map<K, T[]>` (not a plain object, so an
   arbitrary key like `'__proto__'` is just a key, never a pollution vector), groups and elements

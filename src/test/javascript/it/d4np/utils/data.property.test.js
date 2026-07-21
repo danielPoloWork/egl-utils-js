@@ -7,6 +7,8 @@ import {
   omit,
   groupBy,
   uniq,
+  isObject,
+  isEmpty,
 } from '../../../../../main/javascript/it/d4np/utils/data.js';
 
 // Property suite (roadmap 2.6 template) for the data module.
@@ -175,6 +177,42 @@ describe('uniq — dedup laws (spec §2 item 13)', () => {
         expect(new Set(once).size).toBe(once.length);
         // Keeps exactly the first occurrence of each distinct value, in order.
         expect(once).toEqual(values.filter((v, i) => values.indexOf(v) === i));
+      }),
+      { numRuns: 100 },
+    );
+  });
+});
+
+describe('isObject / isEmpty — type-guard laws (spec §2 item 14)', () => {
+  // Invariant: for any plain object built from an arbitrary key/value
+  // dictionary, isObject is true and isEmpty agrees with "has no own keys".
+  it('isObject is true and isEmpty matches key-count for any plain object', () => {
+    fc.assert(
+      fc.property(fc.dictionary(fc.string(), fc.integer()), (obj) => {
+        expect(isObject(obj)).toBe(true);
+        expect(isEmpty(obj)).toBe(Object.keys(obj).length === 0);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  // Invariant: for any array, isObject is always false (arrays are excluded)
+  // and isEmpty matches the array's length being zero.
+  it('isObject is false and isEmpty matches length-zero for any array', () => {
+    fc.assert(
+      fc.property(fc.array(fc.anything()), (arr) => {
+        expect(isObject(arr)).toBe(false);
+        expect(isEmpty(arr)).toBe(arr.length === 0);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  // Invariant: for any string, isEmpty matches the string's length being zero.
+  it('isEmpty matches length-zero for any string', () => {
+    fc.assert(
+      fc.property(fc.string(), (str) => {
+        expect(isEmpty(str)).toBe(str.length === 0);
       }),
       { numRuns: 100 },
     );
