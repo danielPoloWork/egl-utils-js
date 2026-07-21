@@ -30,6 +30,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `validateEmail(email)` on `egl-utils-js/validation`, re-exported from the root (roadmap 3.6,
+  ADR-0005): a practical RFC 5322 subset validated by a hand-rolled single-pass scan with **no
+  regular expression anywhere** — linear time by construction (the ReDoS answer, NFR-05) — and
+  the 64/255 length caps enforced before any per-character work. Quoted local parts, comments,
+  IP-literal domains, single-label domains, and non-ASCII input are documented non-goals. The
+  NFR-05 gate (10^6 adversarial inputs, each < 1 ms) runs un-instrumented via `pnpm test:redos`
+  in CI — coverage instrumentation would time itself, not the function.
 - `isObject(value)` and `isEmpty(value)` type guards on `egl-utils-js/data`, re-exported from
   the root (roadmap 3.5): `isObject` narrows to the plain-object notion `deepMerge`/`pick`/`omit`
   already use (prototype `Object.prototype` or `null`); `isEmpty` recognizes `null`/`undefined`,
