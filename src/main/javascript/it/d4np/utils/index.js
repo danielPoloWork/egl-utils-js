@@ -38,4 +38,4 @@ export { deepClone, deepMerge, pick, omit, groupBy, uniq, isObject, isEmpty } fr
 export { validateEmail } from './validation.js';
 
 // Typed event helpers (spec §2 items 6–8), stateful by contract (ADR-0006).
-export { EventEmitter, debounce } from './events.js';
+export { EventEmitter, debounce, throttle } from './events.js';
