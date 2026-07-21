@@ -78,7 +78,7 @@ Typed event emitter and rate-limiting helpers (spec §2 items 6-8)
 - [x] 4.1 EventEmitter<EventMap>: on/once/off/emit, per-listener exception isolation via 'error' _(route: frontier-reasoning/high — sets-pattern: the hardest JSDoc-generics surface in the library; typed-API template)_
 - [x] 4.2 debounce: trailing default, {leading, maxWait}, .cancel()/.flush() _(route: standard/high — leading/maxWait interplay is classically bug-prone)_
 - [x] 4.3 throttle: one call per interval, .cancel() _(route: standard/medium)_
-- [ ] 4.4 fake-timer test suites for debounce/throttle edge cases _(route: fast/medium)_
+- [x] 4.4 fake-timer test suites for debounce/throttle edge cases _(route: fast/medium)_
 
 
 ---
@@ -138,4 +138,4 @@ progress · ✅ done · ❎ N/A.
 | §3 | Non-functional requirements | 1.3, 1.4, 2.6, 3.6 | 🚧 |
 | §4 | Logical architecture | 1.1 | 🚧 |
 | §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3 | 🚧 |
-| §6 | Verification & test strategy | 1.2, 1.4, 2.6 | 🚧 |
+| §6 | Verification & test strategy | 1.2, 1.4, 2.6, 4.4 | 🚧 |

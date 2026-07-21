@@ -55,7 +55,7 @@ setup.
 | 1 | Project bootstrap & CI | ✅ done |
 | 2 | Errors & async core | ✅ done |
 | 3 | Data & validation | ✅ done |
-| 4 | Events | ⏳ planned |
+| 4 | Events | ✅ done |
 | 5 | Web, crypto & diagnostics | ⏳ planned |
 | 6 | Storage & sanitize subpaths | ⏳ planned |
 | 7 | Benchmarks & release readiness | ⏳ planned |
