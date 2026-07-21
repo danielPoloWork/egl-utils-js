@@ -283,3 +283,133 @@ export async function retry(fn, options = {}) {
     cause: errors[errors.length - 1],
   });
 }
+
+/**
+ * Run tasks with bounded concurrency (spec §2 item 4). At most `limit` tasks
+ * are in flight at once; results are returned in the tasks' input order.
+ *
+ * Each task is a function `(signal) => promise` that receives a signal
+ * merging the caller's `signal` with an internal fail-fast controller
+ * (ADR-0004), so a task can stop when a sibling fails or the caller cancels.
+ *
+ * Partial-failure policy is explicit:
+ * - **fail-fast (default)** — the first task rejection aborts the shared
+ *   signal (pending tasks never launch; in-flight ones that respect the
+ *   signal stop) and rejects with that first error, without waiting for
+ *   stragglers that ignore the signal (their late settlements are absorbed).
+ * - **`{ settle: true }`** — no task failure aborts the others; every task
+ *   runs to completion and the result is a `PromiseSettledResult[]`.
+ *
+ * A caller `signal` abort is terminal in **both** modes: it rejects with
+ * {@link AbortError}, distinct from a task failure.
+ *
+ * @template T
+ * @overload
+ * @param {Array<(signal: AbortSignal) => Promise<T> | T>} tasks
+ * @param {number} limit
+ * @param {{ signal?: AbortSignal, settle?: false }} [options]
+ * @returns {Promise<T[]>}
+ */
+/**
+ * @template T
+ * @overload
+ * @param {Array<(signal: AbortSignal) => Promise<T> | T>} tasks
+ * @param {number} limit
+ * @param {{ signal?: AbortSignal, settle: true }} options
+ * @returns {Promise<PromiseSettledResult<T>[]>}
+ */
+/**
+ * @template T
+ * @param {Array<(signal: AbortSignal) => Promise<T> | T>} tasks - The task
+ *   functions; each receives the merged signal.
+ * @param {number} limit - Maximum tasks in flight at once (positive integer).
+ * @param {{ signal?: AbortSignal, settle?: boolean }} [options]
+ * @returns {Promise<T[] | PromiseSettledResult<T>[]>}
+ */
+export function parallelLimit(tasks, limit, options = {}) {
+  const { signal, settle = false } = options;
+
+  if (!Array.isArray(tasks) || tasks.some((task) => typeof task !== 'function')) {
+    throw new TypeError('tasks must be an array of task functions');
+  }
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new TypeError('limit must be a positive integer');
+  }
+
+  if (signal?.aborted) {
+    return Promise.reject(abortErrorFrom(signal));
+  }
+  if (tasks.length === 0) {
+    return Promise.resolve([]);
+  }
+
+  const failFast = new AbortController();
+  const merged = anySignal(signal ? [signal, failFast.signal] : [failFast.signal]);
+
+  return new Promise((resolve, reject) => {
+    /** @type {any[]} */
+    const results = new Array(tasks.length);
+    let nextIndex = 0;
+    let running = 0;
+    let remaining = tasks.length;
+    let settled = false;
+
+    // Settle-once is enforced by the handler-level `if (settled) return` guards
+    // plus removing the caller-abort listener here, so finalize is reached at
+    // most once (JS run-to-completion leaves no gap between a guard and its
+    // finalize call) — no redundant guard needed inside it.
+    /** @param {() => void} action */
+    const finalize = (action) => {
+      settled = true;
+      signal?.removeEventListener('abort', onCallerAbort);
+      // Stop any in-flight task that respects the signal; harmless if already aborted.
+      failFast.abort();
+      merged.cleanup();
+      action();
+    };
+
+    function onCallerAbort() {
+      finalize(() => reject(abortErrorFrom(/** @type {AbortSignal} */ (signal))));
+    }
+
+    const pump = () => {
+      // Every caller reaches pump only while `settled` is false (the initial
+      // call, or a handler that already returned early when settled).
+      while (running < limit && nextIndex < tasks.length) {
+        const index = nextIndex;
+        nextIndex += 1;
+        running += 1;
+        Promise.resolve()
+          .then(() => tasks[index](merged.signal))
+          .then(
+            (value) => {
+              running -= 1;
+              if (settled) return;
+              results[index] = settle ? { status: 'fulfilled', value } : value;
+              remaining -= 1;
+              if (remaining === 0) finalize(() => resolve(results));
+              else pump();
+            },
+            (reason) => {
+              running -= 1;
+              if (settled) return;
+              if (settle) {
+                results[index] = { status: 'rejected', reason };
+                remaining -= 1;
+                if (remaining === 0) finalize(() => resolve(results));
+                else pump();
+              } else {
+                // fail-fast: reject with the first error now, abandoning any
+                // straggler that ignores the abort (its settlement is absorbed
+                // by the `if (settled) return` guards above).
+                finalize(() => reject(reason));
+              }
+            },
+          );
+      }
+    };
+
+    signal?.addEventListener('abort', onCallerAbort, { once: true });
+    pump();
+  });
+}

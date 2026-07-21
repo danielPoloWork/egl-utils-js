@@ -30,6 +30,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `parallelLimit(tasks, limit, {signal, settle})` async combinator (roadmap 2.4): bounded
+  concurrency with order-preserving results. Default fail-fast — the first rejection aborts the
+  shared signal (pending tasks never launch, in-flight ones stop) and rejects with that error,
+  without waiting for stragglers; `{settle: true}` runs all tasks and returns
+  `PromiseSettledResult[]`. A caller-signal abort is terminal (`AbortError`) in both modes.
 - `retry(fn, {retries, minDelay, maxDelay, signal, onAttempt})` async combinator (roadmap 2.3):
   exponential backoff with full jitter, `RetryExhaustedError{attempts, errors[]}` on exhaustion,
   and an `onAttempt` observation hook reporting `{attempt, error, retriesLeft, nextDelay}`.
