@@ -161,3 +161,137 @@ export function deepClone(value) {
     throw error;
   }
 }
+
+/**
+ * A plain data object — one whose prototype is `Object.prototype` or `null`.
+ * Arrays, `Date`, `Map`, `RegExp`, and class instances are deliberately not
+ * plain: `deepMerge` treats them as opaque leaf values (replaced wholesale),
+ * only recursing into plain objects.
+ *
+ * @param {unknown} value
+ * @returns {value is Record<string, unknown>}
+ */
+function isPlainObject(value) {
+  if (value === null || typeof value !== 'object') return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+/**
+ * Combine two arrays per the `arrayMerge` strategy.
+ *
+ * @param {unknown[]} targetArray
+ * @param {unknown[]} sourceArray
+ * @param {'replace' | 'concat' | ((target: unknown[], source: unknown[]) => unknown[])} strategy
+ * @returns {unknown[]}
+ */
+function combineArrays(targetArray, sourceArray, strategy) {
+  if (typeof strategy === 'function') return strategy(targetArray, sourceArray);
+  if (strategy === 'concat') return [...targetArray, ...sourceArray];
+  return sourceArray; // 'replace' — the source array wins
+}
+
+/**
+ * Merge a single (target, source) value pair.
+ *
+ * @param {unknown} targetValue
+ * @param {unknown} sourceValue
+ * @param {'replace' | 'concat' | ((target: unknown[], source: unknown[]) => unknown[])} arrayMerge
+ * @returns {unknown}
+ */
+function mergeValue(targetValue, sourceValue, arrayMerge) {
+  if (isPlainObject(targetValue) && isPlainObject(sourceValue)) {
+    return mergeObjects(targetValue, sourceValue, arrayMerge);
+  }
+  if (Array.isArray(targetValue) && Array.isArray(sourceValue)) {
+    return combineArrays(targetValue, sourceValue, arrayMerge);
+  }
+  return sourceValue; // source wins for every other combination
+}
+
+/**
+ * Assign an **own** data property, safe against prototype pollution: a plain
+ * `result[key] = value` with `key === '__proto__'` would set the prototype
+ * (deepMerge is a classic pollution sink), so that key is defined as an own
+ * property instead.
+ *
+ * @param {Record<string, unknown>} object
+ * @param {string} key
+ * @param {unknown} value
+ * @returns {void}
+ */
+function assignOwn(object, key, value) {
+  if (key === '__proto__') {
+    Object.defineProperty(object, key, {
+      value,
+      enumerable: true,
+      writable: true,
+      configurable: true,
+    });
+  } else {
+    object[key] = value;
+  }
+}
+
+/**
+ * @param {Record<string, unknown>} target
+ * @param {Record<string, unknown>} source
+ * @param {'replace' | 'concat' | ((target: unknown[], source: unknown[]) => unknown[])} arrayMerge
+ * @returns {Record<string, unknown>}
+ */
+function mergeObjects(target, source, arrayMerge) {
+  /** @type {Record<string, unknown>} */
+  const result = {};
+  // Copy target's own keys first (references — inputs are never written to).
+  for (const key of Object.keys(target)) {
+    assignOwn(result, key, target[key]);
+  }
+  // Overlay source: recurse where both sides hold the key, else take source's.
+  for (const key of Object.keys(source)) {
+    const value = Object.prototype.hasOwnProperty.call(target, key)
+      ? mergeValue(target[key], source[key], arrayMerge)
+      : source[key];
+    assignOwn(result, key, value);
+  }
+  return result;
+}
+
+/**
+ * Recursively merge two plain objects into a **new** object (spec §2 item 10).
+ * Neither input is mutated — every merged level is a fresh object and the
+ * function only ever reads the inputs.
+ *
+ * Merge rules: where both sides hold a plain object at a key, the two are
+ * merged recursively; where both hold an array, the `arrayMerge` strategy
+ * decides (default `'replace'` — the source array wins; `'concat'`, or a
+ * custom `(target, source) => result` function); for every other conflict the
+ * source value wins. Non-plain objects (`Date`, `Map`, class instances, …)
+ * are treated as opaque leaves and replaced wholesale, never merged field by
+ * field.
+ *
+ * Independence note: the result is a new graph at every *merged* level, but
+ * values taken wholesale from one side (arrays under `'replace'`, non-plain
+ * objects, keys present on only one side) are **referenced, not cloned** — so
+ * the result may share nested references with the inputs. This keeps function
+ * values (e.g. config handlers) intact; callers needing a fully independent
+ * result can {@link deepClone} it. Inputs must be acyclic.
+ *
+ * @template {Record<string, unknown>} T
+ * @template {Record<string, unknown>} S
+ * @param {T} target - The base object.
+ * @param {S} source - The object whose values win on conflict.
+ * @param {{ arrayMerge?: 'replace' | 'concat' | ((target: unknown[], source: unknown[]) => unknown[]) }} [options]
+ * @returns {T & S} A new merged object.
+ * @throws {TypeError} If `target` or `source` is not a plain object, or
+ *   `arrayMerge` is neither `'replace'`, `'concat'`, nor a function.
+ */
+export function deepMerge(target, source, options = {}) {
+  if (!isPlainObject(target) || !isPlainObject(source)) {
+    throw new TypeError('deepMerge requires target and source to be plain objects');
+  }
+  const { arrayMerge = 'replace' } = options;
+  if (arrayMerge !== 'replace' && arrayMerge !== 'concat' && typeof arrayMerge !== 'function') {
+    throw new TypeError("arrayMerge must be 'replace', 'concat', or a function");
+  }
+  return /** @type {T & S} */ (mergeObjects(target, source, arrayMerge));
+}

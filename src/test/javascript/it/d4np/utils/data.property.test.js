@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { deepClone } from '../../../../../main/javascript/it/d4np/utils/data.js';
+import { deepClone, deepMerge } from '../../../../../main/javascript/it/d4np/utils/data.js';
 
 // Property suite (roadmap 2.6 template) for the data module.
 
@@ -31,6 +31,45 @@ describe('deepClone — clone laws (spec §2 item 9)', () => {
         // Mutate every own array/object reached from the clone.
         stampDeep(clone);
         expect(value).toStrictEqual(before); // input unchanged despite clone mutation
+      }),
+      { numRuns: 100 },
+    );
+  });
+});
+
+describe('deepMerge — merge laws (spec §2 item 10)', () => {
+  // Invariant: deepMerge never mutates either input — after the merge, both
+  // target and source are structurally identical to their pre-merge snapshots.
+  it('mutates neither input for any pair of objects', () => {
+    fc.assert(
+      fc.property(fc.object(), fc.object(), (target, source) => {
+        const targetSnapshot = structuredClone(target);
+        const sourceSnapshot = structuredClone(source);
+        deepMerge(target, source);
+        expect(target).toStrictEqual(targetSnapshot);
+        expect(source).toStrictEqual(sourceSnapshot);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  // Invariant: every key of both inputs appears in the result, and where the
+  // source holds a non-object (a leaf) at a key it wins outright.
+  it('is a superset of both key sets, with source leaves winning', () => {
+    fc.assert(
+      fc.property(fc.object(), fc.object(), (target, source) => {
+        const result = deepMerge(target, source);
+        for (const key of [...Object.keys(target), ...Object.keys(source)]) {
+          expect(Object.prototype.hasOwnProperty.call(result, key)).toBe(true);
+        }
+        for (const key of Object.keys(source)) {
+          const sourceValue = /** @type {Record<string, unknown>} */ (source)[key];
+          const isLeaf =
+            sourceValue === null || typeof sourceValue !== 'object' || Array.isArray(sourceValue);
+          if (isLeaf) {
+            expect(/** @type {Record<string, unknown>} */ (result)[key]).toStrictEqual(sourceValue);
+          }
+        }
       }),
       { numRuns: 100 },
     );
