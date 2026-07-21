@@ -13,9 +13,13 @@ export default defineConfig({
       // Measure only the library source, never tests or config.
       include: ['src/main/javascript/it/d4np/utils/**/*.js'],
       reporter: ['text', 'html', 'lcov'],
-      // NFR-03 target is >= 95% lines/branches. The hard threshold becomes a
-      // CI gate once real modules land (roadmap 2.6); at 1.2 the source is
-      // JSDoc-only entry stubs, so the gate is wired but not yet enforced.
+      // NFR-03 hard gate (enforced since roadmap 2.6, deferred from 1.2 while
+      // the source was stub-only): `vitest run --coverage` fails below these.
+      // The CI build matrix runs `pnpm coverage`, so every Node cell enforces it.
+      thresholds: {
+        lines: 95,
+        branches: 95,
+      },
       reportsDirectory: './coverage',
     },
   },

@@ -51,9 +51,12 @@ jobs:
         shell: bash
         run: pnpm build
 
-      - name: Test
+      # `pnpm coverage` = vitest run --coverage: runs the full suite AND
+      # enforces the NFR-03 thresholds (>= 95% lines/branches) from
+      # vitest.config.js on every Node cell of the matrix (roadmap 2.6).
+      - name: Test (coverage gate >= 95%)
         shell: bash
-        run: pnpm test
+        run: pnpm coverage
 
   # ---------------------------------------------------------------------------
   # Cross-artifact congruence — the agent-runnable consistency lint.
