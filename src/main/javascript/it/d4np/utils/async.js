@@ -12,7 +12,7 @@
  * @module egl-utils-js/async
  */
 
-import { AbortError, TimeoutError } from './errors.js';
+import { AbortError, TimeoutError, RetryExhaustedError } from './errors.js';
 
 /**
  * @param {number} ms
@@ -31,6 +31,23 @@ function assertMilliseconds(ms, name) {
  */
 function abortErrorFrom(signal) {
   return new AbortError(undefined, { cause: signal.reason });
+}
+
+/**
+ * Full-jitter exponential backoff (spec §2 item 3): a uniform random wait in
+ * `[0, min(maxDelay, minDelay * 2^(attempt-1)))`. Full jitter (not equal or
+ * decorrelated) is the spec's explicit choice — it minimizes contention when
+ * many callers retry in lockstep. Uses `Math.random`, which is correct here:
+ * jitter needs no cryptographic randomness (unlike `uuid`, spec item 18).
+ *
+ * @param {number} attempt - 1-based number of the attempt that just failed.
+ * @param {number} minDelay
+ * @param {number} maxDelay
+ * @returns {number} milliseconds to wait before the next attempt
+ */
+function jitteredBackoff(attempt, minDelay, maxDelay) {
+  const ceiling = Math.min(maxDelay, minDelay * 2 ** (attempt - 1));
+  return Math.random() * ceiling;
 }
 
 /**
@@ -168,5 +185,101 @@ export function timeout(input, ms, { signal } = {}) {
       (value) => settle(() => resolve(value)),
       (error) => settle(() => reject(error)),
     );
+  });
+}
+
+/**
+ * @typedef {object} RetryAttempt
+ * @property {number} attempt - 1-based number of the attempt that just failed.
+ * @property {unknown} error - The failure that attempt raised.
+ * @property {number} retriesLeft - Attempts still remaining after this one.
+ * @property {number} [nextDelay] - Milliseconds until the next attempt;
+ *   `undefined` when this was the final attempt (no retry follows).
+ */
+
+/**
+ * Retry a failing operation with exponential backoff and full jitter
+ * (spec §2 item 3). Signal-first per ADR-0004: `fn` receives the signal so
+ * each attempt is itself cancellable, the backoff wait is abortable, and
+ * cancellation is terminal — it rejects with {@link AbortError} immediately,
+ * never wrapped in a {@link RetryExhaustedError}. When every attempt fails,
+ * rejects with {@link RetryExhaustedError} carrying `attempts` and the
+ * ordered `errors`.
+ *
+ * @example
+ * const data = await retry((signal) => client.get('/flaky', { signal }), {
+ *   retries: 4,
+ *   minDelay: 200,
+ *   onAttempt: ({ attempt, error }) => log.warn(`attempt ${attempt} failed`, error),
+ * });
+ *
+ * @template T
+ * @param {(signal?: AbortSignal) => Promise<T> | T} fn - The operation; it
+ *   receives the caller's `signal` (or `undefined` when none was provided).
+ * @param {object} [options]
+ * @param {number} [options.retries] - Retries after the first attempt
+ *   (default 3 → up to 4 attempts total).
+ * @param {number} [options.minDelay] - Base backoff in ms (default 100).
+ * @param {number} [options.maxDelay] - Backoff ceiling in ms (default 30000).
+ * @param {AbortSignal} [options.signal] - Cancels the whole operation,
+ *   including an in-progress backoff wait.
+ * @param {(info: RetryAttempt) => void} [options.onAttempt] - Observation
+ *   hook invoked after each failed attempt; exceptions from it propagate and
+ *   abort the retry loop.
+ * @returns {Promise<T>}
+ */
+export async function retry(fn, options = {}) {
+  const { retries = 3, minDelay = 100, maxDelay = 30_000, signal, onAttempt } = options;
+
+  if (typeof fn !== 'function') {
+    throw new TypeError('fn must be a function');
+  }
+  if (!Number.isInteger(retries) || retries < 0) {
+    throw new TypeError('retries must be a non-negative integer');
+  }
+  assertMilliseconds(minDelay, 'minDelay');
+  assertMilliseconds(maxDelay, 'maxDelay');
+  if (maxDelay < minDelay) {
+    throw new TypeError('maxDelay must be greater than or equal to minDelay');
+  }
+  if (onAttempt !== undefined && typeof onAttempt !== 'function') {
+    throw new TypeError('onAttempt must be a function');
+  }
+
+  if (signal?.aborted) {
+    throw abortErrorFrom(signal);
+  }
+
+  const maxAttempts = retries + 1;
+  /** @type {unknown[]} */
+  const errors = [];
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await fn(signal);
+    } catch (error) {
+      // Cancellation is terminal: a caller who aborted wants to stop, not
+      // consume the remaining retries. The signal is the single source of
+      // truth (ADR-0004), so abort-shaped errors from fn on a live signal
+      // are treated as ordinary retryable failures.
+      if (signal?.aborted) {
+        throw abortErrorFrom(signal);
+      }
+      errors.push(error);
+      const isLastAttempt = attempt === maxAttempts;
+      const nextDelay = isLastAttempt ? undefined : jitteredBackoff(attempt, minDelay, maxDelay);
+      onAttempt?.({ attempt, error, retriesLeft: maxAttempts - attempt, nextDelay });
+      if (isLastAttempt) {
+        break;
+      }
+      // Abortable backoff wait — throws AbortError if cancelled mid-wait.
+      await delay(/** @type {number} */ (nextDelay), { signal });
+    }
+  }
+
+  throw new RetryExhaustedError(`All ${maxAttempts} attempt(s) failed`, {
+    attempts: maxAttempts,
+    errors,
+    cause: errors[errors.length - 1],
   });
 }
