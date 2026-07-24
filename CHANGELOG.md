@@ -30,6 +30,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `urlSearchParams(params)` on `egl-utils-js/web`, re-exported from the root (roadmap 5.2,
+  spec §2 item 17): builds a query string from a plain object via the platform
+  `URLSearchParams` — an array value repeats its key once per element in array order,
+  `null`/`undefined` values (and array elements) are skipped rather than serialized as
+  `"null"`/`"undefined"`, and every other value is coerced with `String(...)`.
 - `httpClient(config)` on `egl-utils-js/web`, re-exported from the root (roadmap 5.1,
   ADR-0007): a typed facade over `fetch` — default (30 s) and per-request timeouts run under
   the library's own `timeout` combinator merged with caller signals (`TimeoutError` /

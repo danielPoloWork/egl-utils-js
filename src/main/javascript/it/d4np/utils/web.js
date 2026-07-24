@@ -11,6 +11,38 @@
  * @module egl-utils-js/web
  */
 
+/**
+ * Build a query string from a plain object (spec §2 item 17): each own
+ * enumerable key becomes one or more `key=value` pairs via the platform
+ * `URLSearchParams` (percent-encoding, ordering, and multi-value semantics
+ * all ride the platform). An array value produces one repeated key per
+ * element, in array order; `null`/`undefined` values (and array elements)
+ * are skipped entirely rather than serialized as `"null"`/`"undefined"`.
+ * Every other value is coerced with `String(...)`.
+ *
+ * @example
+ * urlSearchParams({ q: 'a b', tag: ['x', 'y'], page: 2, empty: undefined });
+ * // 'q=a+b&tag=x&tag=y&page=2'
+ *
+ * @param {Record<string, unknown>} params
+ * @returns {string} A query string with no leading `?`.
+ * @throws {TypeError} If `params` is not a plain object.
+ */
+export function urlSearchParams(params) {
+  if (typeof params !== 'object' || params === null || Array.isArray(params)) {
+    throw new TypeError('params must be a plain object');
+  }
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    const values = Array.isArray(value) ? value : [value];
+    for (const item of values) {
+      if (item === null || item === undefined) continue;
+      search.append(key, String(item));
+    }
+  }
+  return search.toString();
+}
+
 import { HttpError } from './errors.js';
 import { timeout as withTimeout } from './async.js';
 

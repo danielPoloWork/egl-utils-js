@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { httpClient } from '../../../../../main/javascript/it/d4np/utils/web.js';
+import { httpClient, urlSearchParams } from '../../../../../main/javascript/it/d4np/utils/web.js';
 import { HttpError } from '../../../../../main/javascript/it/d4np/utils/errors.js';
 
 // Property suite (roadmap 2.6 template) for the web module — fake fetch, no
@@ -66,6 +66,54 @@ describe('httpClient — request/response laws (spec §2 item 16)', () => {
         },
       ),
       { numRuns: 100 },
+    );
+  });
+});
+
+describe('urlSearchParams — query-string laws (spec §2 item 17)', () => {
+  const scalar = fc.oneof(fc.string(), fc.integer(), fc.boolean());
+
+  // Invariant: parsing the built query string back with the platform
+  // URLSearchParams recovers exactly the non-null/undefined values in order —
+  // the function is a thin, lossless wrapper for any object shape it accepts.
+  it('round-trips through URLSearchParams for any object of scalars/arrays/nullish', () => {
+    fc.assert(
+      fc.property(
+        fc.dictionary(
+          fc.string({ minLength: 1 }).filter((k) => k !== '__proto__'),
+          fc.oneof(scalar, fc.constant(null), fc.constant(undefined), fc.array(scalar)),
+        ),
+        (params) => {
+          const query = urlSearchParams(params);
+          const parsed = new URLSearchParams(query);
+
+          /** @type {[string, string][]} */
+          const expectedPairs = [];
+          for (const [key, value] of Object.entries(params)) {
+            const values = Array.isArray(value) ? value : [value];
+            for (const item of values) {
+              if (item === null || item === undefined) continue;
+              expectedPairs.push([key, String(item)]);
+            }
+          }
+
+          expect(Array.from(parsed.entries())).toEqual(expectedPairs);
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  // Invariant: every value in the output is either absent (nullish input) or
+  // present as an exact string-coerced pair — no value is ever silently
+  // dropped for a reason other than being null/undefined.
+  it('never drops a non-nullish scalar value', () => {
+    fc.assert(
+      fc.property(scalar, (value) => {
+        const query = urlSearchParams({ v: value });
+        expect(new URLSearchParams(query).get('v')).toBe(String(value));
+      }),
+      { numRuns: 50 },
     );
   });
 });
