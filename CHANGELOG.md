@@ -30,6 +30,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `measure(fn)` on the new `egl-utils-js/diagnostics` group, re-exported from the root
+  (roadmap 5.5): times a sync or async `fn` on `performance.now()`, returning
+  `Promise<{result, ms}>` — a returned promise is awaited so `ms` covers the full async
+  duration, not just the portion before the first `await`. A synchronous throw or a
+  rejected promise surfaces as a rejection of `measure`'s own promise, unwrapped.
 - `hashString(input, algorithm = 'SHA-256')` on `egl-utils-js/crypto`, re-exported from the
   root (roadmap 5.4): UTF-8-encodes the input and digests it with `crypto.subtle.digest`,
   returning lowercase hex (64/96/128 chars). The algorithm allowlist is exactly
