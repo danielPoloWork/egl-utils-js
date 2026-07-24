@@ -5,6 +5,14 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['src/test/javascript/it/d4np/utils/**/*.test.js'],
+    // The heaviest property suites (validateEmail totality over 400-char
+    // binary strings, hashString's real-subtle.digest oracle) run ~1 s each
+    // in isolation but share a worker pool with the whole suite; under v8
+    // coverage instrumentation plus that contention the default 5 s window is
+    // too tight and flakes. 20 s is headroom for a growing suite, not slack
+    // for slow code — the ReDoS/timing gate (NFR-05) lives separately and
+    // un-instrumented in *.redos.test.js.
+    testTimeout: 20_000,
     // Leak/handle detection — the profile's "sanitizer" equivalent for a
     // single-threaded runtime (vitest --detectOpenHandles equivalent).
     dangerouslyIgnoreUnhandledErrors: false,

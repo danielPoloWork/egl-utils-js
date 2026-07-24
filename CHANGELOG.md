@@ -30,6 +30,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `parseDuration(input)` on `egl-utils-js/diagnostics`, re-exported from the root (roadmap
+  5.6, ADR-0009): parses a duration string to milliseconds via a strict, ordered grammar —
+  one or more `<integer><unit>` segments with units `h`/`m`/`s` in strictly descending
+  order, each at most once (`'2h'`, `'1h30m'` valid; `'30m1h'`, `'1h1h'` rejected).
+  Lowercase-only (the minute/month `m`/`M` ambiguity is refused, not resolved), no
+  decimals or signs, surrounding whitespace trimmed. Invalid input always throws
+  `DurationParseError` — never `NaN`, and overflow past the safe-integer range throws
+  rather than returning `Infinity`; non-string input throws `TypeError`.
 - `measure(fn)` on the new `egl-utils-js/diagnostics` group, re-exported from the root
   (roadmap 5.5): times a sync or async `fn` on `performance.now()`, returning
   `Promise<{result, ms}>` — a returned promise is awaited so `ms` covers the full async
