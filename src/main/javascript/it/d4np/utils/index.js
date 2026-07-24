@@ -39,3 +39,7 @@ export { validateEmail } from './validation.js';
 
 // Typed event helpers (spec §2 items 6–8), stateful by contract (ADR-0006).
 export { EventEmitter, debounce, throttle } from './events.js';
+
+// Web utilities (spec §2 items 16–17) — fetch facade with the no-token-storage
+// auth contract (ADR-0007).
+export { httpClient } from './web.js';

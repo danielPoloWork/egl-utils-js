@@ -30,6 +30,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `httpClient(config)` on `egl-utils-js/web`, re-exported from the root (roadmap 5.1,
+  ADR-0007): a typed facade over `fetch` — default (30 s) and per-request timeouts run under
+  the library's own `timeout` combinator merged with caller signals (`TimeoutError` /
+  `AbortError` per ADR-0004, the underlying fetch genuinely aborts); a per-request `auth()`
+  callback attaches `Authorization: Bearer` **without ever storing the token** (fail-closed on
+  auth failure; an explicit Authorization header wins and skips the callback); JSON bodies are
+  parsed only for JSON media types (`application/json`/`…+json`), `204`/empty → `undefined`;
+  non-2xx rejects `HttpError{status, body}`. Injectable `fetch`; retries/redirect policy/query
+  building are documented composable non-goals.
 - `throttle(fn, interval)` on `egl-utils-js/events`, re-exported from the root (roadmap 4.3):
   invokes `fn` at most once per `interval` ms — leading edge immediately, trailing edge with the
   latest args if calls kept arriving — with `.cancel()`/`.flush()`. Implemented as `debounce`

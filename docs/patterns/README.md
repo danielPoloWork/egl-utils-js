@@ -34,7 +34,8 @@ _Patterns named in the spec at intake are seeded below as **Planned**; each beco
 | # | Pattern | Status | Problem it addresses | Code location | ADR / PR |
 |---|---------|--------|----------------------|---------------|----------|
 | 1 | Observer | Implemented | Typed publish/subscribe decoupling: consumers react to named events with exact payload types, without the emitter knowing its subscribers | [events.js](../../src/main/javascript/it/d4np/utils/events.js) | [ADR-0006](../adr/0006-typed-event-emitter-contract.md) |
-| — | Facade | Planned | httpClient and the storage wrappers present small stable surfaces over fetch / Web Storage platform APIs | _TBD_ | _spec (intake)_ |
+| 2 | Facade (httpClient) | Implemented | A small stable typed surface over `fetch`: merged timeout/cancellation signals, per-request bearer auth with no token storage, content-type-aware JSON, typed HttpError | [web.js](../../src/main/javascript/it/d4np/utils/web.js) | [ADR-0007](../adr/0007-http-client-facade-contract.md) |
+| — | Facade (storage wrappers) | Planned | localStorage/sessionStorage wrappers present a safe stable surface over Web Storage (lands with M6) | _TBD_ | _spec (intake)_ |
 | — | Adapter | Planned | sanitizeHtml adapts DOMPurify behind a curated-allowlist API on a separate entry point (ADR-003) | _TBD_ | _spec (intake)_ |
 
 
