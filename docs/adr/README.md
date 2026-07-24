@@ -22,3 +22,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0004](0004-signal-first-cancellation-contract.md) | Signal-first cancellation contract for async combinators | Accepted |
 | [0005](0005-validate-email-linear-scan.md) | validateEmail — a hand-rolled linear scan, no regex | Accepted |
 | [0006](0006-typed-event-emitter-contract.md) | Typed EventEmitter — single-payload maps and non-silent isolation | Accepted |
+| [0007](0007-http-client-facade-contract.md) | httpClient — a fetch facade with a no-token-storage auth contract | Accepted |
