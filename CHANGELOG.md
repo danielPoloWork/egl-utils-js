@@ -30,6 +30,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `hashString(input, algorithm = 'SHA-256')` on `egl-utils-js/crypto`, re-exported from the
+  root (roadmap 5.4): UTF-8-encodes the input and digests it with `crypto.subtle.digest`,
+  returning lowercase hex (64/96/128 chars). The algorithm allowlist is exactly
+  SHA-256/384/512, case-insensitive — SHA-1 and MD5 are deliberately rejected, never
+  forwarded to the platform. Rides the ADR-0008 `#webcrypto` surface; without
+  `crypto.subtle` (browsers in non-secure contexts) it rejects `TypeError` rather than
+  degrading.
 - `uuid()` on `egl-utils-js/crypto`, re-exported from the root (roadmap 5.3, ADR-0008): a
   random RFC 4122 v4 UUID from the platform CSPRNG — `crypto.randomUUID()` when available,
   otherwise 16 `crypto.getRandomValues()` bytes with hand-forced version/variant bits (the

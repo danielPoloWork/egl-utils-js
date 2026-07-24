@@ -90,7 +90,7 @@ fetch/URL/crypto/timing/duration utilities (spec §2 items 16-20, 25)
 - [x] 5.1 httpClient: AbortController default+per-request timeouts merged with caller signals; auth() callback -> Bearer; JSON content-type handling; HttpError{status, body} _(route: frontier-reasoning/high — security: Authorization handling and the no-token-storage contract)_
 - [x] 5.2 urlSearchParams: arrays as repeated keys, null/undefined skipped _(route: fast/low)_
 - [x] 5.3 uuid via Web Crypto (randomUUID/getRandomValues) + conditional-exports crypto shim (spec §1.1) _(route: frontier-reasoning/high — security: entropy source correctness on both runtimes)_
-- [ ] 5.4 hashString: subtle.digest SHA-256/384/512, hex output _(route: frontier-reasoning/high — security)_
+- [x] 5.4 hashString: subtle.digest SHA-256/384/512, hex output _(route: frontier-reasoning/high — security)_
 - [ ] 5.5 measure on performance.now() returning {result, ms} _(route: fast/low)_
 - [ ] 5.6 parseDuration grammar + DurationParseError; fast-check grammar property test _(route: standard/medium)_
 
@@ -134,8 +134,8 @@ progress · ✅ done · ❎ N/A.
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
 | §1 | Objective & business context | 1.1 | 🚧 |
-| §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3 | 🚧 |
+| §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4 | 🚧 |
 | §3 | Non-functional requirements | 1.3, 1.4, 2.6, 3.6, 5.3 | 🚧 |
 | §4 | Logical architecture | 1.1 | 🚧 |
-| §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3 | 🚧 |
+| §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4 | 🚧 |
 | §6 | Verification & test strategy | 1.2, 1.4, 2.6, 4.4 | 🚧 |

@@ -46,4 +46,4 @@ export { httpClient, urlSearchParams } from './web.js';
 
 // Crypto utilities (spec §2 items 18–19) — Web Crypto only via the #webcrypto
 // conditional-import shim; Math.random is never a fallback (ADR-0008).
-export { uuid } from './crypto.js';
+export { uuid, hashString } from './crypto.js';
