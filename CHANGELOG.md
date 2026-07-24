@@ -30,6 +30,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `uuid()` on `egl-utils-js/crypto`, re-exported from the root (roadmap 5.3, ADR-0008): a
+  random RFC 4122 v4 UUID from the platform CSPRNG — `crypto.randomUUID()` when available,
+  otherwise 16 `crypto.getRandomValues()` bytes with hand-forced version/variant bits (the
+  real fallback for browsers in non-secure contexts); **never `Math.random`** — with no Web
+  Crypto surface it throws `TypeError`. Web Crypto is reached through the `#webcrypto`
+  conditional-import shim (NFR-07): the exports map now serves Node a dedicated root build
+  (`node` condition, `globalThis.crypto ?? node:crypto` covering the Node 18 floor) while
+  browsers/bundlers keep a `node:`-free default build (agadoo/size-limit gate that exact
+  artifact).
 - `urlSearchParams(params)` on `egl-utils-js/web`, re-exported from the root (roadmap 5.2,
   spec §2 item 17): builds a query string from a plain object via the platform
   `URLSearchParams` — an array value repeats its key once per element in array order,

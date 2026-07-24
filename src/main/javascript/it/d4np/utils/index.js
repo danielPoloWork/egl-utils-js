@@ -43,3 +43,7 @@ export { EventEmitter, debounce, throttle } from './events.js';
 // Web utilities (spec §2 items 16–17) — fetch facade with the no-token-storage
 // auth contract (ADR-0007).
 export { httpClient, urlSearchParams } from './web.js';
+
+// Crypto utilities (spec §2 items 18–19) — Web Crypto only via the #webcrypto
+// conditional-import shim; Math.random is never a fallback (ADR-0008).
+export { uuid } from './crypto.js';
