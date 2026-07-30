@@ -45,3 +45,7 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@vitest/coverage-v8"
         update-types: ["version-update:semver-major"]
+      # jsdom >= 27 requires Node >= 20, dropping the Node 18 floor. Needed by
+      # the /sanitize test suites (roadmap 6.3). See ADR-0012.
+      - dependency-name: "jsdom"
+        update-types: ["version-update:semver-major"]

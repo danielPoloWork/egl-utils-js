@@ -36,7 +36,7 @@ _Patterns named in the spec at intake are seeded below as **Planned**; each beco
 | 1 | Observer | Implemented | Typed publish/subscribe decoupling: consumers react to named events with exact payload types, without the emitter knowing its subscribers | [events.js](../../src/main/javascript/it/d4np/utils/events.js) | [ADR-0006](../adr/0006-typed-event-emitter-contract.md) |
 | 2 | Facade (httpClient) | Implemented | A small stable typed surface over `fetch`: merged timeout/cancellation signals, per-request bearer auth with no token storage, content-type-aware JSON, typed HttpError | [web.js](../../src/main/javascript/it/d4np/utils/web.js) | [ADR-0007](../adr/0007-http-client-facade-contract.md) |
 | 3 | Facade (storage wrappers) | Implemented | localStorage/sessionStorage wrappers present a safe stable surface over Web Storage: JSON (de)serialization, a silent in-memory fallback when the real store is unavailable, and quota failures surfaced as typed StorageError | [storage.js](../../src/main/javascript/it/d4np/utils/storage.js) | [ADR-0010](../adr/0010-storage-in-memory-fallback-contract.md) |
-| — | Adapter | Planned | sanitizeHtml adapts DOMPurify behind a curated-allowlist API on a separate entry point (ADR-003) | _TBD_ | _spec (intake)_ |
+| 4 | Adapter | Implemented | sanitizeHtml adapts DOMPurify behind a curated deny-by-default allowlist on a separate entry point, absorbing the two shapes of its export (browser-bound instance vs Node factory) so callers see one stable typed surface | [sanitize.js](../../src/main/javascript/it/d4np/utils/sanitize.js) | [ADR-0012](../adr/0012-sanitize-default-profile.md) |
 
 
 ## Rejected
