@@ -49,4 +49,4 @@ export { httpClient, urlSearchParams } from './web.js';
 export { uuid, hashString } from './crypto.js';
 
 // Diagnostics utilities (spec §2 items 20, 25).
-export { measure } from './diagnostics.js';
+export { measure, parseDuration } from './diagnostics.js';
