@@ -205,6 +205,17 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- Real-browser verification wired for the browser-leaning entries (roadmap 6.4, spec §6): a
+  Playwright smoke suite runs the **built** `dist/` bundles in **Chromium, Firefox and
+  WebKit** as a dedicated CI job (`browser`, Node 20 — `@playwright/test` requires Node ≥ 20,
+  so it stays off the Node 18 matrix cell). It asserts what a fake DOM cannot: that
+  `isPersistent()` is finally `true` against a real Web Storage, that `document.cookie`
+  round-trips through the genuine accessor pair with the browser parsing the attribute string
+  the library emits, and — the security promise (ADR-0012) — that **sanitized markup assigned
+  to a live `innerHTML` does not execute** in a real engine, with a deliberate control test
+  proving the detector is not vacuous. Served over HTTP by a zero-dependency static server
+  (`tools/static-server.mjs`) so a real origin backs storage and cookies.
+
 - CI matrix consolidated (roadmap 1.4): the `lint` job now invokes the `format:check` and
   `lint` package scripts (single source of truth) instead of duplicating the commands,
   which also brings the `tsc --noEmit` checkJs type gate into CI; the `benchmark` job no

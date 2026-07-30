@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>egl-utils-js browser smoke fixture</title>
+    <!--
+      The browser smoke suite (roadmap 6.4) loads the BUILT bundles from dist/,
+      not the sources: what a consumer actually downloads is what gets checked.
+
+      The import map resolves the one bare specifier the /sanitize bundle
+      carries — DOMPurify, an external optional peer (ADR-0012) — to its
+      browser ESM build. A real consumer's bundler does this job; here the map
+      stands in for it without adding a bundling step to the test harness.
+    -->
+    <script type="importmap">
+      {
+        "imports": {
+          "dompurify": "/node_modules/dompurify/dist/purify.es.mjs"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="host"></div>
+    <script type="module">
+      // Expose the built entries on `window` so Playwright's page.evaluate can
+      // drive them. Errors are captured rather than thrown so a failed import
+      // surfaces as a readable assertion instead of a blank page.
+      window.__eglReady = (async () => {
+        try {
+          const [root, storage, sanitize, errors] = await Promise.all([
+            import('/dist/esm/index.js'),
+            import('/dist/esm/storage.js'),
+            import('/dist/esm/sanitize.js'),
+            import('/dist/esm/errors.js'),
+          ]);
+          window.egl = { root, storage, sanitize, errors };
+          return { ok: true };
+        } catch (error) {
+          return { ok: false, message: String(error && error.message ? error.message : error) };
+        }
+      })();
+    </script>
+  </body>
+</html>

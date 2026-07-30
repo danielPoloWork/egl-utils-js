@@ -104,7 +104,7 @@ Browser-leaning entries with real-browser CI (spec §2 items 21-24)
 - [x] 6.1 localStorageWrapper/sessionStorageWrapper with in-memory fallback and StorageError quota surfacing _(route: standard/medium)_
 - [x] 6.2 cookieHelper: document.cookie with Secure/SameSite/Max-Age/Path; Node no-op warning _(route: frontier-reasoning/high — security: cookie attribute defaults are security posture)_
 - [x] 6.3 sanitizeHtml on 'egl-utils-js/sanitize': DOMPurify optional-peer delegation with curated default allowlist (ADR-003) _(route: frontier-reasoning/max — security + foundational: the curated allowlist is the library's security promise)_
-- [ ] 6.4 Playwright browser smoke jobs (Chromium/Firefox/WebKit) for storage/cookie/sanitize in CI _(route: standard/medium)_
+- [x] 6.4 Playwright browser smoke jobs (Chromium/Firefox/WebKit) for storage/cookie/sanitize in CI _(route: standard/medium)_
 - [ ] 6.5 DOMPurify bypass-corpus snapshot tests for the default sanitize profile _(route: frontier-reasoning/high — security: validates the sanitize promise against known bypasses)_
 
 
@@ -135,7 +135,7 @@ progress · ✅ done · ❎ N/A.
 |--------|-------------|---------------|--------|
 | §1 | Objective & business context | 1.1 | 🚧 |
 | §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3 | 🚧 |
-| §3 | Non-functional requirements | 1.3, 1.4, 2.6, 3.6, 5.3 | 🚧 |
+| §3 | Non-functional requirements | 1.3, 1.4, 2.6, 3.6, 5.3, 6.4 | 🚧 |
 | §4 | Logical architecture | 1.1 | 🚧 |
 | §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3 | 🚧 |
-| §6 | Verification & test strategy | 1.2, 1.4, 2.6, 4.4, 5.6 | 🚧 |
+| §6 | Verification & test strategy | 1.2, 1.4, 2.6, 4.4, 5.6, 6.4 | 🚧 |

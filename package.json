@@ -96,6 +96,8 @@
     "test:watch": "vitest",
     "test:redos": "vitest run --coverage.enabled=false src/test/javascript/it/d4np/utils/validate-email.redos.test.js",
     "coverage": "vitest run --coverage --exclude \"**/*.redos.test.js\"",
+    "test:browser": "playwright test",
+    "test:browser:install": "playwright install --with-deps chromium firefox webkit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0 && tsc --noEmit",
@@ -118,6 +120,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.62.0",
     "@size-limit/preset-small-lib": "^12.1.0",
     "@types/node": "^18.19.130",
     "@vitest/coverage-v8": "^3.2.7",
