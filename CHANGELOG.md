@@ -30,6 +30,18 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `cookieHelper` on `egl-utils-js/storage` (roadmap 6.2, ADR-0011): `get`/`getAll`/`set`/
+  `remove`/`isSupported` over `document.cookie`, **secure by default** — `SameSite=Lax`,
+  `Secure` inferred from an HTTPS page (explicit `secure` always wins), `Path=/`, and
+  `Domain` omitted (host-only is the narrower scope). Names are validated as RFC 6265 tokens
+  and names/values percent-encoded, so **a value can never inject a cookie attribute**;
+  `sameSite: 'None'` is refused without `Secure` (browsers reject that pairing silently).
+  `HttpOnly` is refused with a `TypeError` rather than ignored — such cookies are invisible
+  to client-side JavaScript by design, and this module makes no claim otherwise. Outside a
+  browser every operation no-ops with a **one-time** warning while still validating its
+  arguments. Reads never throw (an undecodable value is returned verbatim) and `getAll()`
+  returns a null-prototype object, so a `__proto__` cookie is data. Cookie-size limits and
+  `Expires` are documented non-goals; real-browser verification lands with roadmap 6.4.
 - `localStorageWrapper` and `sessionStorageWrapper` on `egl-utils-js/storage` (roadmap 6.1,
   ADR-0010): safe `get`/`set`/`remove`/`clear`/`has`/`isPersistent` interfaces over Web
   Storage with JSON (de)serialization. When the real store is unavailable (Node, private

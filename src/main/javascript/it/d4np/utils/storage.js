@@ -8,7 +8,14 @@
  * store is unavailable (Node, private browsing, disabled storage, sandboxed
  * iframe) operations transparently use a per-wrapper `Map` instead of
  * throwing. Values are JSON-(de)serialized; a genuine quota failure surfaces
- * as {@link StorageError}. `cookieHelper` lands with roadmap 6.2.
+ * as {@link StorageError}.
+ *
+ * `cookieHelper` is a security surface (ADR-0011): its attribute defaults
+ * (`SameSite=Lax`, `Secure` on HTTPS, `Path=/`) *are* the security posture,
+ * and it percent-encodes names/values so a value can never inject cookie
+ * attributes. It reads and writes **only** cookies visible to
+ * `document.cookie` — `HttpOnly` cookies are invisible to client-side
+ * JavaScript by design, and this module makes no claim otherwise.
  *
  * @module egl-utils-js/storage
  */
@@ -188,3 +195,318 @@ export const sessionStorageWrapper = createStorageWrapper(
   () => /** @type {Storage | undefined} */ (globalThis.sessionStorage),
   'sessionStorage',
 );
+
+// ---------------------------------------------------------------------------
+// cookieHelper (spec §2 item 23, ADR-0011)
+// ---------------------------------------------------------------------------
+
+/** Warn at most once per process that cookies are unavailable — not per call. */
+let cookieWarningIssued = false;
+
+/**
+ * The live `document` if it exposes a `cookie` property, else `undefined`.
+ * Reading the global can throw in exotic embeddings, hence the `try`.
+ *
+ * @returns {Document | undefined}
+ */
+function getCookieDocument() {
+  try {
+    const doc = /** @type {Document | undefined} */ (globalThis.document);
+    if (doc === undefined || doc === null) return undefined;
+    return typeof doc.cookie === 'string' ? doc : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Emit the one-time no-op warning (spec §2 item 23: "no-ops with a warning in
+ * Node"). Kept to a single warning so a server-rendered app does not flood
+ * its logs on every call.
+ *
+ * @param {string} operation
+ * @returns {void}
+ */
+function warnNoCookies(operation) {
+  if (cookieWarningIssued) return;
+  cookieWarningIssued = true;
+  // The documented Node-side signal (spec §2 item 23).
+  console.warn(
+    `egl-utils-js: cookieHelper.${operation}() is a no-op — document.cookie is ` +
+      'unavailable in this environment (Node?). Cookies are a browser-only surface.',
+  );
+}
+
+/**
+ * Whether `code` is a valid RFC 6265 cookie-name character: a US-ASCII
+ * `token` character — printable, and none of the separators. Rejecting
+ * anything else is what stops a crafted name from injecting `;`-delimited
+ * attributes. Hand-rolled scan, no regex (ADR-0005 house style).
+ *
+ * @param {number} code
+ * @returns {boolean}
+ */
+function isCookieNameCode(code) {
+  if (code <= 0x20 || code >= 0x7f) return false; // CTLs, space, DEL, non-ASCII
+  switch (code) {
+    case 0x28: // (
+    case 0x29: // )
+    case 0x3c: // <
+    case 0x3e: // >
+    case 0x40: // @
+    case 0x2c: // ,
+    case 0x3b: // ;
+    case 0x3a: // :
+    case 0x5c: // \
+    case 0x22: // "
+    case 0x2f: // /
+    case 0x5b: // [
+    case 0x5d: // ]
+    case 0x3f: // ?
+    case 0x3d: // =
+    case 0x7b: // {
+    case 0x7d: // }
+      return false;
+    default:
+      return true;
+  }
+}
+
+/**
+ * @param {unknown} name
+ * @returns {asserts name is string}
+ */
+function assertCookieName(name) {
+  if (typeof name !== 'string') {
+    throw new TypeError('cookie name must be a string');
+  }
+  if (name.length === 0) {
+    throw new TypeError('cookie name must not be empty');
+  }
+  for (let i = 0; i < name.length; i += 1) {
+    if (!isCookieNameCode(name.charCodeAt(i))) {
+      throw new TypeError(
+        `cookie name ${JSON.stringify(name)} contains an invalid character at position ${i} ` +
+          '(RFC 6265 tokens exclude control characters, spaces, and ()<>@,;:\\"/[]?={})',
+      );
+    }
+  }
+}
+
+/**
+ * Decode a percent-encoded cookie component, tolerating values this library
+ * did not write: a server or another script may store a raw `%` that is not a
+ * valid escape, and `decodeURIComponent` throws `URIError` on those. Reading a
+ * cookie must never throw, so an undecodable value is returned verbatim.
+ *
+ * @param {string} raw
+ * @returns {string}
+ */
+function decodeComponent(raw) {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+/**
+ * Guard the attribute bag before reading it. Without this, a `null` or
+ * primitive argument fails later with a cryptic engine message ("Cannot use
+ * 'in' operator…" / "Cannot destructure…"); the library validates programmer
+ * errors eagerly and says what was wrong.
+ *
+ * @param {unknown} attributes
+ * @returns {asserts attributes is Record<string, unknown>}
+ */
+function assertAttributes(attributes) {
+  if (typeof attributes !== 'object' || attributes === null || Array.isArray(attributes)) {
+    throw new TypeError('attributes must be a plain object');
+  }
+}
+
+/**
+ * @typedef {object} CookieAttributes
+ * @property {number} [maxAge] - Lifetime in **seconds** (non-negative
+ *   integer). Omitted → a session cookie. Use `remove` to delete.
+ * @property {string} [path] - URL path scope; default `'/'`.
+ * @property {string} [domain] - Domain scope; omitted → the current host only
+ *   (the narrower, safer default — a `Domain` attribute widens scope to
+ *   subdomains).
+ * @property {'Strict' | 'Lax' | 'None'} [sameSite] - Cross-site policy;
+ *   default `'Lax'`. `'None'` requires `secure: true` (browsers reject it
+ *   otherwise) and is refused without it.
+ * @property {boolean} [secure] - Restrict to HTTPS. Default: `true` when the
+ *   page is served over HTTPS, `false` otherwise (so `http://localhost`
+ *   development still works), never silently dropping the flag on a secure
+ *   page.
+ */
+
+/**
+ * @typedef {object} CookieHelper
+ * @property {(name: string) => string | undefined} get
+ * @property {() => Record<string, string>} getAll
+ * @property {(name: string, value: string, attributes?: CookieAttributes) => void} set
+ * @property {(name: string, attributes?: Pick<CookieAttributes, 'path' | 'domain'>) => void} remove
+ * @property {() => boolean} isSupported
+ */
+
+/**
+ * Read, write, and delete cookies visible to `document.cookie` (spec §2 item
+ * 23, ADR-0011).
+ *
+ * **Security posture — the defaults are the feature:** `SameSite=Lax` (CSRF
+ * mitigation without breaking top-level navigation), `Secure` automatically on
+ * HTTPS pages, and `Path=/` (explicit, rather than the surprising
+ * current-directory default). Names are validated as RFC 6265 tokens and
+ * values are percent-encoded, so **a value can never inject an attribute**
+ * (`'x; Domain=evil.example'` is stored as data, not parsed as a directive).
+ *
+ * **`HttpOnly` is not offered.** Such cookies are invisible to client-side
+ * JavaScript by design — no library can read or set them from a page, and
+ * passing `httpOnly` is refused with a `TypeError` rather than silently
+ * ignored, so a caller never believes they got a protection they did not.
+ *
+ * Outside a browser (`document.cookie` absent) every operation **no-ops with
+ * a one-time warning**: `get`/`getAll` return `undefined`/`{}`,
+ * `set`/`remove` do nothing. `isSupported()` reports which mode is active.
+ *
+ * @example
+ * cookieHelper.set('theme', 'dark', { maxAge: 60 * 60 * 24 * 365 });
+ * cookieHelper.get('theme'); // 'dark'
+ * cookieHelper.remove('theme');
+ *
+ * @type {CookieHelper}
+ */
+export const cookieHelper = {
+  get(name) {
+    assertCookieName(name);
+    const doc = getCookieDocument();
+    if (doc === undefined) {
+      warnNoCookies('get');
+      return undefined;
+    }
+    for (const pair of doc.cookie.split(';')) {
+      const eq = pair.indexOf('=');
+      // A bare `name` with no `=` is a valueless cookie; treat it as ''.
+      const rawName = (eq === -1 ? pair : pair.slice(0, eq)).trim();
+      if (rawName === '') continue;
+      if (decodeComponent(rawName) === name) {
+        return eq === -1 ? '' : decodeComponent(pair.slice(eq + 1).trim());
+      }
+    }
+    return undefined;
+  },
+
+  getAll() {
+    const doc = getCookieDocument();
+    if (doc === undefined) {
+      warnNoCookies('getAll');
+      return {};
+    }
+    /** @type {Record<string, string>} */
+    const all = Object.create(null);
+    for (const pair of doc.cookie.split(';')) {
+      const eq = pair.indexOf('=');
+      const rawName = (eq === -1 ? pair : pair.slice(0, eq)).trim();
+      if (rawName === '') continue;
+      const key = decodeComponent(rawName);
+      // First occurrence wins: the browser lists the most specific path first.
+      if (key in all) continue;
+      all[key] = eq === -1 ? '' : decodeComponent(pair.slice(eq + 1).trim());
+    }
+    return all;
+  },
+
+  set(name, value, attributes = {}) {
+    assertCookieName(name);
+    if (typeof value !== 'string') {
+      throw new TypeError('cookie value must be a string');
+    }
+    assertAttributes(attributes);
+    if ('httpOnly' in attributes) {
+      throw new TypeError(
+        'HttpOnly cannot be set from client-side JavaScript — such cookies are ' +
+          'invisible to document.cookie by design. Set it on the server (Set-Cookie).',
+      );
+    }
+    const { maxAge, path = '/', domain, sameSite = 'Lax', secure } = attributes;
+
+    if (maxAge !== undefined && (!Number.isSafeInteger(maxAge) || maxAge < 0)) {
+      throw new TypeError('maxAge must be a non-negative integer number of seconds');
+    }
+    if (typeof path !== 'string' || path.includes(';')) {
+      throw new TypeError('path must be a string without ";"');
+    }
+    if (domain !== undefined && (typeof domain !== 'string' || domain.includes(';'))) {
+      throw new TypeError('domain must be a string without ";"');
+    }
+    const normalizedSameSite =
+      typeof sameSite === 'string'
+        ? sameSite.charAt(0).toUpperCase() + sameSite.slice(1).toLowerCase()
+        : undefined;
+    if (
+      normalizedSameSite !== 'Strict' &&
+      normalizedSameSite !== 'Lax' &&
+      normalizedSameSite !== 'None'
+    ) {
+      throw new TypeError("sameSite must be one of 'Strict', 'Lax', 'None'");
+    }
+    if (secure !== undefined && typeof secure !== 'boolean') {
+      throw new TypeError('secure must be a boolean');
+    }
+
+    const doc = getCookieDocument();
+    if (doc === undefined) {
+      warnNoCookies('set');
+      return;
+    }
+
+    // Default: secure on an HTTPS page, plain on http (so localhost dev works).
+    let isSecure = secure;
+    if (isSecure === undefined) {
+      let protocol;
+      try {
+        protocol = globalThis.location?.protocol;
+      } catch {
+        protocol = undefined;
+      }
+      isSecure = protocol === 'https:';
+    }
+    if (normalizedSameSite === 'None' && !isSecure) {
+      throw new TypeError(
+        "sameSite: 'None' requires secure: true — browsers reject SameSite=None " +
+          'cookies sent without the Secure attribute',
+      );
+    }
+
+    let cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
+    cookie += `; Path=${path}`;
+    if (domain !== undefined) cookie += `; Domain=${domain}`;
+    if (maxAge !== undefined) cookie += `; Max-Age=${maxAge}`;
+    cookie += `; SameSite=${normalizedSameSite}`;
+    if (isSecure) cookie += '; Secure';
+    doc.cookie = cookie;
+  },
+
+  remove(name, attributes = {}) {
+    assertCookieName(name);
+    assertAttributes(attributes);
+    // A cookie can only be deleted by a write whose Path/Domain match the
+    // ones it was created with — hence both are forwarded, not assumed.
+    const { path = '/', domain } = attributes;
+    const doc = getCookieDocument();
+    if (doc === undefined) {
+      warnNoCookies('remove');
+      return;
+    }
+    /** @type {CookieAttributes} */
+    const expire = { maxAge: 0, path, sameSite: 'Lax' };
+    if (domain !== undefined) expire.domain = domain;
+    cookieHelper.set(name, '', expire);
+  },
+
+  isSupported() {
+    return getCookieDocument() !== undefined;
+  },
+};
