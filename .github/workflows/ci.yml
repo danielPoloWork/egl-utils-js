@@ -158,3 +158,37 @@ jobs:
         run: pnpm bench
 
 
+
+  # Real-browser verification for the browser-leaning entries (roadmap 6.4,
+  # spec §6). Runs on Node 20 in its own job: @playwright/test requires
+  # Node >= 20, so it must not run on the Node 18 matrix cell, and the browser
+  # download makes this the slowest job in the workflow.
+  browser:
+    name: browser / storage + cookie + sanitize
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install browsers (Chromium, Firefox, WebKit)
+        run: pnpm test:browser:install
+      # The suite loads dist/, so the artifact consumers download is what gets
+      # verified — not the sources.
+      - name: Build
+        run: pnpm build
+      - name: Run the browser smoke suite
+        run: pnpm test:browser
+      - name: Upload the Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

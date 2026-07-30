@@ -53,3 +53,8 @@ htmlcov/
 # EADOS factory tooling — the .eados-core/ bundle is copied in to (re)generate this repo; it is
 # not part of the project's own source.
 /.eados-core/
+
+# Playwright browser smoke suite (roadmap 6.4) — run artifacts.
+/test-results/
+/playwright-report/
+/blob-report/
