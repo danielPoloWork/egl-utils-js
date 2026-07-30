@@ -30,6 +30,22 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `sanitizeHtml(html, options?)` and `defaultSanitizeProfile` on `egl-utils-js/sanitize`
+  (roadmap 6.3, ADR-003 / ADR-0012): allowlist-based HTML sanitization that **delegates to
+  DOMPurify** — an **optional `peerDependency`** declared with `peerDependenciesMeta`, so
+  root-entry consumers carry no sanitizer bytes and the NFR-06 zero-runtime-dependency gate
+  is unchanged. The library contributes a **curated deny-by-default profile**: only
+  structural/formatting tags and a small attribute set survive, so every `on*` handler,
+  `style`, `<script>`, `<iframe>`, `<form>` and every SVG/MathML vector is removed without
+  being enumerated; `href`/`src` are restricted to `http:`/`https:`/`mailto:` (relative URLs
+  still work), which is what stops `javascript:` and `data:`. `aria-*` is kept, `id`/`target`
+  and `data-*` are not. Extend with `additionalTags`/`additionalAttributes` or replace with
+  `allowedTags`/`allowedAttributes` (mutually exclusive); `allowedUriSchemes` validates
+  scheme names so config can never inject regex syntax. `defaultSanitizeProfile` exposes the
+  frozen lists. Browser-first with zero configuration; in Node pass a `jsdom` window
+  (`{ window }`) — a missing DOM throws a `TypeError` naming the remedy. Non-goals stated: no
+  CSS sanitization, no URL rewriting (`img src` permits remote loads — a CSP is the answer),
+  no attribute-position templating protection, no streaming.
 - `cookieHelper` on `egl-utils-js/storage` (roadmap 6.2, ADR-0011): `get`/`getAll`/`set`/
   `remove`/`isSupported` over `document.cookie`, **secure by default** — `SameSite=Lax`,
   `Secure` inferred from an HTTPS page (explicit `secure` always wins), `Path=/`, and

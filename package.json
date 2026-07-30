@@ -107,6 +107,14 @@
     "check:package": "pnpm build && pnpm check:publint && pnpm check:exports && pnpm size && pnpm check:shakeable && pnpm check:deps",
     "bench": "node -e \"console.log('no benchmark suite yet - vitest bench lands with roadmap item 7.1')\""
   },
+  "peerDependencies": {
+    "dompurify": "^3"
+  },
+  "peerDependenciesMeta": {
+    "dompurify": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@eslint/js": "^9.39.5",
@@ -114,10 +122,12 @@
     "@types/node": "^18.19.130",
     "@vitest/coverage-v8": "^3.2.7",
     "agadoo": "^3.0.0",
+    "dompurify": "^3.4.12",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "fast-check": "^4.9.0",
     "globals": "^17.8.0",
+    "jsdom": "^26.1.0",
     "prettier": "^3.9.6",
     "publint": "^0.3.22",
     "size-limit": "^12.1.0",
