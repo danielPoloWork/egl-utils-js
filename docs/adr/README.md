@@ -25,3 +25,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0007](0007-http-client-facade-contract.md) | httpClient — a fetch facade with a no-token-storage auth contract | Accepted |
 | [0008](0008-one-webcrypto-surface-conditional-exports.md) | One Web Crypto surface via conditional exports — never Math.random | Accepted |
 | [0009](0009-parse-duration-grammar.md) | parseDuration — a strict, ordered h/m/s grammar, no calendar units | Accepted |
+| [0010](0010-storage-in-memory-fallback-contract.md) | Storage wrappers — silent in-memory fallback, quota as StorageError | Accepted |

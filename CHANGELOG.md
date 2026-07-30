@@ -30,6 +30,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Version constant `VERSION = '0.0.0'` in `version.js`, in lockstep with the `package.json`
   version and the README `Status` badge (roadmap 1.5) — the source `tools/consistency_lint.py`
   reads for its version-lockstep check.
+- `localStorageWrapper` and `sessionStorageWrapper` on `egl-utils-js/storage` (roadmap 6.1,
+  ADR-0010): safe `get`/`set`/`remove`/`clear`/`has`/`isPersistent` interfaces over Web
+  Storage with JSON (de)serialization. When the real store is unavailable (Node, private
+  browsing, disabled storage, sandboxed iframe) they fall back **silently** to a per-wrapper
+  in-memory `Map` — availability is proven with a lazy write+remove probe, never at module
+  load — and `isPersistent()` reports which backing store resolved. A genuine quota failure
+  surfaces as `StorageError`; corrupt stored JSON on read surfaces as `StorageError`; a
+  non-string key or a non-JSON-serializable value throws `TypeError`. Kept on the `/storage`
+  subpath, off the root entry (browser-leaning code stays out of Node-only imports).
 - `parseDuration(input)` on `egl-utils-js/diagnostics`, re-exported from the root (roadmap
   5.6, ADR-0009): parses a duration string to milliseconds via a strict, ordered grammar —
   one or more `<integer><unit>` segments with units `h`/`m`/`s` in strictly descending
