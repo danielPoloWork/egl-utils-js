@@ -205,6 +205,17 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- NFR-01 and NFR-02 are now enforced **in full** (roadmap 7.3, ADR-0015). Entry budgets are
+  tightened from the M1 skeleton values to measured-plus-6% (root 5.35 kB against 5036 B
+  measured, `/storage` 1.81 kB, `/sanitize` 1.55 kB, `/errors` 310 B) — safe to keep tight
+  because size-limit is byte-deterministic, the opposite of the benchmark situation in ADR-0014,
+  and verified non-vacuous (a budget 1 B under the measured size fails with "exceeded by 6 B").
+  NFR-01's **per-function clause is measured for the first time**: 23 size-limit *scenario
+  builds* import one named export each and gate it at 1 kB, which is simultaneously NFR-02's
+  missing mechanism — a function pulling in unrelated modules could not fit. Measured range:
+  `isObject` 93 B to `retry` 717 B. All 27 budgets run in ~7 s inside the existing `packaging`
+  job.
+
 - NFR-04 gate wired as a **nightly** workflow (roadmap 7.2, ADR-0014). It enforces the
   requirement as written — a **floor** of 0.9 on `ourHz / baselineLibraryHz`, both measured in
   the same run so machine speed cancels — rather than diffing against stored history. That

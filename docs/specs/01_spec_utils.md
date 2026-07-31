@@ -48,6 +48,7 @@ inputs; events, storage, http, and cookie modules are labeled stateful (spec §1
      fold): a value per hard NFR axis — throughput / concurrency, p99 latency, memory ceiling,
      target FPS, cold-start budget — each phrased so CI could prove a violation. -->
 - NFR-01 Bundle budgets (min+gzip): root entry full import <= 6 kB; any single function <= 1 kB after shaking; /storage <= 2 kB — size-limit gate in CI
+  - **Divergence (roadmap 7.3, [ADR-0015](../adr/0015-final-size-budgets-and-the-httpclient-exception.md)):** the per-function clause is now measured, and `httpClient` is **1251 B** — 22% over. The overage is the `timeout` combinator and `HttpError` it composes rather than reimplements (verified: `{httpClient}` = 1251 B, `{httpClient, timeout}` = 1252 B), a deliberate choice in [ADR-0007](../adr/0007-http-client-facade-contract.md). Its budget is set to 1.3 kB and labelled as an exception in the CI output. All other 22 functions comply (93–717 B). Whether to amend this clause to exempt composing facades is an open decision for the owner.
 - NFR-02 Tree-shakability: importing one named export pulls zero unrelated modules — agadoo + size-limit scenario builds
 - NFR-03 Coverage >= 95% lines/branches — vitest + c8 gate
 - NFR-04 Performance parity: retry/parallelLimit within 10% of p-retry/p-limit; data functions within 10% of lodash equivalents or faster — vitest bench, pinned baselines, nightly regression gate
