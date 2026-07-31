@@ -1,22 +1,160 @@
 [
   {
-    "name": "root — full import (NFR-01: <= 6 kB)",
+    "name": "root — full import (NFR-01: measured 5036 B)",
     "path": "dist/esm/index.js",
-    "limit": "6 kB"
+    "limit": "5.35 kB"
   },
   {
-    "name": "/storage (NFR-01: <= 2 kB)",
+    "name": "/storage (NFR-01: measured 1706 B)",
     "path": "dist/esm/storage.js",
-    "limit": "2 kB"
+    "limit": "1.81 kB"
   },
   {
-    "name": "/sanitize",
+    "name": "/sanitize (measured 1457 B; DOMPurify is external)",
     "path": "dist/esm/sanitize.js",
-    "limit": "2 kB"
+    "limit": "1.55 kB"
   },
   {
-    "name": "/errors",
+    "name": "/errors (measured 291 B)",
     "path": "dist/esm/errors.js",
+    "limit": "310 B"
+  },
+  {
+    "name": "single: delay (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ delay }",
     "limit": "1 kB"
+  },
+  {
+    "name": "single: timeout (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ timeout }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: retry (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ retry }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: parallelLimit (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ parallelLimit }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: asyncQueue (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ asyncQueue }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: EventEmitter (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ EventEmitter }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: debounce (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ debounce }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: throttle (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ throttle }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: deepClone (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ deepClone }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: deepMerge (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ deepMerge }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: pick (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ pick }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: omit (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ omit }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: groupBy (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ groupBy }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: uniq (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ uniq }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: isObject (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ isObject }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: isEmpty (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ isEmpty }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: validateEmail (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ validateEmail }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: urlSearchParams (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ urlSearchParams }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: uuid (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ uuid }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: hashString (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ hashString }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: measure (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ measure }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: parseDuration (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ parseDuration }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: httpClient (1.3 kB — documented NFR-01 exception, ADR-0015)",
+    "path": "dist/esm/index.js",
+    "import": "{ httpClient }",
+    "limit": "1.3 kB"
   }
 ]

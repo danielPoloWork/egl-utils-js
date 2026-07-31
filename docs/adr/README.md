@@ -30,3 +30,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0012](0012-sanitize-default-profile.md) | The curated sanitize profile — deny-by-default, and how DOMPurify is reached | Accepted |
 | [0013](0013-benchmark-fair-comparison-methodology.md) | Benchmark methodology — what counts as a fair comparison, and what we refuse to compare | Accepted |
 | [0014](0014-nightly-regression-gate-design.md) | The nightly NFR-04 gate — enforce a parity floor, not a diff against history | Accepted |
+| [0015](0015-final-size-budgets-and-the-httpclient-exception.md) | Final size budgets, and the one per-function budget composition cannot meet | Accepted |
