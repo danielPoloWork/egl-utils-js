@@ -36,6 +36,19 @@ Versioning and the changelog are driven by **changesets** (roadmap 7.4, [ADR-001
    Run it once with `dry-run` left **checked** to see exactly what would ship, then re-run with
    it unchecked.
 
+## Repository setting required for the Version PR
+
+`release-version.yml` pushes the `changeset-release/main` branch and then opens the Version PR.
+Opening it needs **Settings → Actions → General → "Allow GitHub Actions to create and approve
+pull requests"** enabled — the workflow's `pull-requests: write` permission is necessary but not
+sufficient, because that repository/organisation toggle overrides it.
+
+Without it the run fails at the last step with `GitHub Actions is not permitted to create or
+approve pull requests`, **after** the branch has been pushed correctly with the full version
+bump. Recovery is either enabling the setting and re-running the workflow, or opening the PR by
+hand from the already-pushed branch — no work is lost either way. (Observed on the first run
+that had a real bump to propose, roadmap 8.1.)
+
 ## One-time npm setup (before the first publish)
 
 The publish workflow uses **npm trusted publishing (OIDC)**, so there is deliberately **no
