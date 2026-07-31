@@ -101,6 +101,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0 && tsc --noEmit",
+    "docs:api": "typedoc",
     "size": "size-limit",
     "check:publint": "publint --strict",
     "check:exports": "attw --pack . --profile node16",
@@ -146,6 +147,7 @@
     "publint": "^0.3.22",
     "size-limit": "^12.1.0",
     "tsup": "^8.5.1",
+    "typedoc": "^0.28.20",
     "typescript": "^5.9.3",
     "vitest": "^3.2.7"
   },

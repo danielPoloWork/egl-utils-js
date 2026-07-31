@@ -92,6 +92,15 @@ jobs:
       - name: Check package.json version is in lockstep
         run: node tools/sync-version.mjs --check
 
+      # API docs must build without warnings (AGENTS.md quality bar). typedoc.json
+      # sets treatWarningsAsErrors, so any undocumented/unresolved public symbol
+      # fails this step rather than shipping silently broken reference docs.
+      # Needs node_modules — sync-version above did not, being dependency-free.
+      - name: Install dependencies (lockfile only)
+        run: pnpm install --frozen-lockfile
+      - name: Build the API reference (must be warning-free)
+        run: pnpm docs:api
+
   # ---------------------------------------------------------------------------
   # Language-specific quality jobs (format, lint, sanitizers, …) from the profile.
   # ---------------------------------------------------------------------------

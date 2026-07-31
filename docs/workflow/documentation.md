@@ -27,7 +27,13 @@ README ↔ ROADMAP milestone agreement, and bug-ledger integrity.
 
 ## API documentation
 
-Public symbols are documented with `JSDoc / TypeDoc (from JSDoc types)`-compatible comments. The API-docs build
-must be warning-free (quality bar, `AGENTS.md` §10). Narrative documentation lives in
-Markdown under `docs/`; the split between generated API docs and hand-written narrative is
-recorded in an ADR if non-obvious.
+Public symbols are documented with JSDoc comments; [TypeDoc](https://typedoc.org) generates the API
+reference from them (`typedoc.json`, roadmap 7.5). Build it locally with `pnpm docs:api` — output
+goes to `docs/api/` (generated, gitignored, never committed). `treatWarningsAsErrors` is set, so
+the CI consistency job fails the build on any undocumented or unresolved public symbol rather than
+shipping silently broken reference docs (quality bar, `AGENTS.md` §10). A JSDoc `@typedef` that is
+used in a public signature but not itself exported (e.g. `AsyncQueue`, `Debounced`) is listed in
+`typedoc.json`'s `intentionallyNotExported` rather than suppressed with a blanket warning flag, so
+a *new* unresolved reference still fails loudly. Narrative documentation lives in Markdown under
+`docs/`; the split between generated API docs and hand-written narrative is recorded in an ADR if
+non-obvious.
