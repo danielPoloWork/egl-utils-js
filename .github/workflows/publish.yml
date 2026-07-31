@@ -1,0 +1,98 @@
+name: publish
+
+# npm publish with provenance (roadmap 7.4, ADR-0016).
+#
+# THIS WORKFLOW IS NEVER AUTOMATIC. It runs only on an explicit
+# workflow_dispatch, deliberately departing from the changesets convention of
+# publishing when the Version PR merges. AGENTS.md §11 makes publishing the
+# human checkpoint, and an accidental merge must not be able to push a release
+# to a public registry — merging happens by reflex, dispatching does not.
+#
+# `dry-run` defaults to TRUE, so the careless path (dispatch and confirm) does
+# nothing irreversible. Publishing requires deliberately unchecking it.
+#
+# MAINTAINER SETUP REQUIRED BEFORE THE FIRST REAL RUN — docs/workflow/release.md.
+# This uses npm TRUSTED PUBLISHING (OIDC): there is no NPM_TOKEN secret to
+# create, leak, or rotate. The trusted publisher is configured once on
+# npmjs.com, naming this repository and this workflow file.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Verify only — pack and check without publishing'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  # Required to mint the OIDC token npm exchanges for short-lived publish
+  # credentials. This is precisely why no long-lived secret is needed.
+  id-token: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish to npm (dry-run=${{ inputs.dry-run }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          # Node 20 ships npm >= 10, comfortably past the npm >= 9.5 provenance
+          # requires.
+          node-version: '20'
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      # Lockfile-only: the published artifact is built from the exact dependency
+      # tree that was reviewed, never one resolved fresh at publish time.
+      - name: Install dependencies (lockfile only)
+        run: pnpm install --frozen-lockfile
+
+      - name: Supply-chain audit
+        run: pnpm audit --audit-level high
+
+      # The full quality bar runs again here rather than trusting the green on
+      # the merge commit: publishing is irreversible, so it re-earns its pass
+      # instead of inheriting one.
+      - name: Verify (lint and full test suite with coverage)
+        run: |
+          pnpm lint
+          pnpm coverage
+
+      - name: Verify packaging (exports, types, budgets, zero runtime deps)
+        run: pnpm check:package
+
+      - name: Show exactly what would be published
+        run: npm pack --dry-run
+
+      - name: Publish with provenance
+        if: ${{ !inputs.dry-run }}
+        # No NODE_AUTH_TOKEN: trusted publishing exchanges the OIDC token for
+        # short-lived credentials. `--provenance` is passed explicitly rather
+        # than relying on the implicit attestation, so the intent is visible in
+        # the log and a registry-side configuration change cannot silently drop
+        # it.
+        run: npm publish --provenance --access public
+
+      - name: Summarize
+        if: always()
+        run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          {
+            echo "### $name@$version"
+            echo
+            if [ "${{ inputs.dry-run }}" = "true" ]; then
+              echo "Dry run — nothing was published. Re-run with \`dry-run\` unchecked to publish."
+            else
+              echo "Published with provenance via trusted publishing (no long-lived token)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -107,9 +107,14 @@
     "check:deps": "node tools/assert-no-runtime-deps.mjs",
     "check:shakeable": "agadoo dist/esm/index.js",
     "check:package": "pnpm build && pnpm check:publint && pnpm check:exports && pnpm size && pnpm check:shakeable && pnpm check:deps",
+    "audit": "pnpm audit --audit-level high",
+    "changeset": "changeset",
+    "changeset:version": "changeset version && node tools/sync-version.mjs && pnpm install --lockfile-only",
+    "changeset:status": "changeset status --since=origin/main",
     "bench": "vitest bench --run",
     "bench:check": "node tools/bench-regression.mjs",
-    "bench:baseline": "node tools/bench-regression.mjs --update"
+    "bench:baseline": "node tools/bench-regression.mjs --update",
+    "check:version": "node tools/sync-version.mjs --check"
   },
   "peerDependencies": {
     "dompurify": "^3"
@@ -121,6 +126,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
+    "@changesets/cli": "^2.31.1",
     "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.62.0",
     "@size-limit/preset-small-lib": "^12.1.0",
@@ -142,5 +148,12 @@
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^3.2.7"
+  },
+  "pnpm": {
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-mh99-v99m-4gvg"
+      ]
+    }
   }
 }

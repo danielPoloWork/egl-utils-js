@@ -205,6 +205,36 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- Release pipeline wired (roadmap 7.4, ADR-0016): **changesets** for versioning and changelog,
+  and npm publishing with provenance via **trusted publishing (OIDC)** — verified against npm's
+  requirements (npm >= 9.5, `id-token: write`, GitHub-hosted runner, `--access public` first
+  time), and deliberately chosen over an `NPM_TOKEN` secret so **no long-lived credential exists
+  in this repository at all**. Publishing is `workflow_dispatch` only with `dry-run` defaulting
+  to **true**, departing from the changesets convention of publishing on Version PR merge:
+  merging happens by reflex, dispatching does not, and a registry push is irreversible. The
+  `changesets/action` is given no `publish:` input, so the capability is absent rather than
+  unused. Versioning (`release-version.yml`) and publishing (`publish.yml`) are separated by file
+  as well as by trigger, and the publish job re-runs lint, the full suite, the audit and
+  `check:package` rather than inheriting the merge commit's green.
+- Supply-chain gates added as their own CI job (roadmap 7.4): `pnpm install --frozen-lockfile`
+  proves the lockfile is complete and unchanged, and `pnpm audit --audit-level high` fails on a
+  high or critical advisory. Exactly one advisory is excepted with a written justification —
+  `GHSA-mh99-v99m-4gvg`, dev-only, unreachable in this project's threat model, never shipped
+  (NFR-06), and unfixable here because forcing the patched `brace-expansion` breaks `minimatch@9`
+  (attempted and demonstrated). The exception is per-GHSA, verified scoped rather than blanket.
+
+### Fixed
+
+- `tools/sync-version.mjs` closes a gap that adopting changesets would otherwise have opened:
+  `changeset version` bumps `package.json` and nothing else, while the consistency lint holds
+  `version.js`, the README badge, the changelog and the release notes in lockstep **with each
+  other and never reads `package.json`** — so a bump would have diverged silently behind a green
+  gate. The tool propagates the version (wired into `changeset:version`) and asserts lockstep in
+  `--check` mode (wired into the CI consistency job).
+- `release.yml` referenced `matrix.toolchain` in a job that has **no matrix**, working only by
+  falling through to its default. The M1.4 entry records fixing exactly this defect in the
+  benchmark job; this occurrence was missed then.
+
 - NFR-01 and NFR-02 are now enforced **in full** (roadmap 7.3, ADR-0015). Entry budgets are
   tightened from the M1 skeleton values to measured-plus-6% (root 5.35 kB against 5036 B
   measured, `/storage` 1.81 kB, `/sanitize` 1.55 kB, `/errors` 310 B) — safe to keep tight

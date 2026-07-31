@@ -1,0 +1,54 @@
+name: release-version
+
+# Version PR preparation (roadmap 7.4, ADR-0016).
+#
+# When changesets have accumulated on `main`, this opens or updates a single
+# "chore(release): version packages" PR that applies the version bump and rolls
+# the changelog. It NEVER publishes — releasing lives behind the manual
+# dispatch in publish.yml, so the two capabilities are separated by file as
+# well as by trigger.
+#
+# The changesets action is deliberately given no `publish:` input. With one, a
+# merge of the Version PR would push to npm; without it, merging only lands the
+# version bump and a human still has to dispatch the publish.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-version
+  cancel-in-progress: true
+
+jobs:
+  version:
+    name: open or update the Version PR
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: pnpm
+      - name: Install dependencies (lockfile only)
+        run: pnpm install --frozen-lockfile
+      - name: Create or update the Version PR
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset:version
+          title: 'chore(release): version packages'
+          commit: 'chore(release): version packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
