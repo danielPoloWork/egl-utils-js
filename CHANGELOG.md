@@ -205,6 +205,25 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- NFR-04 benchmark suites wired under `src/bench/` against **exactly pinned** baselines
+  (`lodash 4.18.1`, `p-limit 6.2.0`, `p-retry 6.2.1` — a drifting baseline makes a 10%
+  comparison meaningless), with the fair-comparison methodology recorded as **ADR-0013**: async
+  delays neutralized on both sides so orchestration overhead is measured rather than
+  `setTimeout`; comparisons made against the equivalent lodash/p-limit **usage** rather than the
+  equivalent name (p-limit's `Promise.all` wrapper is inside the timed region; lodash `merge` is
+  called non-mutatingly); semantic divergences disclosed and excluded from parity claims (the
+  array-heavy merge ratio is the cost of different work, not speed); deterministic seeded inputs;
+  and functions with no baseline kept in a separate suite carrying no parity claim.
+
+### Fixed
+
+- `groupBy` and `uniq` were **2.0–2.7× slower than lodash**, violating NFR-04 — found by the new
+  benchmark suite (roadmap 7.1), which is what a performance NFR exists to do. Two accidental
+  costs removed with **no behaviour change**: `Array.prototype.forEach` with a closure replaced
+  by an indexed loop, and `uniq` no longer routes every element through an identity function when
+  no iteratee was supplied. Both are now 1.4–1.5× *faster* than their lodash counterparts; all
+  594 tests and 100% coverage held across the change.
+
 - Sanitize bypass corpus wired as a two-layer gate (roadmap 6.5, spec §6, ADR-003): 46 curated
   payloads covering documented mXSS and sanitizer-bypass techniques — MathML/SVG text-integration
   and namespace confusion, `noscript`/`xmp`/`listing`/`plaintext`/`template` parsing divergences,
