@@ -205,6 +205,19 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- Sanitize bypass corpus wired as a two-layer gate (roadmap 6.5, spec §6, ADR-003): 46 curated
+  payloads covering documented mXSS and sanitizer-bypass techniques — MathML/SVG text-integration
+  and namespace confusion, `noscript`/`xmp`/`listing`/`plaintext`/`template` parsing divergences,
+  comment-boundary re-parse, obfuscated `javascript:`/`data:` URIs, `srcdoc`/`formaction`/`srcset`
+  carriers, `base`/`meta`/`link` hijacks, DOM clobbering, and CSS exfiltration. Each payload is
+  asserted **structurally inert** (the gate, which cannot be auto-updated) *and* recorded in a
+  committed snapshot (documentation, so a DOMPurify range bump or a profile edit surfaces as a
+  reviewable diff rather than a silent behaviour change). The corpus additionally runs in
+  **Chromium, Firefox and WebKit** with `window.alert` instrumented, because mXSS is a
+  serialize-then-reparse divergence and therefore a property *of a specific parser* — jsdom's is
+  not a browser's. Both layers ship a non-vacuity control that fails if the detector stops
+  detecting. DOMPurify does not publish its fixtures on npm, so the corpus is curated from
+  published research classes rather than imported, and says so.
 - Real-browser verification wired for the browser-leaning entries (roadmap 6.4, spec §6): a
   Playwright smoke suite runs the **built** `dist/` bundles in **Chromium, Firefox and
   WebKit** as a dedicated CI job (`browser`, Node 20 — `@playwright/test` requires Node ≥ 20,

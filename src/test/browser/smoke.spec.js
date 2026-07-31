@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { BYPASS_CORPUS } from '../fixtures/sanitize-bypass-corpus.js';
 
 // Browser smoke suite (roadmap 6.4, spec §6) for the browser-leaning entries.
 //
@@ -260,6 +261,23 @@ test.describe('sanitizeHtml — non-execution in a real engine', () => {
     return page.evaluate(
       async ([payload, shouldSanitize]) => {
         delete window.__xss;
+        // Clicking every element is how interaction-driven handlers get their
+        // chance, but a legitimately-preserved <a href="https://..."> navigates
+        // and destroys the execution context. Block navigation to another
+        // document while deliberately still allowing `javascript:` hrefs
+        // through — those ARE the vector this test hunts.
+        document.addEventListener(
+          'click',
+          (event) => {
+            const anchor = event.target && event.target.closest && event.target.closest('a[href]');
+            const href = anchor ? anchor.getAttribute('href') || '' : '';
+            if (!href.replace(/[\s]/g, '').toLowerCase().startsWith('javascript:')) {
+              event.preventDefault();
+            }
+          },
+          true,
+        );
+
         const host = document.getElementById('host');
         // Zero configuration in a browser — the ADR-0012 claim.
         const inserted = shouldSanitize ? window.egl.sanitize.sanitizeHtml(payload) : payload;
@@ -351,5 +369,123 @@ test.describe('sanitizeHtml — non-execution in a real engine', () => {
     });
     expect(result.threw).toBe(true);
     expect(result.hasScript).toBe(false);
+  });
+});
+
+test.describe('sanitize bypass corpus — real engines, where mXSS actually lives', () => {
+  // Roadmap 6.5. The Node suite runs this same corpus under jsdom, but jsdom's
+  // parser is parse5 — NOT Chrome's, Firefox's, or WebKit's. mXSS is a
+  // serialize-then-reparse divergence, so it is a property OF a specific
+  // parser: a corpus validated only under jsdom is weakest exactly where the
+  // attack class lives. This block closes that gap.
+  //
+  // Detection overrides `window.alert`, which every execution-class payload in
+  // the corpus calls. That keeps the payloads realistic — they are not
+  // rewritten to poke a test flag — and attributes each call to its payload id.
+
+  test('no corpus payload executes in this engine', async ({ page }) => {
+    test.setTimeout(60_000);
+    const outcome = await page.evaluate(async (corpus) => {
+      /** @type {string[]} */
+      const executed = [];
+      /** @type {{ id: string, output: string }[]} */
+      const outputs = [];
+      window.alert = (value) => executed.push(`alert(${String(value)})`);
+
+      // Clicking every element is how interaction-driven handlers get their
+      // chance, but a legitimately-preserved <a href="https://..."> navigates
+      // and destroys the execution context. Block navigation to another
+      // document while deliberately still allowing `javascript:` hrefs
+      // through — those ARE the vector this test hunts.
+      document.addEventListener(
+        'click',
+        (event) => {
+          const anchor = event.target && event.target.closest && event.target.closest('a[href]');
+          const href = anchor ? anchor.getAttribute('href') || '' : '';
+          if (!href.replace(/[\s]/g, '').toLowerCase().startsWith('javascript:')) {
+            event.preventDefault();
+          }
+        },
+        true,
+      );
+
+      const host = document.getElementById('host');
+      for (const { id, payload } of corpus) {
+        const output = window.egl.sanitize.sanitizeHtml(payload);
+        outputs.push({ id, output });
+        host.innerHTML = output;
+        for (const element of host.querySelectorAll('*')) {
+          for (const type of ['mouseover', 'focus', 'toggle', 'load', 'error']) {
+            element.dispatchEvent(new Event(type, { bubbles: true }));
+          }
+          if (typeof element.click === 'function') element.click();
+        }
+      }
+      // One settle window for the whole batch: asynchronous vectors (a failed
+      // image load) need real time, but they do not need it per payload.
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return { executed, outputs };
+    }, BYPASS_CORPUS);
+
+    expect(outcome.executed, 'a corpus payload executed after sanitization').toEqual([]);
+
+    // Structural check per payload, in this engine's own parser.
+    for (const { id, output } of outcome.outputs) {
+      const inert = await page.evaluate((html) => {
+        const probe = document.createElement('div');
+        probe.innerHTML = html;
+        const forbidden = [
+          'script',
+          'style',
+          'iframe',
+          'object',
+          'embed',
+          'form',
+          'input',
+          'button',
+          'select',
+          'textarea',
+          'svg',
+          'math',
+          'base',
+          'link',
+          'meta',
+          'template',
+          'noscript',
+        ].filter((name) => probe.querySelectorAll(name).length > 0);
+        /** @type {string[]} */
+        const badAttrs = [];
+        for (const element of probe.querySelectorAll('*')) {
+          for (const attr of element.attributes) {
+            const name = attr.name.toLowerCase();
+            if (name.startsWith('on') || name === 'style' || name === 'id') badAttrs.push(name);
+            const url = attr.value.replace(/[\s]/g, '').toLowerCase();
+            if (url.startsWith('javascript:') || url.startsWith('data:')) badAttrs.push(name);
+          }
+        }
+        return { forbidden, badAttrs };
+      }, output);
+      expect(inert.forbidden, `${id}: forbidden elements survived`).toEqual([]);
+      expect(inert.badAttrs, `${id}: dangerous attributes survived`).toEqual([]);
+    }
+  });
+
+  test('the corpus detector is not vacuous — a RAW corpus payload does execute', async ({
+    page,
+  }) => {
+    // Same override, same settle window, but the payload skips sanitization.
+    // Without this, the test above could pass because `alert` was never
+    // reachable rather than because the profile held.
+    const executed = await page.evaluate(async () => {
+      /** @type {string[]} */
+      const calls = [];
+      window.alert = (value) => calls.push(`alert(${String(value)})`);
+      document.getElementById('host').innerHTML = '<img src=x onerror=alert(1)>';
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return calls;
+    });
+    expect(executed, 'the raw payload must execute, or the corpus test proves nothing').toEqual([
+      'alert(1)',
+    ]);
   });
 });
