@@ -202,3 +202,70 @@ describe('timeout (spec §2 item 2)', () => {
     await expect(p).rejects.toBe(reason); // the task observed the abort through the merged signal
   });
 });
+
+// Roadmap 7.6 (release-readiness review): `AbortSignal.timeout` landed in
+// Safari 16.0, but spec §3 NFR-07 declares Safari >= 15.4 supported. Calling it
+// unconditionally made `timeout` — and `httpClient`, which composes it — throw
+// `TypeError: AbortSignal.timeout is not a function` on Safari 15.4–15.6. The
+// internal fallback is exercised here by removing the static, which is the only
+// way to reach that branch on a runtime that has it.
+describe('timeout — fallback where AbortSignal.timeout is unavailable (NFR-07, Safari 15.4)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+
+  /** A Safari-15.4-shaped AbortSignal: everything except the `timeout` static. */
+  function withoutTimeoutStatic() {
+    const Patched = class extends AbortSignal {};
+    // Copy the statics the library relies on, minus `timeout`.
+    Object.defineProperty(Patched, 'abort', { value: AbortSignal.abort });
+    vi.stubGlobal(
+      'AbortSignal',
+      new Proxy(AbortSignal, {
+        get(target, property, receiver) {
+          if (property === 'timeout') return undefined;
+          return Reflect.get(target, property, receiver);
+        },
+      }),
+    );
+  }
+
+  it('still rejects with TimeoutError at the deadline', async () => {
+    withoutTimeoutStatic();
+    vi.resetModules();
+    const { timeout: patched } =
+      await import('../../../../../main/javascript/it/d4np/utils/async.js');
+    expect(AbortSignal.timeout).toBeUndefined(); // the branch under test is reachable
+
+    const error = await patched(() => new Promise(() => {}), 30).catch((e) => e);
+    expect(error.name).toBe('TimeoutError');
+    expect(error.code).toBe('EGL_TIMEOUT');
+  });
+
+  it('still hands the operation a signal that aborts on timeout', async () => {
+    withoutTimeoutStatic();
+    vi.resetModules();
+    const { timeout: patched } =
+      await import('../../../../../main/javascript/it/d4np/utils/async.js');
+
+    /** @type {AbortSignal | undefined} */
+    let observed;
+    await patched((signal) => {
+      observed = signal;
+      return new Promise(() => {});
+    }, 30).catch(() => {});
+    expect(observed?.aborted).toBe(true);
+    // The fallback mirrors the platform's reason, so downstream code that
+    // inspects it (e.g. httpClient's fetch) behaves identically.
+    expect(/** @type {any} */ (observed).reason?.name).toBe('TimeoutError');
+  });
+
+  it('resolves normally when the operation beats the deadline', async () => {
+    withoutTimeoutStatic();
+    vi.resetModules();
+    const { timeout: patched } =
+      await import('../../../../../main/javascript/it/d4np/utils/async.js');
+    await expect(patched(async () => 'ok', 200)).resolves.toBe('ok');
+  });
+});

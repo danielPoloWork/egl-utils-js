@@ -247,7 +247,8 @@ deliberately does not cover.
 | 4 | Events | ✅ done |
 | 5 | Web, crypto & diagnostics | ✅ done |
 | 6 | Storage & sanitize subpaths | ✅ done |
-| 7 | Benchmarks & release readiness | 🚧 in progress |
+| 7 | Benchmarks & release readiness | ✅ done |
+| 8 | Post-0.1.0 follow-ups | ⏳ planned |
 
 
 ## License
