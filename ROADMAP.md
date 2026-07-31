@@ -119,7 +119,18 @@ NFR enforcement at full strength and the first public release
 - [x] 7.3 size-limit budgets tightened to final numbers (NFR-01) + shakeability scenario builds (NFR-02) _(route: standard/medium)_
 - [x] 7.4 changesets release pipeline; npm publish --provenance from CI OIDC; lockfile-only + npm audit supply-chain gates _(route: frontier-reasoning/high — security: supply-chain and provenance surface)_
 - [x] 7.5 documentation pass: JSDoc API reference, README examples, sanitize non-goals in SECURITY.md _(route: fast/medium)_
-- [ ] 7.6 v0.1.0 release readiness review _(route: standard/high — verification review; the release decision itself stays with the owner)_
+- [x] 7.6 v0.1.0 release readiness review _(route: standard/high — verification review; the release decision itself stays with the owner)_
+
+
+---
+
+## Milestone 8 — Post-0.1.0 follow-ups
+
+Filed by the roadmap 7.6 release-readiness review rather than folded into it (AGENTS.md §10:
+out-of-scope findings become roadmap items in the same PR).
+
+- [ ] 8.1 Verify the Safari 15.4 API floor mechanically — a browserslist-driven check or an explicit supported-API inventory, so a Safari-15.4-only regression cannot pass unnoticed again (the review found `AbortSignal.timeout`, Safari 16.0, used against a declared 15.4 floor; Playwright's WebKit is far newer than 15.4 and could never have caught it) _(route: standard/high — the gap is a verification blind spot, not a coding task)_
+- [ ] 8.2 Decide whether `VERSION` belongs on the public root surface before 1.0 — it is exported from `version.js` but not re-exported from the root, which matches spec §5 yet leaves consumers unable to read the version at runtime _(route: fast/low — a small API decision)_
 
 
 
@@ -133,9 +144,9 @@ progress · ✅ done · ❎ N/A.
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 | Objective & business context | 1.1 | 🚧 |
-| §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3 | 🚧 |
-| §3 | Non-functional requirements | 1.3, 1.4, 2.6, 3.6, 5.3, 6.4, 7.1, 7.2, 7.3 | 🚧 |
-| §4 | Logical architecture | 1.1 | 🚧 |
-| §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3 | 🚧 |
-| §6 | Verification & test strategy | 1.2, 1.4, 2.6, 4.4, 5.6, 6.4, 6.5, 7.1, 7.2 | 🚧 |
+| §1 | Objective & business context | 1.1, 7.6 | ✅ |
+| §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 7.6 | ✅ |
+| §3 | Non-functional requirements | 1.3, 1.4, 2.6, 3.6, 5.3, 6.4, 7.1, 7.2, 7.3, 7.6 | ✅ |
+| §4 | Logical architecture | 1.1, 7.6 | ✅ |
+| §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 7.6 | ✅ |
+| §6 | Verification & test strategy | 1.2, 1.4, 2.6, 4.4, 5.6, 6.4, 6.5, 7.1, 7.2, 7.6 | ✅ |

@@ -39,8 +39,8 @@ that pulled in unrelated modules could not fit in 1 kB, so the budget makes the 
 claim falsifiable. Measured, they range from `isObject` at 93 B to `retry` at 717 B — with one
 exception.
 
-**3. `httpClient` gets a documented 1.3 kB budget instead of 1 kB.** It measures **1251 B**,
-22% over. The cause is verified rather than assumed: `{ httpClient }` alone is 1251 B and
+**3. `httpClient` gets a documented 1.35 kB budget instead of 1 kB.** It measured **1251 B**
+when this ADR was written, 22% over. The cause is verified rather than assumed: `{ httpClient }` alone is 1251 B and
 `{ httpClient, timeout }` together is **1252 B** — adding `timeout` costs one byte, because
 `timeout` is *already* inside httpClient's graph. The overage is precisely the composed
 `timeout` combinator (560 B standalone) plus `HttpError`, which **ADR-0007 deliberately reuses
@@ -51,6 +51,21 @@ a documented design decision for a byte count, and reintroducing exactly the dup
 ADR-0007 rejected. The budget is raised for this one function, the reason is recorded here, and
 the exception is **visible in the CI output itself** (the entry is named "documented NFR-01
 exception, ADR-0015") so it cannot quietly become the norm.
+
+## Addendum (roadmap 7.6, 2026-07-31): the exception moved to 1.35 kB
+
+The v0.1.0 readiness review found that `timeout` called `AbortSignal.timeout` unconditionally,
+which first shipped in Safari 16.0 against NFR-07's declared Safari 15.4 floor — breaking
+`timeout` *and* `httpClient` on that floor. The fallback that fixes it costs **+64 B** in
+`httpClient` (1251 → 1315 B), which pushed it past the 1.3 kB exception; the budget is now
+**1.35 kB**.
+
+This is recorded rather than quietly edited because the numbers in this ADR are load-bearing:
+a stale figure here would be the same defect 7.4 found in ADR-0013 (documentation asserting a
+pin the manifest did not have). The increase is a **correctness fix, not feature creep** — and
+the gate did its job by refusing the change until the budget was raised deliberately. `timeout`
+itself grew 560 → 614 B and remains well inside its literal 1 kB budget, so the per-function
+clause still holds unaided for 22 of the 23 functions.
 
 ## Consequences
 

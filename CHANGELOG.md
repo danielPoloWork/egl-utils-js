@@ -237,6 +237,16 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `timeout()` and `httpClient()` threw `TypeError: AbortSignal.timeout is not a function` on
+  **Safari 15.4–15.6**. `AbortSignal.timeout` first shipped in Safari 16.0, while NFR-07 declares
+  Safari >= 15.4 supported — so two public functions were non-functional on a browser the spec
+  promises. Found by the roadmap 7.6 release-readiness review; no browser job could have caught it
+  because Playwright's WebKit build is far newer than Safari 15.4. Fixed with an internal
+  `AbortSignal.timeout` fallback shaped like the existing `anySignal` helper (which exists for the
+  same class of reason on the Node 18 floor, ADR-0004); it aborts with a `TimeoutError`
+  `DOMException`, mirroring the platform's own reason, so error mapping and downstream signal
+  inspection are unchanged.
+
 - `tools/sync-version.mjs` closes a gap that adopting changesets would otherwise have opened:
   `changeset version` bumps `package.json` and nothing else, while the consistency lint holds
   `version.js`, the README badge, the changelog and the release notes in lockstep **with each

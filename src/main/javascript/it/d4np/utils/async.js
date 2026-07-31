@@ -84,6 +84,44 @@ function anySignal(signals) {
 }
 
 /**
+ * A signal that aborts after `ms`, standing in for `AbortSignal.timeout`.
+ *
+ * Internal fallback for the same reason {@link anySignal} exists: the platform
+ * static is not available across the whole supported matrix. `AbortSignal.any`
+ * is missing on the Node 18 floor; `AbortSignal.timeout` is missing on the
+ * **Safari 15.4 floor** — it landed in Safari 16.0, while spec §3 NFR-07
+ * declares Safari >= 15.4 supported. Calling it unconditionally made
+ * `timeout` (and `httpClient`, which composes it) throw
+ * `TypeError: AbortSignal.timeout is not a function` on Safari 15.4–15.6,
+ * i.e. two public functions broken on a browser the spec promises. Found by
+ * the roadmap 7.6 release-readiness review.
+ *
+ * The reason mirrors the platform's: a `TimeoutError` DOMException, so
+ * `timeout`'s own `TimeoutError` mapping is unchanged either way. The timer is
+ * `unref`'d where the runtime supports it so a pending fallback timer cannot
+ * hold a Node process open.
+ *
+ * @param {number} ms
+ * @returns {AbortSignal}
+ */
+function timeoutSignalFor(ms) {
+  if (typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(ms);
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    // `DOMException` is global on Node >= 17 and in every browser in the
+    // NFR-07 matrix, so no guard is needed — a `typeof` check here would be a
+    // dead branch, and this project removes those rather than mock-covering
+    // them to hold 100% coverage honestly.
+    controller.abort(new DOMException('The operation timed out.', 'TimeoutError'));
+  }, ms);
+  // Node exposes unref on its Timeout object; browsers return a number.
+  /** @type {any} */ (timer)?.unref?.();
+  return controller.signal;
+}
+
+/**
  * Resolve after `ms` milliseconds (spec §2 item 1).
  *
  * @example
@@ -116,7 +154,9 @@ export function delay(ms, { signal } = {}) {
 /**
  * Enforce a time budget on an operation (spec §2 item 2).
  *
- * Built on `AbortSignal.timeout`. Pass the operation as a **task function**
+ * Built on `AbortSignal.timeout`, with an internal fallback where that static
+ * is unavailable (Safari 15.4–15.6 — see `timeoutSignalFor`), so the whole
+ * NFR-07 support matrix is covered. Pass the operation as a **task function**
  * `(signal) => promise` and it receives a signal that aborts on timeout or
  * caller cancellation — so the underlying work can actually stop, not just
  * be abandoned. A bare promise is also accepted, but since it is already in
@@ -144,7 +184,7 @@ export function timeout(input, ms, { signal } = {}) {
     return Promise.reject(abortErrorFrom(signal));
   }
 
-  const timeoutSignal = AbortSignal.timeout(ms);
+  const timeoutSignal = timeoutSignalFor(ms);
   const merged = signal
     ? anySignal([signal, timeoutSignal])
     : { signal: timeoutSignal, cleanup: () => {} };
