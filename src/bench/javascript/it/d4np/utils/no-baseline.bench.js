@@ -1,4 +1,5 @@
 import { bench, describe } from 'vitest';
+import { BENCH_OPTIONS } from './options.js';
 import {
   validateEmail,
   parseDuration,
@@ -24,37 +25,61 @@ describe('validateEmail (NFR-05 keeps this linear — no regex anywhere)', () =>
   // chose a hand-rolled scan precisely so cost stays linear in input length.
   // The adversarial worst case has its own un-instrumented gate in
   // validate-email.redos.test.js; this is the ordinary-input cost.
-  bench('mixed valid and invalid inputs', () => {
-    for (const email of EMAILS) validateEmail(email);
-  });
+  bench(
+    'mixed valid and invalid inputs',
+    () => {
+      for (const email of EMAILS) validateEmail(email);
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('parseDuration', () => {
-  bench('valid duration strings', () => {
-    for (const duration of DURATIONS) parseDuration(duration);
-  });
+  bench(
+    'valid duration strings',
+    () => {
+      for (const duration of DURATIONS) parseDuration(duration);
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('urlSearchParams', () => {
-  bench('object with arrays and skipped values', () => {
-    urlSearchParams(QUERY_PARAMS);
-  });
+  bench(
+    'object with arrays and skipped values',
+    () => {
+      urlSearchParams(QUERY_PARAMS);
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('uuid (bounded by the platform CSPRNG, not by our code)', () => {
   // Mostly measures crypto.randomUUID; tracked so a regression in the
   // fallback-assembly path (ADR-0008) would show up.
-  bench('uuid()', () => {
-    uuid();
-  });
+  bench(
+    'uuid()',
+    () => {
+      uuid();
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('type guards', () => {
-  bench('isObject over 1000 records', () => {
-    for (const record of RECORDS) isObject(record);
-  });
+  bench(
+    'isObject over 1000 records',
+    () => {
+      for (const record of RECORDS) isObject(record);
+    },
+    BENCH_OPTIONS,
+  );
 
-  bench('isEmpty over 1000 records', () => {
-    for (const record of RECORDS) isEmpty(record);
-  });
+  bench(
+    'isEmpty over 1000 records',
+    () => {
+      for (const record of RECORDS) isEmpty(record);
+    },
+    BENCH_OPTIONS,
+  );
 });

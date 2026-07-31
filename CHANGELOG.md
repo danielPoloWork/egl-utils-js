@@ -205,6 +205,20 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- NFR-04 gate wired as a **nightly** workflow (roadmap 7.2, ADR-0014). It enforces the
+  requirement as written — a **floor** of 0.9 on `ourHz / baselineLibraryHz`, both measured in
+  the same run so machine speed cancels — rather than diffing against stored history. That
+  choice is what makes it usable: the per-run spread of these ratios reaches 14–47% (V8 settles
+  into different optimization tiers between runs), so a history diff fails constantly on
+  unchanged code, while the ratios sit at 1.2–6.5 against a floor of 0.9 and only a real defect
+  can cross it. Results are the median of several passes; `docs/benchmarks/baseline.json` is a
+  **record for reviewers, not a gate input**, so it cannot rot or block. Benchmarks gained
+  explicit warmup, without which the suite was comparing two half-warm functions.
+- Benchmark baselines are now pinned **exactly** (`lodash`, `p-limit`, `p-retry`) and added to
+  the Dependabot `ignore` list. ADR-0013 and the 7.1 changelog entry asserted exact pins, but
+  `pnpm add -D -E` with range specifiers had written carets — the documentation was ahead of the
+  manifest. A baseline bump must be a deliberate re-baselining, never a routine merge.
+
 - NFR-04 benchmark suites wired under `src/bench/` against **exactly pinned** baselines
   (`lodash 4.18.1`, `p-limit 6.2.0`, `p-retry 6.2.1` — a drifting baseline makes a 10%
   comparison meaningless), with the fair-comparison methodology recorded as **ADR-0013**: async

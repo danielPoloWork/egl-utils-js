@@ -1,0 +1,88 @@
+{
+  "$comment": "NFR-04 recorded position: median ratio (ours / baseline library) over several runs. This file is a RECORD FOR REVIEWERS, NOT the gate input — the gate enforces a fixed floor on the ratio, so it neither depends on this file nor drifts with it. `observedSpread` shows the per-run min..max, i.e. how noisy each comparison inherently is; those spreads are exactly why the gate is a floor rather than a diff (ADR-0014). Refresh with `pnpm bench:baseline` when performance legitimately changes.",
+  "threshold": 0.1,
+  "floor": 0.9,
+  "runs": 3,
+  "groups": {
+    "deepClone vs lodash.cloneDeep": {
+      "ratio": 1.4869,
+      "baselineName": "lodash cloneDeep",
+      "enforced": true,
+      "observedSpread": "1.403..1.503"
+    },
+    "deepMerge vs lodash.merge — array-free input (the like-for-like number)": {
+      "ratio": 7.1767,
+      "baselineName": "lodash merge({}, a, b) (non-mutating idiom)",
+      "enforced": true,
+      "observedSpread": "6.619..7.332"
+    },
+    "deepMerge vs lodash.merge — array-heavy input (NOT a parity claim)": {
+      "ratio": 175.6717,
+      "baselineName": "lodash merge (merges arrays element-wise)",
+      "enforced": false,
+      "notEnforcedBecause": "the ratio reflects a semantic difference (we replace arrays, lodash merges element-wise), not speed (ADR-0013)",
+      "observedSpread": "171.157..189.775"
+    },
+    "groupBy vs lodash.groupBy": {
+      "ratio": 1.3455,
+      "baselineName": "lodash groupBy (-> object)",
+      "enforced": true,
+      "observedSpread": "1.250..1.431"
+    },
+    "omit vs lodash.omit": {
+      "ratio": 1.8892,
+      "baselineName": "lodash omit",
+      "enforced": true,
+      "observedSpread": "1.770..2.043"
+    },
+    "parallelLimit settle mode — no baseline (absolute only)": {
+      "ratio": null,
+      "baselineName": null,
+      "enforced": false,
+      "notEnforcedBecause": "no baseline library — absolute throughput is machine-dependent"
+    },
+    "parallelLimit vs p-limit — 100 immediate tasks, concurrency 4": {
+      "ratio": 2.4634,
+      "baselineName": "p-limit + Promise.all wrapper",
+      "enforced": true,
+      "observedSpread": "2.256..2.721"
+    },
+    "parallelLimit vs p-limit — 1000 immediate tasks, concurrency 16": {
+      "ratio": 3.5912,
+      "baselineName": "p-limit + Promise.all wrapper",
+      "enforced": true,
+      "observedSpread": "3.464..3.745"
+    },
+    "pick vs lodash.pick": {
+      "ratio": 4.252,
+      "baselineName": "lodash pick",
+      "enforced": true,
+      "observedSpread": "3.642..4.321"
+    },
+    "retry — immediate success (pure overhead, no timers involved)": {
+      "ratio": 6.5312,
+      "baselineName": "p-retry",
+      "enforced": true,
+      "observedSpread": "6.383..6.601"
+    },
+    "retry — two transient failures, zero backoff (orchestration overhead)": {
+      "ratio": 0.9657,
+      "baselineName": "p-retry",
+      "enforced": false,
+      "notEnforcedBecause": "the only comparison whose true value is GENUINE PARITY (~1.0), so it sits at the floor rather than far above it; its timer-bound ±10% swing therefore can and does cross 0.9 (observed 0.85). Parity here is real and verified by the 7.1 suite — it simply cannot be gated at a 10% tolerance (ADR-0013, ADR-0014)",
+      "observedSpread": "0.954..0.985"
+    },
+    "uniq vs lodash.uniq": {
+      "ratio": 1.4586,
+      "baselineName": "lodash uniq",
+      "enforced": true,
+      "observedSpread": "1.261..1.461"
+    },
+    "uniq with iteratee vs lodash.uniqBy": {
+      "ratio": 1.4206,
+      "baselineName": "lodash uniqBy",
+      "enforced": true,
+      "observedSpread": "1.390..1.747"
+    }
+  }
+}

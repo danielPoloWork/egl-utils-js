@@ -48,13 +48,13 @@ importers:
         specifier: ^26.1.0
         version: 26.1.0
       lodash:
-        specifier: ^4.18.1
+        specifier: 4.18.1
         version: 4.18.1
       p-limit:
-        specifier: ^6.2.0
+        specifier: 6.2.0
         version: 6.2.0
       p-retry:
-        specifier: ^6.2.1
+        specifier: 6.2.1
         version: 6.2.1
       prettier:
         specifier: ^3.9.6
