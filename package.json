@@ -115,7 +115,8 @@
     "bench": "vitest bench --run",
     "bench:check": "node tools/bench-regression.mjs",
     "bench:baseline": "node tools/bench-regression.mjs --update",
-    "check:version": "node tools/sync-version.mjs --check"
+    "check:version": "node tools/sync-version.mjs --check",
+    "check:api-floor": "node tools/check-api-floor.mjs"
   },
   "peerDependencies": {
     "dompurify": "^3"
@@ -129,6 +130,7 @@
     "@arethetypeswrong/cli": "^0.18.5",
     "@changesets/cli": "^2.31.1",
     "@eslint/js": "^9.39.5",
+    "@mdn/browser-compat-data": "^8.0.8",
     "@playwright/test": "^1.62.0",
     "@size-limit/preset-small-lib": "^12.1.0",
     "@types/node": "^18.19.130",
@@ -157,5 +159,11 @@
         "GHSA-mh99-v99m-4gvg"
       ]
     }
-  }
+  },
+  "browserslist": [
+    "safari >= 15.4",
+    "last 2 chrome versions",
+    "last 2 firefox versions",
+    "last 2 edge versions"
+  ]
 }

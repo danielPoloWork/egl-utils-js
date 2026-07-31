@@ -205,6 +205,20 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- NFR-07's platform-API floor is now **mechanically gated** (roadmap 8.1, ADR-0017), closing the
+  verification blind spot that let the Safari 15.4 defect ship: Playwright runs one recent build
+  per engine and can never exercise an old Safari. `tools/check-api-floor.mjs` reads floors from
+  `@mdn/browser-compat-data` (never hand-typed) and enforces an inventory of every Web platform
+  API the source touches, **deny-by-default** — a newly used API fails until someone records how
+  it is reached. Guards declare *why* they exist (`version` vs secure-`context`), because an
+  earlier draft wrongly reported `crypto.subtle`'s secure-context guard as obsolete on version
+  grounds alone. `eslint-plugin-compat` was tried first and rejected on evidence: correctly
+  configured against `safari 15.4` it detected none of `AbortSignal.timeout`, `Object.groupBy`,
+  `checkVisibility`, `ResizeObserver` or `navigator.clipboard` — a green gate that checks nothing.
+  Proven non-vacuous on three failure modes (unguarded new API, un-inventoried usage, typo'd BCD
+  path). Runs in the existing `consistency` job; 21 APIs inventoried, 2 version-guarded, 5
+  context-guarded.
+
 - Documentation pass (roadmap 7.5): a generated **API reference** now builds via
   [TypeDoc](https://typedoc.org) from the existing JSDoc comments (`pnpm docs:api`,
   `typedoc.json`), gated warning-free in CI (`treatWarningsAsErrors`) so an unresolved or

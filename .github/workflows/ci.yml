@@ -101,6 +101,14 @@ jobs:
       - name: Build the API reference (must be warning-free)
         run: pnpm docs:api
 
+      # NFR-07 platform-API floor (roadmap 8.1, ADR-0017). Playwright runs one
+      # recent build per engine and can never catch an old-Safari-only gap —
+      # which is how AbortSignal.timeout (Safari 16.0) shipped against a
+      # declared 15.4 floor for six milestones. This checks every platform API
+      # the source touches against MDN browser-compat-data, deny-by-default.
+      - name: Check the platform-API support floor
+        run: pnpm check:api-floor
+
   # ---------------------------------------------------------------------------
   # Language-specific quality jobs (format, lint, sanitizers, …) from the profile.
   # ---------------------------------------------------------------------------
