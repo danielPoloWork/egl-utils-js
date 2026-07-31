@@ -15,32 +15,54 @@ pre-1.0 milestone-driven.
 
 ## Cutting a release (the steps)
 
-1. **Bump the version constant** (export const VERSION = 'X.Y.Z') in `version.js`; update any
-   version-check test.
-2. **Roll the changelog** — move the `[Unreleased]` entries into a new per-version file
-   `docs/changelog/v<MAJOR>/v<X.Y.Z>.md` and add an index row to `CHANGELOG.md`.
-3. **Refresh the README** status badge (and milestone table on a MINOR that closes a
-   milestone).
-4. **Draft release notes** under `docs/releases/v<X.Y.Z>.md`.
-5. **Run the consistency lint** (`python tools/consistency_lint.py`) — version lockstep must
-   pass.
-6. **Open the release PR** — *the maintainer does this*. The agent prepares it.
-7. **Merge** — *the maintainer*.
-8. **Tag + draft (carry-through)** — the agent runs `git tag -a v<X.Y.Z> -m "<headline>"` and
-   `git push origin v<X.Y.Z>` immediately after merge; the tag push lets CI open the GitHub Release
-   as a **draft**. The agent always carries the release this far — only **Publish** is the human's.
-9. **Publish** the GitHub Release — *the maintainer* (the deliberate human checkpoint).
-10. **CI builds & attaches artifacts** on the tag push.
+Versioning and the changelog are driven by **changesets** (roadmap 7.4, [ADR-0016](../adr/0016-release-pipeline-and-supply-chain.md)); publishing is a **manual dispatch**.
 
+1. **Record intent as you go** — every PR with a user-visible change runs `pnpm changeset` and
+   commits the generated file. This replaces hand-bumping the version constant.
+2. **The Version PR opens itself** — on push to `main`, `release-version.yml` opens or updates
+   *chore(release): version packages*, applying the accumulated changesets. Its
+   `changeset:version` step also runs `tools/sync-version.mjs`, which propagates the new
+   `package.json` version into `version.js` and the README badge (changesets does not touch
+   them, and the consistency lint does not read `package.json` — see ADR-0016).
+3. **Write the prose** — add `docs/changelog/v<MAJOR>/v<X.Y.Z>.md` and
+   `docs/releases/v<X.Y.Z>.md`. These are deliberately not generated: they need words.
+4. **Run the gates** — `python tools/consistency_lint.py` and `node tools/sync-version.mjs
+   --check` must both pass.
+5. **Merge the Version PR** — *the maintainer*. Merging does **not** publish anything.
+6. **Tag** — the agent runs `git tag -a v<X.Y.Z>` and pushes it; `release.yml` drafts the
+   GitHub Release.
+7. **Publish the GitHub Release** — *the maintainer*.
+8. **Publish to npm** — *the maintainer*, via the **publish** workflow (`workflow_dispatch`).
+   Run it once with `dry-run` left **checked** to see exactly what would ship, then re-run with
+   it unchecked.
+
+## One-time npm setup (before the first publish)
+
+The publish workflow uses **npm trusted publishing (OIDC)**, so there is deliberately **no
+`NPM_TOKEN` secret** to create — nothing to leak or rotate ([ADR-0016](../adr/0016-release-pipeline-and-supply-chain.md)).
+On npmjs.com, configure a trusted publisher for `egl-utils-js`:
+
+| Field | Value |
+|---|---|
+| Repository | `danielPoloWork/egl-utils-js` |
+| Workflow | `.github/workflows/publish.yml` |
+
+Provenance additionally requires the `repository` field in `package.json` to match that
+repository **case-sensitively** — it does.
+
+Optional hardening worth doing: add a GitHub **environment** with required reviewers and attach
+it to the publish job, so a second person approves before the registry is touched.
 
 ## Boundary
 
 | Action | Who |
 |---|---|
-| Bump version, roll changelog, draft notes | Agent |
+| Record changesets, write changelog/notes prose | Agent |
+| Bump the version (applied by the Version PR) | CI + **human merge** |
 | Open / merge the release PR | **Human** |
 | Create & push the annotated tag, then the **draft** release (CI drafts it on tag-push) | Agent |
 | Publish the GitHub Release (click **Publish**) | **Human** |
+| Publish to npm (dispatch the **publish** workflow) | **Human** |
 | Build & attach artifacts | CI |
 
 
