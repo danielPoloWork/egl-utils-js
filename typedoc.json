@@ -1,0 +1,27 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "src/main/javascript/it/d4np/utils/index.js",
+    "src/main/javascript/it/d4np/utils/storage.js",
+    "src/main/javascript/it/d4np/utils/sanitize.js",
+    "src/main/javascript/it/d4np/utils/errors.js"
+  ],
+  "tsconfig": "tsconfig.json",
+  "out": "docs/api",
+  "name": "egl-utils-js",
+  "readme": "none",
+  "excludeInternal": true,
+  "treatWarningsAsErrors": true,
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": false
+  },
+  "intentionallyNotExported": [
+    "AsyncQueue",
+    "Debounced",
+    "HttpClient",
+    "MeasureResult",
+    "RetryAttempt"
+  ]
+}

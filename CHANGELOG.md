@@ -205,6 +205,18 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- Documentation pass (roadmap 7.5): a generated **API reference** now builds via
+  [TypeDoc](https://typedoc.org) from the existing JSDoc comments (`pnpm docs:api`,
+  `typedoc.json`), gated warning-free in CI (`treatWarningsAsErrors`) so an unresolved or
+  undocumented public symbol fails the build rather than shipping silently broken docs.
+  `README.md` gains a full **Usage** section with a runnable example for every exported
+  function across the root entry and the `/storage`, `/sanitize`, and `/errors` subpaths.
+  `SECURITY.md` gains a **`sanitizeHtml` non-goals** section (CSS sanitization, URL/link
+  safety, downstream attribute-position templating, streaming, DOM availability in Node,
+  DOMPurify version currency) consolidating what was previously scattered across ADR-0012
+  and inline JSDoc, so operators can find the security boundary of the sanitizer in one
+  place without reading the source.
+
 - Release pipeline wired (roadmap 7.4, ADR-0016): **changesets** for versioning and changelog,
   and npm publishing with provenance via **trusted publishing (OIDC)** — verified against npm's
   requirements (npm >= 9.5, `id-token: write`, GitHub-hosted runner, `--access public` first

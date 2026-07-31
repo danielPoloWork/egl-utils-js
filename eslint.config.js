@@ -9,7 +9,7 @@ import prettierConfig from 'eslint-config-prettier';
 export default [
   {
     // Generated, vendored, or build output — never linted.
-    ignores: ['dist/**', 'coverage/**', '.eados-core/**'],
+    ignores: ['dist/**', 'coverage/**', 'docs/api/**', '.eados-core/**'],
   },
   js.configs.recommended,
   {

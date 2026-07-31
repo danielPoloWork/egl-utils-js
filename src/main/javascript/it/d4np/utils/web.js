@@ -123,7 +123,7 @@ async function parseBody(response) {
  * Facade — docs/patterns).
  *
  * - **Timeouts**: every request runs under the library's own
- *   {@link module:egl-utils-js/async~timeout} combinator — the default
+ *   {@link timeout} combinator — the default
  *   (30 000 ms) or per-request budget is merged with the caller's `signal`,
  *   the underlying fetch receives the merged signal (it genuinely stops), and
  *   expiry rejects with `TimeoutError` / caller cancellation with

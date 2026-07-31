@@ -62,3 +62,6 @@ htmlcov/
 # NFR-04 benchmark run output (roadmap 7.2) — the committed artifact is
 # docs/benchmarks/baseline.json, not the raw per-run report.
 /bench-results.json
+
+# Generated API reference (roadmap 7.5) — built by `pnpm docs:api`, never committed.
+/docs/api/

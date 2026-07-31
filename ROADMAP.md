@@ -118,7 +118,7 @@ NFR enforcement at full strength and the first public release
 - [x] 7.2 nightly benchmark regression workflow (> 10% fail) _(route: standard/medium)_
 - [x] 7.3 size-limit budgets tightened to final numbers (NFR-01) + shakeability scenario builds (NFR-02) _(route: standard/medium)_
 - [x] 7.4 changesets release pipeline; npm publish --provenance from CI OIDC; lockfile-only + npm audit supply-chain gates _(route: frontier-reasoning/high — security: supply-chain and provenance surface)_
-- [ ] 7.5 documentation pass: JSDoc API reference, README examples, sanitize non-goals in SECURITY.md _(route: fast/medium)_
+- [x] 7.5 documentation pass: JSDoc API reference, README examples, sanitize non-goals in SECURITY.md _(route: fast/medium)_
 - [ ] 7.6 v0.1.0 release readiness review _(route: standard/high — verification review; the release decision itself stays with the owner)_
 
 
