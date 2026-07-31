@@ -49,7 +49,7 @@ jobs:
         run: pnpm bench --reporter=verbose > benchmark-run.txt 2>&1 || true
       - name: Upload the benchmark output
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: benchmark-nightly-${{ github.run_number }}
           path: benchmark-run.txt
