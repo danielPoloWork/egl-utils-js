@@ -28,3 +28,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0010](0010-storage-in-memory-fallback-contract.md) | Storage wrappers — silent in-memory fallback, quota as StorageError | Accepted |
 | [0011](0011-cookie-helper-security-defaults.md) | cookieHelper — secure-by-default attributes, encoded values, no HttpOnly claim | Accepted |
 | [0012](0012-sanitize-default-profile.md) | The curated sanitize profile — deny-by-default, and how DOMPurify is reached | Accepted |
+| [0013](0013-benchmark-fair-comparison-methodology.md) | Benchmark methodology — what counts as a fair comparison, and what we refuse to compare | Accepted |

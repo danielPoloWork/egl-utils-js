@@ -398,15 +398,19 @@ export function groupBy(array, iteratee) {
   }
   /** @type {Map<K, T[]>} */
   const groups = new Map();
-  array.forEach((item, index) => {
+  // Indexed loop rather than `forEach`: the callback-per-element cost is
+  // measurable against lodash on 1000-item inputs (NFR-04, roadmap 7.1) and
+  // buys nothing here.
+  for (let index = 0; index < array.length; index += 1) {
+    const item = array[index];
     const key = iteratee(item, index);
     const group = groups.get(key);
-    if (group) {
-      group.push(item);
-    } else {
+    if (group === undefined) {
       groups.set(key, [item]);
+    } else {
+      group.push(item);
     }
-  });
+  }
   return groups;
 }
 
@@ -438,21 +442,35 @@ export function uniq(array, iteratee) {
   if (iteratee !== undefined && typeof iteratee !== 'function') {
     throw new TypeError('uniq requires iteratee to be a function when given');
   }
-  const defaultIteratee = /** @type {(item: T, index: number) => K} */ (
-    /** @type {(item: T) => unknown} */ ((item) => item)
-  );
-  const identify = iteratee ?? defaultIteratee;
   /** @type {Set<K>} */
   const seen = new Set();
   /** @type {T[]} */
   const result = [];
-  array.forEach((item, index) => {
-    const key = identify(item, index);
+  // Two deliberate shapes here, both for NFR-04 (roadmap 7.1) and neither
+  // changing behaviour: an indexed loop instead of `forEach`, and — in the
+  // common no-iteratee case — comparing the element itself rather than routing
+  // every element through an identity function. `Set` gives SameValueZero for
+  // free, which is exactly the documented contract (`NaN` unique with itself,
+  // `+0`/`-0` equal).
+  if (iteratee === undefined) {
+    for (let index = 0; index < array.length; index += 1) {
+      const item = array[index];
+      const key = /** @type {K} */ (/** @type {unknown} */ (item));
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push(item);
+      }
+    }
+    return result;
+  }
+  for (let index = 0; index < array.length; index += 1) {
+    const item = array[index];
+    const key = iteratee(item, index);
     if (!seen.has(key)) {
       seen.add(key);
       result.push(item);
     }
-  });
+  }
   return result;
 }
 

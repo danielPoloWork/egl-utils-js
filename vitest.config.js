@@ -13,6 +13,13 @@ export default defineConfig({
     // for slow code — the ReDoS/timing gate (NFR-05) lives separately and
     // un-instrumented in *.redos.test.js.
     testTimeout: 20_000,
+    // NFR-04 parity benchmarks (roadmap 7.1, methodology in ADR-0013). Kept
+    // to their own tree so `vitest run` and `vitest bench` never see each
+    // other's files, and scoped explicitly rather than relying on the default
+    // glob (which would also scan node_modules).
+    benchmark: {
+      include: ['src/bench/javascript/it/d4np/utils/**/*.bench.js'],
+    },
     // Leak/handle detection — the profile's "sanitizer" equivalent for a
     // single-threaded runtime (vitest --detectOpenHandles equivalent).
     dangerouslyIgnoreUnhandledErrors: false,
