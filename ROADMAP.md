@@ -130,7 +130,7 @@ Filed by the roadmap 7.6 release-readiness review rather than folded into it (AG
 out-of-scope findings become roadmap items in the same PR).
 
 - [x] 8.1 Verify the Safari 15.4 API floor mechanically — a browserslist-driven check or an explicit supported-API inventory, so a Safari-15.4-only regression cannot pass unnoticed again (the review found `AbortSignal.timeout`, Safari 16.0, used against a declared 15.4 floor; Playwright's WebKit is far newer than 15.4 and could never have caught it) _(route: standard/high — the gap is a verification blind spot, not a coding task)_
-- [ ] 8.2 Decide whether `VERSION` belongs on the public root surface before 1.0 — it is exported from `version.js` but not re-exported from the root, which matches spec §5 yet leaves consumers unable to read the version at runtime _(route: fast/low — a small API decision)_
+- [x] 8.2 Decide whether `VERSION` belongs on the public root surface before 1.0 — it is exported from `version.js` but not re-exported from the root, which matches spec §5 yet leaves consumers unable to read the version at runtime _(route: fast/low — a small API decision)_ — decided: yes, re-exported as a meta export outside the 25 numbered functional items (ADR-0018)
 
 
 

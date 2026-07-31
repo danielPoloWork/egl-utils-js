@@ -33,3 +33,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0015](0015-final-size-budgets-and-the-httpclient-exception.md) | Final size budgets, and the one per-function budget composition cannot meet | Accepted |
 | [0016](0016-release-pipeline-and-supply-chain.md) | Release pipeline — trusted publishing, a manual trigger, and one documented advisory | Accepted |
 | [0017](0017-platform-api-floor-gate.md) | Verifying the platform-API floor — BCD data plus a deny-by-default inventory | Accepted |
+| [0018](0018-version-on-the-root-surface.md) | Re-export `VERSION` from the root entry | Accepted |

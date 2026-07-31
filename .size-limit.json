@@ -1,6 +1,6 @@
 [
   {
-    "name": "root \u00e2\u20ac\u201d full import (NFR-01: measured 5036 B)",
+    "name": "root \u00e2\u20ac\u201d full import (NFR-01: measured 5104 B)",
     "path": "dist/esm/index.js",
     "limit": "5.35 kB"
   },
@@ -149,6 +149,12 @@
     "name": "single: parseDuration (NFR-01 <= 1 kB / NFR-02)",
     "path": "dist/esm/index.js",
     "import": "{ parseDuration }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: VERSION (NFR-01 <= 1 kB / NFR-02)",
+    "path": "dist/esm/index.js",
+    "import": "{ VERSION }",
     "limit": "1 kB"
   },
   {

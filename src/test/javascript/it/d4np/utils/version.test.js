@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { VERSION } from '../../../../../main/javascript/it/d4np/utils/version.js';
+import { VERSION as rootVersion } from '../../../../../main/javascript/it/d4np/utils/index.js';
 import pkg from '../../../../../../package.json';
 
 describe('version constant', () => {
@@ -9,5 +10,9 @@ describe('version constant', () => {
 
   it('is a plain X.Y.Z SemVer string', () => {
     expect(VERSION).toMatch(/^\d+\.\d+\.\d+$/);
+  });
+
+  it('is re-exported from the root entry (ROADMAP 8.2, ADR-0018)', () => {
+    expect(rootVersion).toBe(VERSION);
   });
 });

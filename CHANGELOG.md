@@ -202,6 +202,9 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   NFR-01 values, `agadoo` (tree-shakeability, NFR-02), and a zero-runtime-dependency assertion
   (NFR-06, `tools/assert-no-runtime-deps.mjs`). Per-function budgets and the final tightening
   land with roadmap 7.3.
+- `VERSION` is now re-exported from the root entry (roadmap 8.2, ADR-0018): a meta export,
+  outside the 25 numbered functional items, letting consumers read the running version at
+  runtime. Root named-export count moves from 31 to 32.
 
 ### Changed
 
