@@ -1,0 +1,56 @@
+name: benchmark-nightly
+
+# NFR-04 regression gate (roadmap 7.2, design in ADR-0014).
+#
+# Deliberately NOT part of the per-PR workflow. The gate aggregates several
+# benchmark passes to get a robust median, which takes minutes, and a shared CI
+# runner's variance means an occasional red build here is informational rather
+# than blocking. Per-PR checks stay fast; this runs on a schedule and can be
+# triggered by hand when a change is expected to move performance.
+
+on:
+  schedule:
+    # 03:17 UTC — off the hour, so this does not contend with the flood of jobs
+    # every other project schedules at :00.
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  regression:
+    name: benchmark / NFR-04 regression gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        # One Node version, matching the `benchmark` job in ci.yml: baselines
+        # are only comparable when the runtime is held constant.
+        with:
+          node-version: '20'
+          cache: pnpm
+      - name: Install dependencies
+        # --frozen-lockfile matters here beyond hygiene: the NFR-04 baselines
+        # (lodash, p-limit, p-retry) are pinned exactly, and a resolved
+        # different version would invalidate every stored ratio.
+        run: pnpm install --frozen-lockfile
+      - name: Compare against the stored baseline (fails on a > 10% regression)
+        run: pnpm bench:check
+      - name: Record the run for inspection
+        if: always()
+        run: pnpm bench --reporter=verbose > benchmark-run.txt 2>&1 || true
+      - name: Upload the benchmark output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-nightly-${{ github.run_number }}
+          path: benchmark-run.txt
+          retention-days: 30

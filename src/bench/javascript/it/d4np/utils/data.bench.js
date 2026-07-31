@@ -1,4 +1,5 @@
 import { bench, describe } from 'vitest';
+import { BENCH_OPTIONS } from './options.js';
 import lodash from 'lodash';
 import {
   deepClone,
@@ -30,13 +31,21 @@ describe('deepClone vs lodash.cloneDeep', () => {
   // only one of the two can clone. Note the mechanisms differ — ours delegates
   // to native structuredClone (and supports cycles, Map/Set, typed arrays),
   // lodash walks in JS. Different capability sets, comparable on the overlap.
-  bench('egl deepClone', () => {
-    deepClone(NESTED_OBJECT);
-  });
+  bench(
+    'egl deepClone',
+    () => {
+      deepClone(NESTED_OBJECT);
+    },
+    BENCH_OPTIONS,
+  );
 
-  bench('lodash cloneDeep', () => {
-    lodash.cloneDeep(NESTED_OBJECT);
-  });
+  bench(
+    'lodash cloneDeep',
+    () => {
+      lodash.cloneDeep(NESTED_OBJECT);
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('deepMerge vs lodash.merge — array-free input (the like-for-like number)', () => {
@@ -49,13 +58,21 @@ describe('deepMerge vs lodash.merge — array-free input (the like-for-like numb
   //  2. The input contains NO ARRAYS. Ours replaces arrays wholesale while
   //     lodash merges them element-wise, so an array in the input makes the two
   //     perform different amounts of work and the ratio stops measuring speed.
-  bench('egl deepMerge (returns a new object)', () => {
-    deepMerge(ARRAY_FREE_TARGET, ARRAY_FREE_SOURCE);
-  });
+  bench(
+    'egl deepMerge (returns a new object)',
+    () => {
+      deepMerge(ARRAY_FREE_TARGET, ARRAY_FREE_SOURCE);
+    },
+    BENCH_OPTIONS,
+  );
 
-  bench('lodash merge({}, a, b) (non-mutating idiom)', () => {
-    lodash.merge({}, ARRAY_FREE_TARGET, ARRAY_FREE_SOURCE);
-  });
+  bench(
+    'lodash merge({}, a, b) (non-mutating idiom)',
+    () => {
+      lodash.merge({}, ARRAY_FREE_TARGET, ARRAY_FREE_SOURCE);
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('deepMerge vs lodash.merge — array-heavy input (NOT a parity claim)', () => {
@@ -65,36 +82,60 @@ describe('deepMerge vs lodash.merge — array-heavy input (NOT a parity claim)',
   // resulting number (two orders of magnitude) must never be quoted as a
   // performance claim — it is the cost of doing different work, and it is
   // recorded only so the regression gate (roadmap 7.2) can watch our side.
-  bench('egl deepMerge (replaces arrays)', () => {
-    deepMerge(NESTED_OBJECT, MERGE_SOURCE);
-  });
+  bench(
+    'egl deepMerge (replaces arrays)',
+    () => {
+      deepMerge(NESTED_OBJECT, MERGE_SOURCE);
+    },
+    BENCH_OPTIONS,
+  );
 
-  bench('lodash merge (merges arrays element-wise)', () => {
-    lodash.merge({}, NESTED_OBJECT, MERGE_SOURCE);
-  });
+  bench(
+    'lodash merge (merges arrays element-wise)',
+    () => {
+      lodash.merge({}, NESTED_OBJECT, MERGE_SOURCE);
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('pick vs lodash.pick', () => {
-  bench('egl pick', () => {
-    pick(WIDE_OBJECT, PICK_KEYS);
-  });
+  bench(
+    'egl pick',
+    () => {
+      pick(WIDE_OBJECT, PICK_KEYS);
+    },
+    BENCH_OPTIONS,
+  );
 
-  bench('lodash pick', () => {
-    lodash.pick(WIDE_OBJECT, PICK_KEYS);
-  });
+  bench(
+    'lodash pick',
+    () => {
+      lodash.pick(WIDE_OBJECT, PICK_KEYS);
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('omit vs lodash.omit', () => {
   // DISCLOSURE: lodash.omit accepts deep paths and clones more aggressively;
   // ours is an own-enumerable-key filter. Any win here is partly a difference
   // in feature surface, not purely in efficiency.
-  bench('egl omit', () => {
-    omit(WIDE_OBJECT, PICK_KEYS);
-  });
+  bench(
+    'egl omit',
+    () => {
+      omit(WIDE_OBJECT, PICK_KEYS);
+    },
+    BENCH_OPTIONS,
+  );
 
-  bench('lodash omit', () => {
-    lodash.omit(WIDE_OBJECT, PICK_KEYS);
-  });
+  bench(
+    'lodash omit',
+    () => {
+      lodash.omit(WIDE_OBJECT, PICK_KEYS);
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('groupBy vs lodash.groupBy', () => {
@@ -102,33 +143,57 @@ describe('groupBy vs lodash.groupBy', () => {
   // deliberate safety choice (an arbitrary key such as '__proto__' is just a
   // key in a Map), and Map.set has a different cost profile from property
   // assignment. The comparison is still the one a caller faces when choosing.
-  bench('egl groupBy (-> Map)', () => {
-    groupBy(RECORDS, (record) => record.group);
-  });
+  bench(
+    'egl groupBy (-> Map)',
+    () => {
+      groupBy(RECORDS, (record) => record.group);
+    },
+    BENCH_OPTIONS,
+  );
 
-  bench('lodash groupBy (-> object)', () => {
-    lodash.groupBy(RECORDS, (record) => record.group);
-  });
+  bench(
+    'lodash groupBy (-> object)',
+    () => {
+      lodash.groupBy(RECORDS, (record) => record.group);
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('uniq vs lodash.uniq', () => {
-  bench('egl uniq', () => {
-    uniq(DUPLICATED_NUMBERS);
-  });
+  bench(
+    'egl uniq',
+    () => {
+      uniq(DUPLICATED_NUMBERS);
+    },
+    BENCH_OPTIONS,
+  );
 
-  bench('lodash uniq', () => {
-    lodash.uniq(DUPLICATED_NUMBERS);
-  });
+  bench(
+    'lodash uniq',
+    () => {
+      lodash.uniq(DUPLICATED_NUMBERS);
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('uniq with iteratee vs lodash.uniqBy', () => {
   // Ours folds the iteratee into `uniq`; lodash splits it into `uniqBy`. The
   // like-for-like baseline is therefore uniqBy, not uniq.
-  bench('egl uniq(array, iteratee)', () => {
-    uniq(RECORDS, (record) => record.group);
-  });
+  bench(
+    'egl uniq(array, iteratee)',
+    () => {
+      uniq(RECORDS, (record) => record.group);
+    },
+    BENCH_OPTIONS,
+  );
 
-  bench('lodash uniqBy', () => {
-    lodash.uniqBy(RECORDS, (record) => record.group);
-  });
+  bench(
+    'lodash uniqBy',
+    () => {
+      lodash.uniqBy(RECORDS, (record) => record.group);
+    },
+    BENCH_OPTIONS,
+  );
 });

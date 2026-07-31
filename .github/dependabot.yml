@@ -49,3 +49,12 @@ updates:
       # the /sanitize test suites (roadmap 6.3). See ADR-0012.
       - dependency-name: "jsdom"
         update-types: ["version-update:semver-major"]
+      # NFR-04 benchmark baselines (ADR-0013). These are pinned EXACTLY on
+      # purpose: the nightly regression gate compares against them, so a
+      # baseline that moves on its own invalidates every stored measurement.
+      # Changing one is a deliberate re-baselining decision (regenerate
+      # docs/benchmarks/baseline.json in the same PR), never a routine merge.
+      # p-limit >= 7 and p-retry >= 7 additionally drop the Node 18 floor.
+      - dependency-name: "lodash"
+      - dependency-name: "p-limit"
+      - dependency-name: "p-retry"

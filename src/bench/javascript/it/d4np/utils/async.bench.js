@@ -1,4 +1,5 @@
 import { bench, describe } from 'vitest';
+import { BENCH_OPTIONS } from './options.js';
 import pLimit from 'p-limit';
 import pRetry from 'p-retry';
 import { retry, parallelLimit } from '../../../../../main/javascript/it/d4np/utils/index.js';
@@ -50,25 +51,41 @@ function failingTask(failures) {
 }
 
 describe('retry — immediate success (pure overhead, no timers involved)', () => {
-  bench('egl retry', async () => {
-    await retry(async () => 'ok', EGL_NO_BACKOFF);
-  });
+  bench(
+    'egl retry',
+    async () => {
+      await retry(async () => 'ok', EGL_NO_BACKOFF);
+    },
+    BENCH_OPTIONS,
+  );
 
-  bench('p-retry', async () => {
-    await pRetry(async () => 'ok', P_RETRY_NO_BACKOFF);
-  });
+  bench(
+    'p-retry',
+    async () => {
+      await pRetry(async () => 'ok', P_RETRY_NO_BACKOFF);
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('retry — two transient failures, zero backoff (orchestration overhead)', () => {
   // Even at zero delay this path crosses at least one timer boundary per
   // attempt, so it measures scheduling plus bookkeeping, not raw CPU.
-  bench('egl retry', async () => {
-    await retry(failingTask(2), EGL_NO_BACKOFF);
-  });
+  bench(
+    'egl retry',
+    async () => {
+      await retry(failingTask(2), EGL_NO_BACKOFF);
+    },
+    BENCH_OPTIONS,
+  );
 
-  bench('p-retry', async () => {
-    await pRetry(failingTask(2), P_RETRY_NO_BACKOFF);
-  });
+  bench(
+    'p-retry',
+    async () => {
+      await pRetry(failingTask(2), P_RETRY_NO_BACKOFF);
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('parallelLimit vs p-limit — 100 immediate tasks, concurrency 4', () => {
@@ -79,31 +96,51 @@ describe('parallelLimit vs p-limit — 100 immediate tasks, concurrency 4', () =
   //
   // DISCLOSURE: ours additionally preserves input order in its results and
   // arms a shared abort signal for fail-fast, work p-limit does not do.
-  bench('egl parallelLimit(tasks, 4)', async () => {
-    await parallelLimit(immediateTasks(100), 4);
-  });
+  bench(
+    'egl parallelLimit(tasks, 4)',
+    async () => {
+      await parallelLimit(immediateTasks(100), 4);
+    },
+    BENCH_OPTIONS,
+  );
 
-  bench('p-limit + Promise.all wrapper', async () => {
-    const limit = pLimit(4);
-    await Promise.all(immediateTasks(100).map((task) => limit(task)));
-  });
+  bench(
+    'p-limit + Promise.all wrapper',
+    async () => {
+      const limit = pLimit(4);
+      await Promise.all(immediateTasks(100).map((task) => limit(task)));
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('parallelLimit vs p-limit — 1000 immediate tasks, concurrency 16', () => {
-  bench('egl parallelLimit(tasks, 16)', async () => {
-    await parallelLimit(immediateTasks(1000), 16);
-  });
+  bench(
+    'egl parallelLimit(tasks, 16)',
+    async () => {
+      await parallelLimit(immediateTasks(1000), 16);
+    },
+    BENCH_OPTIONS,
+  );
 
-  bench('p-limit + Promise.all wrapper', async () => {
-    const limit = pLimit(16);
-    await Promise.all(immediateTasks(1000).map((task) => limit(task)));
-  });
+  bench(
+    'p-limit + Promise.all wrapper',
+    async () => {
+      const limit = pLimit(16);
+      await Promise.all(immediateTasks(1000).map((task) => limit(task)));
+    },
+    BENCH_OPTIONS,
+  );
 });
 
 describe('parallelLimit settle mode — no baseline (absolute only)', () => {
   // p-limit has no settle-all equivalent, so there is no parity claim to make
   // here. Recorded as an absolute number for the regression gate (roadmap 7.2).
-  bench('egl parallelLimit(tasks, 16, { settle: true })', async () => {
-    await parallelLimit(immediateTasks(1000), 16, { settle: true });
-  });
+  bench(
+    'egl parallelLimit(tasks, 16, { settle: true })',
+    async () => {
+      await parallelLimit(immediateTasks(1000), 16, { settle: true });
+    },
+    BENCH_OPTIONS,
+  );
 });
