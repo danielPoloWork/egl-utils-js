@@ -26,6 +26,9 @@ Versioning and the changelog are driven by **changesets** (roadmap 7.4, [ADR-001
    them, and the consistency lint does not read `package.json` — see ADR-0016).
 3. **Write the prose** — add `docs/changelog/v<MAJOR>/v<X.Y.Z>.md` and
    `docs/releases/v<X.Y.Z>.md`. These are deliberately not generated: they need words.
+   `release.yml` reads `docs/releases/v<X.Y.Z>.md` as the GitHub Release body (the generated
+   "What's Changed" list is appended below it) and **fails if the file is missing**, so this
+   step cannot be silently skipped.
 4. **Run the gates** — `python tools/consistency_lint.py` and `node tools/sync-version.mjs
    --check` must both pass.
 5. **Merge the Version PR** — *the maintainer*. Merging does **not** publish anything.

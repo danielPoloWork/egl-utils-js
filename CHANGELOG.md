@@ -20,6 +20,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- `release.yml` never read `docs/releases/v<X.Y.Z>.md`, so the hand-written release notes that
+  step 3 of the release process mandates were produced and then ignored — the v0.1.0 draft came
+  out as a bare 61-entry auto-generated PR list. The workflow now passes the file as the release
+  body (the generated list is appended below it) and **fails if it is absent**, so the prose
+  cannot be skipped silently.
+
 ### Security
 
 ---
