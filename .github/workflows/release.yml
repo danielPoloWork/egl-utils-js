@@ -45,10 +45,29 @@ jobs:
         shell: bash
         run: pnpm build
 
+      # release.md step 3 mandates hand-written notes at docs/releases/v<X.Y.Z>.md.
+      # Fail loudly if they are missing rather than silently shipping only the
+      # auto-generated PR list: an absent file means the release process was
+      # skipped, which is exactly what a gate should refuse.
+      - name: Require the hand-written release notes
+        shell: bash
+        run: |
+          notes="docs/releases/${GITHUB_REF_NAME}.md"
+          if [ ! -f "$notes" ]; then
+            echo "::error::missing $notes — release.md step 3 requires it before tagging"
+            exit 1
+          fi
+          echo "using $notes"
+
       - name: Draft the release (a human publishes it)
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           draft: true
+          # The hand-written notes are the body; GitHub appends the generated
+          # "What's Changed" PR list below them. Without body_path the prose
+          # docs/releases/v<X.Y.Z>.md file was written but never consumed —
+          # the v0.1.0 draft came out as a bare 61-item PR list.
+          body_path: docs/releases/${{ github.ref_name }}.md
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
