@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.0
+
+### Minor Changes
+
+- 04bed84: First feature release: the full 25-function public surface across the root entry and the
+  `/storage`, `/sanitize`, and `/errors` subpaths — async combinators with AbortSignal-first
+  cancellation, pure data helpers, a typed event emitter with rate limiters, a fetch facade
+  with a no-token-storage auth contract, Web Crypto helpers, diagnostics, safe Web Storage
+  and cookie wrappers, and allowlist-based HTML sanitization delegating to DOMPurify.
+
+  Also fixes a portability defect found by the v0.1.0 readiness review: `timeout()` (and
+  `httpClient()`, which composes it) called `AbortSignal.timeout` unconditionally, which
+  first shipped in Safari 16.0 while NFR-07 declares Safari >= 15.4 supported. An internal
+  fallback now covers the whole supported matrix.
+
+- 4993c76: `VERSION` is now re-exported from the root entry (ROADMAP 8.2, ADR-0018), so consumers can
+  read the running package version at runtime without a separate subpath import.
+
 All notable changes to `egl-utils-js` are documented here, following
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning 2.0.0](https://semver.org/).
@@ -162,7 +180,7 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   a thin wrapper over native `structuredClone` (dates, regexes, `Map`/`Set`, typed arrays, and
   cycles ride the platform) that adds diagnostics — on a `DataCloneError` it walks the input and
   throws `CloneError{path, valueType}` naming the offending value (e.g. `config.handlers[2] is a
-  function`), or rethrows the native error unchanged when it cannot localize the offender.
+function`), or rethrows the native error unchanged when it cannot localize the offender.
 - Property-based test suites (fast-check) for the combinator invariants (roadmap 2.6, spec §7):
   retry's attempt-count law, parallelLimit's order/concurrency-cap laws and settle-mode mapping,
   asyncQueue's FIFO/serial law, and timeout's identity/deadline laws — with explicit `numRuns`
@@ -213,7 +231,7 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   per engine and can never exercise an old Safari. `tools/check-api-floor.mjs` reads floors from
   `@mdn/browser-compat-data` (never hand-typed) and enforces an inventory of every Web platform
   API the source touches, **deny-by-default** — a newly used API fails until someone records how
-  it is reached. Guards declare *why* they exist (`version` vs secure-`context`), because an
+  it is reached. Guards declare _why_ they exist (`version` vs secure-`context`), because an
   earlier draft wrongly reported `crypto.subtle`'s secure-context guard as obsolete on version
   grounds alone. `eslint-plugin-compat` was tried first and rejected on evidence: correctly
   configured against `safari 15.4` it detected none of `AbortSignal.timeout`, `Object.groupBy`,
@@ -279,8 +297,8 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   measured, `/storage` 1.81 kB, `/sanitize` 1.55 kB, `/errors` 310 B) — safe to keep tight
   because size-limit is byte-deterministic, the opposite of the benchmark situation in ADR-0014,
   and verified non-vacuous (a budget 1 B under the measured size fails with "exceeded by 6 B").
-  NFR-01's **per-function clause is measured for the first time**: 23 size-limit *scenario
-  builds* import one named export each and gate it at 1 kB, which is simultaneously NFR-02's
+  NFR-01's **per-function clause is measured for the first time**: 23 size-limit _scenario
+  builds_ import one named export each and gate it at 1 kB, which is simultaneously NFR-02's
   missing mechanism — a function pulling in unrelated modules could not fit. Measured range:
   `isObject` 93 B to `retry` 717 B. All 27 budgets run in ~7 s inside the existing `packaging`
   job.
@@ -315,7 +333,7 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   benchmark suite (roadmap 7.1), which is what a performance NFR exists to do. Two accidental
   costs removed with **no behaviour change**: `Array.prototype.forEach` with a closure replaced
   by an indexed loop, and `uniq` no longer routes every element through an identity function when
-  no iteratee was supplied. Both are now 1.4–1.5× *faster* than their lodash counterparts; all
+  no iteratee was supplied. Both are now 1.4–1.5× _faster_ than their lodash counterparts; all
   594 tests and 100% coverage held across the change.
 
 - Sanitize bypass corpus wired as a two-layer gate (roadmap 6.5, spec §6, ADR-003): 46 curated
@@ -323,11 +341,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   and namespace confusion, `noscript`/`xmp`/`listing`/`plaintext`/`template` parsing divergences,
   comment-boundary re-parse, obfuscated `javascript:`/`data:` URIs, `srcdoc`/`formaction`/`srcset`
   carriers, `base`/`meta`/`link` hijacks, DOM clobbering, and CSS exfiltration. Each payload is
-  asserted **structurally inert** (the gate, which cannot be auto-updated) *and* recorded in a
+  asserted **structurally inert** (the gate, which cannot be auto-updated) _and_ recorded in a
   committed snapshot (documentation, so a DOMPurify range bump or a profile edit surfaces as a
   reviewable diff rather than a silent behaviour change). The corpus additionally runs in
   **Chromium, Firefox and WebKit** with `window.alert` instrumented, because mXSS is a
-  serialize-then-reparse divergence and therefore a property *of a specific parser* — jsdom's is
+  serialize-then-reparse divergence and therefore a property _of a specific parser_ — jsdom's is
   not a browser's. Both layers ship a non-vacuity control that fails if the detector stops
   detecting. DOMPurify does not publish its fixtures on npm, so the corpus is curated from
   published research classes rather than imported, and says so.
