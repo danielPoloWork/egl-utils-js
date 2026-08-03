@@ -171,6 +171,18 @@ parseDuration('1h30m'); // -> 5_400_000 (ms). Strict grammar: h > m > s, each at
 parseDuration('30m1h'); //    throws DurationParseError (out of order), never returns NaN
 ```
 
+### Package version (`egl-utils-js`)
+
+`VERSION` is a meta export, outside the 25 numbered functional items — kept in lockstep
+with `package.json` (ROADMAP 8.2, ADR-0018), for consumers that need the version at
+runtime (diagnostics, telemetry, support requests).
+
+```js
+import { VERSION } from 'egl-utils-js';
+
+VERSION; // -> '0.1.0'
+```
+
 ### Errors (`egl-utils-js/errors`)
 
 One base class, one stable `.code` per subtype — check identity via `.code`, never

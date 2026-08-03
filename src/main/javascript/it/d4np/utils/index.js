@@ -50,3 +50,7 @@ export { uuid, hashString } from './crypto.js';
 
 // Diagnostics utilities (spec §2 items 20, 25).
 export { measure, parseDuration } from './diagnostics.js';
+
+// Package version constant (ROADMAP 8.2, ADR-0018) — a meta export outside the
+// 25 numbered functional items, kept in lockstep with package.json.
+export { VERSION } from './version.js';
