@@ -13,8 +13,10 @@ At the close of a state-changing session, the agent:
 
 ## Index
 
-_No checkpoints yet._
-
 ### 2026
 
 _(newest first)_
+
+#### August
+
+- [2026-08-05 — Utility wave planning (spec 02, M9–M10)](2026/08/2026-08-05-utility-wave-planning.md)

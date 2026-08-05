@@ -5,7 +5,8 @@ flip its checkbox (`- [ ]` → `- [x]`) **in the same PR**. New work goes at the
 its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
-- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint: _none yet_.
+- **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
+  [`2026-08-05 — utility wave planning`](docs/journal/2026/08/2026-08-05-utility-wave-planning.md).
 
 ## Model & effort routing
 
@@ -136,11 +137,38 @@ out-of-scope findings become roadmap items in the same PR).
 
 ---
 
+## Milestone 9 — Text, net & query utilities
+
+Pure, universal utilities on Node-safe entries (spec 02 §2, F26–F39): zero DOM, zero new
+platform APIs, testable from day one. Spec: [`docs/specs/02_spec_core_extensions.md`](docs/specs/02_spec_core_extensions.md).
+
+- [ ] 9.1 `/text` subpath: truncate, wrapText, fixedWidth string helpers (spec 02 F26–F28) _(route: standard/medium)_
+- [ ] 9.2 `/net` subpath: strict IPv4 parse/format/validate, sortable fixed-width key codec, CIDR prefix → subnet mask (spec 02 F29–F32) _(route: standard/high — security: address parsing is input validation)_
+- [ ] 9.3 `/table` subpath, query primitives: filter-expression compiler with pluggable operators, typed comparators (Intl.Collator collation, auto type detection, empties-last), paginate (spec 02 F33–F35) _(route: frontier-reasoning/high — sets-pattern + decision-heavy: the query contract the spec-03 table pipeline builds on)_
+- [ ] 9.4 diagnostics: formatDuration (parseDuration round-trip) + normalizeError (any thrown value → uniform diagnostic record) (spec 02 F36–F37) _(route: standard/medium)_
+- [ ] 9.5 storage: pageSessionId — per-tab stable id on the storage-wrapper contract with private-mode fallback (spec 02 F39) _(route: standard/medium)_
+- [ ] 9.6 web: createResource — repository factory over an injected httpClient-compatible transport (spec 02 F38) _(route: standard/high — sets-pattern: the repository contract)_
+
+
+---
+
+## Milestone 10 — Structured logging
+
+Level-thresholded logger with a pure formatter and a pluggable sink contract on a
+`/logging` subpath (spec 02 §2, F40–F41).
+
+- [ ] 10.1 `/logging` subpath: logger factory (level threshold, child contexts, injected clock/sink/format/id), formatLogLine, formatTimestamp, LOG_LEVELS; throwing sinks contained; CRLF-hardened lines (spec 02 F40–F41) _(route: frontier-reasoning/high — sets-pattern: the sink/formatter contract every future adapter copies)_
+
+
+---
+
 ## Spec Coverage Map
 
 Tracks which spec section is fulfilled by which roadmap item(s). Every spec section has a
 row with at least one fulfilling item and a status glyph. Legend: ⏳ not started · 🚧 in
 progress · ✅ done · ❎ N/A.
+
+### Spec 01 — core utils (F1–F25, frozen)
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
@@ -150,3 +178,14 @@ progress · ✅ done · ❎ N/A.
 | §4 | Logical architecture | 1.1, 7.6 | ✅ |
 | §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 7.6 | ✅ |
 | §6 | Verification & test strategy | 1.2, 1.4, 2.6, 4.4, 5.6, 6.4, 6.5, 7.1, 7.2, 7.6, 8.1 | ✅ |
+
+### Spec 02 — core extensions: text, net, query & logging (F26–F41)
+
+| Spec § | Requirement | Roadmap items | Status |
+|--------|-------------|---------------|--------|
+| §1 (02) | Objective & business context | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ⏳ |
+| §2 (02) | Functional requirements F26–F41 | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ⏳ |
+| §3 (02) | Non-functional requirements | 9.1, 9.2, 9.3, 9.5, 9.6, 10.1 | ⏳ |
+| §4 (02) | Logical architecture | 9.1, 9.3, 10.1 | ⏳ |
+| §5 (02) | Public interface | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ⏳ |
+| §6 (02) | Verification & test strategy | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ⏳ |
