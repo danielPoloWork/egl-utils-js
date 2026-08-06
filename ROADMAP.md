@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-06 — delegation, setters, and an amended NFR-14`](docs/journal/2026/08/2026-08-06-dom-events-setters.md).
+  [`2026-08-06 — the sanitize decision, and M11 complete`](docs/journal/2026/08/2026-08-06-dom-inject-fragment.md).
 
 ## Model & effort routing
 
@@ -169,7 +169,7 @@ F43–F48). Spec: [`docs/specs/03_spec_dom_ui_table.md`](docs/specs/03_spec_dom_
 
 - [x] 11.1 `/dom` subpath foundation: entry wiring, `bindElements` with a missing-element report and a `strict` mode, `DomContractError` on `egl-utils-js/errors`, and the deny-by-default api-floor scanner extended to policed DOM globals (spec 03 F43, NFR-14, NFR-16) _(route: frontier-reasoning/high — sets-pattern + security: extends the ADR-0017 gate to the DOM; the fail-fast contract every /dom export copies)_
 - [x] 11.2 `delegate` with AbortController teardown, plus the `setEnabled`/`setVisible`/`setValue` native setters (spec 03 F44–F45, NFR-15) _(route: standard/high — teardown lifecycle is classically leak-prone)_
-- [ ] 11.3 `injectFragment` with a mandatory caller-supplied sanitizer, `autoGrow` behind an injected measure seam, and `withUrlParams` (spec 03 F46–F48) _(route: frontier-reasoning/high — security: the sanitize boundary is the deliverable)_
+- [x] 11.3 `injectFragment` with a mandatory caller-supplied sanitizer, `autoGrow` behind an injected measure seam, and `withUrlParams` (spec 03 F46–F48) _(route: frontier-reasoning/high — security: the sanitize boundary is the deliverable)_
 
 
 ---

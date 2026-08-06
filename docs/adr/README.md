@@ -45,3 +45,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0027](0027-logging-formatter-sink-split.md) | A logger split into a threshold, a formatter, and a sink | Accepted |
 | [0028](0028-dom-entry-fails-fast-and-the-floor-gate-sees-the-dom.md) | The `/dom` entry fails fast, and the floor gate learns to see the DOM | Accepted |
 | [0029](0029-delegation-teardown-and-setter-symmetry.md) | Teardown as a signal, and setters that stay symmetric | Accepted |
+| [0030](0030-sanitize-is-a-required-parameter.md) | The sanitizer is a required parameter, not a default | Accepted |

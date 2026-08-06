@@ -12,11 +12,13 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   bindElements,
   delegate,
+  injectFragment,
   isElement,
   requireDocument,
   setEnabled,
   setValue,
   setVisible,
+  withUrlParams,
 } from '../../../../../main/javascript/it/d4np/utils/dom.js';
 import { DomContractError } from '../../../../../main/javascript/it/d4np/utils/errors.js';
 
@@ -126,5 +128,32 @@ describe('the /dom entry with no DOM present', () => {
 
   it('the setters still reject a wrong type rather than the environment', () => {
     expect(() => setEnabled(/** @type {never} */ ('#x'), true)).toThrow(TypeError);
+  });
+
+  it('withUrlParams is pure and SSR-safe — no document, location, or URL base', () => {
+    // It never touches the URL constructor, which is why a relative URL works.
+    expect(withUrlParams('items?page=1#top', { page: 2, tag: ['x', 'y'] })).toBe(
+      'items?page=2&tag=x&tag=y#top',
+    );
+  });
+
+  it('injectFragment works against a supplied element and an injected fetch', async () => {
+    const target = {
+      nodeType: 1,
+      querySelector: () => null,
+      innerHTML: '',
+    };
+    await injectFragment(/** @type {never} */ (target), '/f.html', {
+      sanitize: false,
+      fetch: async () => ({ ok: true, status: 200, text: async () => '<p>server</p>' }),
+    });
+    expect(target.innerHTML).toBe('<p>server</p>');
+  });
+
+  it('injectFragment still requires the sanitize decision with no DOM', async () => {
+    const target = { nodeType: 1, querySelector: () => null, innerHTML: '' };
+    await expect(injectFragment(/** @type {never} */ (target), '/f.html')).rejects.toThrow(
+      /sanitize is required/,
+    );
   });
 });

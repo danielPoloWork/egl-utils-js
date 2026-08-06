@@ -366,6 +366,33 @@ one. `setValue` dispatches **no** `input` or `change` event — a plain assignme
 either, and synthesising one could re-enter the handler that called it; dispatch explicitly
 when a listener must run.
 
+```js
+import { injectFragment, autoGrow, withUrlParams } from 'egl-utils-js/dom';
+import { sanitizeHtml } from 'egl-utils-js/sanitize';
+
+// `sanitize` is REQUIRED and has no default (ADR-0030). A sanitizing default would drag
+// the DOMPurify optional peer into every /dom import; a non-sanitizing one would make the
+// dangerous choice the quiet one. So the decision is yours, in code, and greppable:
+await injectFragment(host, '/partials/menu.html', { sanitize: sanitizeHtml });
+await injectFragment(host, '/dist/shell.html', { sanitize: false }); // trusted, and it SAYS so
+
+// Add to the target instead of replacing it: `insertAdjacentHTML`, so existing nodes and
+// their listeners survive (`innerHTML +=` would re-parse and destroy them).
+await injectFragment(list, '/partials/next-page.html', {
+  sanitize: sanitizeHtml,
+  position: 'beforeend',
+});
+// A non-2xx rejects with HttpError{status, body} and every error propagates — no dialog,
+// nothing swallowed — so a shell assembled from several fragments can be trusted or blamed.
+
+const detach = autoGrow(elements.comment, { maxRows: 8 }); // grows AND shrinks: the inline
+detach(); //  height is released before measuring, and detach restores the original styles
+
+withUrlParams('/api/items?page=1', { page: 2, tag: ['x', 'y'] });
+// '/api/items?page=2&tag=x&tag=y' — one `?`, ever. Pure, SSR-safe, works on relative URLs.
+withUrlParams('/docs#section', { v: buildId }); // '/docs?v=abc#section' — fragment kept last
+```
+
 ### Structured logging (`egl-utils-js/logging`)
 
 One threshold instead of a flag per severity, and every seam injected: destination
@@ -498,7 +525,7 @@ deliberately does not cover.
 | 8 | Post-0.1.0 follow-ups | ✅ done |
 | 9 | Text, net & query utilities | ✅ done |
 | 10 | Structured logging | ✅ done |
-| 11 | DOM foundation | ⏳ planned |
+| 11 | DOM foundation | ✅ done |
 | 12 | UI components | ⏳ planned |
 | 13 | Composable table pipeline | ⏳ planned |
 
