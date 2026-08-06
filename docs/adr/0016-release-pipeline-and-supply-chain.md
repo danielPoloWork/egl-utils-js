@@ -65,6 +65,14 @@ minimatch > brace-expansion`). It is excepted via `pnpm.auditConfig.ignoreGhsas`
 anything else still fails** (verified: at `--audit-level low` the remaining low advisory still
 exits 1, proving the exception is scoped and not a blanket suppression).
 
+> **Amended 2026-08-06 by [ADR-0026](0026-brace-expansion-override-replaces-the-audit-exception.md).**
+> The "it cannot be fixed here" finding below no longer holds. `test-exclude@7` has since
+> moved to `minimatch@10`, so the tree carries a **v5** `brace-expansion` — and a
+> **range-scoped** override (`brace-expansion@>=4.0.0 <5.0.9`) lifts exactly that instance
+> without touching the v1/v2 consumers whose export shape broke the unscoped attempt
+> described below. With the override in place no `brace-expansion` advisory remains at any
+> severity, so `ignoreGhsas` is now **empty**: this exception is retired.
+
 The exception is justified, not convenient:
 
 - **It cannot be fixed here.** The patch line is `brace-expansion >= 5.0.8`, and v5 changed its
