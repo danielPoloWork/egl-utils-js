@@ -26,6 +26,8 @@
     "AsyncQueue",
     "BindElementsOptions",
     "BoundElements",
+    "DelegateOptions",
+    "SetVisibleOptions",
     "Debounced",
     "ErrorRecord",
     "HttpClient",

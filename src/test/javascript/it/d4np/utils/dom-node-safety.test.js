@@ -8,11 +8,15 @@
 // switch of the project default cannot silently turn this suite into a second
 // jsdom run that proves nothing. (Naming the *other* environment in prose here
 // would also re-declare it — vitest reads the pragma out of any comment.)
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   bindElements,
+  delegate,
   isElement,
   requireDocument,
+  setEnabled,
+  setValue,
+  setVisible,
 } from '../../../../../main/javascript/it/d4np/utils/dom.js';
 import { DomContractError } from '../../../../../main/javascript/it/d4np/utils/errors.js';
 
@@ -78,5 +82,49 @@ describe('the /dom entry with no DOM present', () => {
   it('isElement is pure and needs no DOM at all', () => {
     expect(isElement({ nodeType: 1, querySelector: () => null })).toBe(true);
     expect(isElement(null)).toBe(false);
+  });
+
+  // NFR-14 as amended in 11.2: an export handed an explicit node acts on that
+  // node and needs no ambient document. Requiring one a function never reads
+  // would be a check for its own sake — and would make these unusable inside a
+  // server-side DOM implementation.
+  it('delegate works against a caller-supplied root with no document', () => {
+    /** @type {Record<string, Function[]>} */
+    const listeners = {};
+    const fakeRoot = {
+      nodeType: 1,
+      querySelector: () => null,
+      contains: () => true,
+      addEventListener: (type, listener) => {
+        (listeners[type] ??= []).push(listener);
+      },
+    };
+    const matched = { nodeType: 1, querySelector: () => null, closest: () => matched };
+
+    const handler = vi.fn();
+    const off = delegate(/** @type {never} */ (fakeRoot), 'click', 'tr', handler);
+    listeners.click[0]({ target: matched });
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][1]).toBe(matched);
+    expect(() => off()).not.toThrow();
+  });
+
+  it.each([
+    ['setEnabled', () => setEnabled(null, true)],
+    ['setVisible', () => setVisible(null, true)],
+    ['setValue', () => setValue(null, 'x')],
+  ])('%s is a no-op on null even with no DOM', (_label, call) => {
+    expect(call).not.toThrow();
+  });
+
+  it('the setters act on a supplied element without any document', () => {
+    const element = { nodeType: 1, querySelector: () => null, disabled: false, hidden: false };
+    setEnabled(/** @type {never} */ (element), false);
+    setVisible(/** @type {never} */ (element), false);
+    expect(element).toMatchObject({ disabled: true, hidden: true });
+  });
+
+  it('the setters still reject a wrong type rather than the environment', () => {
+    expect(() => setEnabled(/** @type {never} */ ('#x'), true)).toThrow(TypeError);
   });
 });
