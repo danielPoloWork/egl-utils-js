@@ -24,6 +24,7 @@
   },
   "intentionallyNotExported": [
     "AsyncQueue",
+    "AutoGrowOptions",
     "BindElementsOptions",
     "BoundElements",
     "DelegateOptions",
@@ -31,6 +32,7 @@
     "Debounced",
     "ErrorRecord",
     "HttpClient",
+    "InjectFragmentOptions",
     "MeasureResult",
     "Resource",
     "ResourceOptions",

@@ -20,3 +20,6 @@ export { bindElements, isElement, requireDocument } from './dom-helpers.js';
 
 // Event delegation and native element setters (spec 03 §2 items F44-F45, ADR-0029).
 export { delegate, setEnabled, setValue, setVisible } from './dom-events.js';
+
+// Fragment injection, textarea auto-grow, URL parameters (spec 03 §2 items F46-F48, ADR-0030).
+export { autoGrow, injectFragment, withUrlParams } from './dom-fragment.js';

@@ -105,6 +105,12 @@ export const GLOBALS = {
     bcd: 'api.Window.sessionStorage',
     guarded: 'same write+remove probe and in-memory fallback as localStorage (ADR-0010)',
   },
+  getComputedStyle: {
+    guardReason: 'context',
+    bcd: 'api.Window.getComputedStyle',
+    guarded:
+      'autoGrow reads layout only through its injectable `measure` seam, whose default is the sole caller; a non-browser or layout-free host (jsdom reports every height as 0) supplies its own (ADR-0030). Note the BCD path is api.Window.getComputedStyle — there is no api.getComputedStyle node, though the function is called bare.',
+  },
 };
 
 /**

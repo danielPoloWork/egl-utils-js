@@ -12,6 +12,34 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **`injectFragment`, `autoGrow` and `withUrlParams`** on `egl-utils-js/dom`, completing
+  Milestone 11 (ROADMAP 11.3, spec 03 F46–F48,
+  [ADR-0030](docs/adr/0030-sanitize-is-a-required-parameter.md)).
+  `injectFragment`'s **`sanitize` option is required and has no default**: pass a sanitizer
+  (typically `sanitizeHtml`) or the literal `false` to declare the source trusted, and
+  omitting it throws. Both candidate defaults were rejected — sanitizing by default would
+  drag the DOMPurify optional peer into every `/dom` import, breaking the boundary
+  [ADR-0012](docs/adr/0012-sanitize-default-profile.md) drew; not sanitizing by default would
+  make the dangerous path the quiet one. Every error **propagates**: a non-2xx rejects with
+  `HttpError` carrying status and body, so a shell assembled from several fragments can be
+  told apart from a partial one. `'beforeend'`/`'afterbegin'` use `insertAdjacentHTML`, so
+  existing nodes and their listeners survive where `innerHTML +=` would destroy them.
+  `autoGrow` releases the inline height **before** measuring — the ordering that lets a
+  textarea shrink as well as grow — reads layout through an injectable `measure` seam (jsdom
+  reports every height as 0, so this is what makes the behaviour verifiable), and restores the
+  original inline styles on detach. `withUrlParams` merges parameters through
+  `URLSearchParams` over a hand-split URL, so a second `?` is impossible and a **relative**
+  URL works (`new URL('/a?b=1')` throws without a base); fragments are preserved, arrays
+  repeat the key, and nullish values are skipped — the same contract as `urlSearchParams`.
+
+### Security
+
+- The threat model gains an **HTML fragments** trust boundary with a full STRIDE pass,
+  covering the XSS path (`innerHTML` with the page's full authority), the propagate-don't-swallow
+  argument under Repudiation, the URL-passed-as-given position under Information disclosure,
+  and an explicit note that the library **performs no sanitizing of its own** on this path —
+  it routes markup through whatever the caller supplied.
+
 - **`delegate`, `setEnabled`, `setVisible` and `setValue`** on `egl-utils-js/dom`
   (ROADMAP 11.2, spec 03 F44–F45,
   [ADR-0029](docs/adr/0029-delegation-teardown-and-setter-symmetry.md)). `delegate` attaches
