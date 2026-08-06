@@ -23,6 +23,7 @@
   "intentionallyNotExported": [
     "AsyncQueue",
     "Debounced",
+    "ErrorRecord",
     "HttpClient",
     "MeasureResult",
     "RetryAttempt"

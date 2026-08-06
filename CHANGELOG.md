@@ -12,6 +12,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `formatDuration` and `normalizeError` on the root entry (ROADMAP 9.4, spec 02 F36-F37,
+  [ADR-0023](docs/adr/0023-duration-round-trip-and-the-error-record.md)). `formatDuration` is
+  the exact inverse of `parseDuration` — same ADR-0009 grammar, so
+  `parseDuration(formatDuration(ms)) === ms` for every whole second, with sub-second
+  remainders truncated to a `'0s'` floor and fractional input accepted so `measure()`'s
+  output can be handed straight over. `normalizeError` turns anything a `catch` block can
+  receive — an `Error`, a string, a response object, `null`, a symbol, a value whose getters
+  throw — into one record `{ name, message, stack?, code?, status?, detail?, cause }`, never
+  throwing, with `cause` holding the original by identity so the error can still be rethrown.
 - New `egl-utils-js/table` entry (ROADMAP 9.3, spec 02 F33-F35): `compileFilter`,
   `comparator`, and `paginate` — the query primitives behind a data table, pure and
   Node-safe. `compileFilter` interprets a small filter grammar (substring, `=`, `!=`,
