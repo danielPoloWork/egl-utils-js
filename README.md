@@ -260,7 +260,9 @@ deliberately does not cover.
 | 5 | Web, crypto & diagnostics | ✅ done |
 | 6 | Storage & sanitize subpaths | ✅ done |
 | 7 | Benchmarks & release readiness | ✅ done |
-| 8 | Post-0.1.0 follow-ups | ⏳ planned |
+| 8 | Post-0.1.0 follow-ups | ✅ done |
+| 9 | Text, net & query utilities | ⏳ planned |
+| 10 | Structured logging | ⏳ planned |
 
 
 ## License

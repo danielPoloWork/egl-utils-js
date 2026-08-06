@@ -28,7 +28,7 @@ chore, ci}`. Lowercase kebab, ≤40 chars, describe the *what* not the issue num
 <optional footers: BREAKING CHANGE: ... | Refs: ADR-XXXX | Refs: #NN>
 ```
 
-- `scope` is a short subsystem noun. Scopes for this repo: `api` `async` `events` `data` `validation` `web` `crypto` `storage` `sanitize` `errors` `build` `tests` `docs` `ci` .
+- `scope` is a short subsystem noun. Scopes for this repo: `api` `async` `events` `data` `validation` `web` `crypto` `storage` `sanitize` `errors` `diagnostics` `text` `net` `table` `logging` `dom` `build` `tests` `docs` `ci` .
 - One logical change per commit; imperative subject; the body adds the *why*.
 - Rebase/squash before opening the PR if intermediate commits are noisy.
 
