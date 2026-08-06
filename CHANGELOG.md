@@ -12,6 +12,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `inlineAlert` on `egl-utils-js/dom` (spec 03 F49, ROADMAP 12.1): an instance-based,
+  framework-agnostic alert component. Each instance owns its nodes, its auto-hide timer and
+  its close binding, so two alerts on one page cannot interfere; class names and icons are
+  injected over neutral defaults; messages render as text by default and require the
+  explicit `{ html: true, sanitize }` pair for markup; `destroy()` or an aborted `signal`
+  leaves no listener, timer, or node behind (ADR-0031).
+
 ### Changed
 
 ### Deprecated

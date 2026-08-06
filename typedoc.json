@@ -33,6 +33,8 @@
     "ErrorRecord",
     "HttpClient",
     "InjectFragmentOptions",
+    "InlineAlertInstance",
+    "InlineAlertOptions",
     "MeasureResult",
     "Resource",
     "ResourceOptions",

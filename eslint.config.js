@@ -8,8 +8,11 @@ import prettierConfig from 'eslint-config-prettier';
 // run via the `lint` script and the build.
 export default [
   {
-    // Generated, vendored, or build output — never linted.
-    ignores: ['dist/**', 'coverage/**', 'docs/api/**', '.eados-core/**'],
+    // Generated or build output, and every top-level dot-directory: those hold
+    // tooling, caches, and local working material, never library source. The
+    // rule is stated by shape rather than by listing names, so a new one cannot
+    // turn `pnpm lint` red for reasons that have nothing to do with the library.
+    ignores: ['dist/**', 'coverage/**', 'docs/api/**', '.*/**'],
   },
   js.configs.recommended,
   {

@@ -46,3 +46,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0028](0028-dom-entry-fails-fast-and-the-floor-gate-sees-the-dom.md) | The `/dom` entry fails fast, and the floor gate learns to see the DOM | Accepted |
 | [0029](0029-delegation-teardown-and-setter-symmetry.md) | Teardown as a signal, and setters that stay symmetric | Accepted |
 | [0030](0030-sanitize-is-a-required-parameter.md) | The sanitizer is a required parameter, not a default | Accepted |
+| [0031](0031-component-instances-and-the-alert-budget.md) | Components are instances that own their state — and what one costs | Accepted |
