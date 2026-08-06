@@ -10,6 +10,6 @@ README badge.
 
 | Version | Date | Highlights | Notes |
 |---------|------|------------|-------|
-| —       | —    | —          | —     |
-
-_No releases yet — the first one lands when Milestone 1 ships._
+| v0.3.0 | 2026-08-06 | `egl-utils-js/logging` — a level-thresholded logger with an injected sink, formatter, clock and correlation id; spec 02 complete (F26–F41) | [v0.3.0.md](v0.3.0.md) |
+| v0.2.0 | 2026-08-06 | The `/text`, `/net` and `/table` entries, plus `formatDuration`, `normalizeError`, `createResource` and `pageSessionId` | [v0.2.0.md](v0.2.0.md) |
+| v0.1.0 | 2026-08-03 | First public release — the 25-function surface of spec 01 across the root, `/storage`, `/sanitize` and `/errors` entries | [v0.1.0.md](v0.1.0.md) |
