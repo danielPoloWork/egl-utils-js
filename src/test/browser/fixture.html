@@ -28,13 +28,14 @@
       // surfaces as a readable assertion instead of a blank page.
       window.__eglReady = (async () => {
         try {
-          const [root, storage, sanitize, errors] = await Promise.all([
+          const [root, storage, sanitize, errors, logging] = await Promise.all([
             import('/dist/esm/index.js'),
             import('/dist/esm/storage.js'),
             import('/dist/esm/sanitize.js'),
             import('/dist/esm/errors.js'),
+            import('/dist/esm/logging.js'),
           ]);
-          window.egl = { root, storage, sanitize, errors };
+          window.egl = { root, storage, sanitize, errors, logging };
           return { ok: true };
         } catch (error) {
           return { ok: false, message: String(error && error.message ? error.message : error) };

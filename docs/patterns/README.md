@@ -40,15 +40,15 @@ _Patterns named in the spec at intake are seeded below as **Planned**; each beco
 | 5 | Interpreter | Implemented | A user-typed column filter needs more than "contains", so `compileFilter` defines a small grammar (comparison, prefix/suffix, equality, blank sentinels) and evaluates it without a RegExp — total by construction, so a half-typed expression is a valid program rather than an error, and extensible through injected operator tokens | [table.js](../../src/main/javascript/it/d4np/utils/table.js) | [ADR-0021](../adr/0021-filter-expression-grammar.md) |
 | 6 | Strategy | Implemented | `comparator` selects an interchangeable comparison algorithm (auto-probed, string, number, date, boolean) behind one `(a, b) => number` interface, with the collator itself injectable — so a column chooses its ordering at runtime without the caller reimplementing the total-order rules | [table.js](../../src/main/javascript/it/d4np/utils/table.js) | [ADR-0022](../adr/0022-comparator-total-order-semantics.md) |
 | 7 | Repository | Implemented | `createResource` mediates between calling code and one remote REST collection, collapsing the six near-identical methods every collection otherwise grows by hand into one factory whose only knowledge is a path and a client — the client injected as a parameter, so any compatible transport works and the function costs 505 B instead of inheriting the 1304 B facade | [web.js](../../src/main/javascript/it/d4np/utils/web.js) | [ADR-0025](../adr/0025-resource-repository-over-an-injected-client.md) |
+| 8 | Strategy (logging sink & formatter) | Implemented | Destination and line shape are two independent axes of a log record's fate: `sink` selects where a record goes and `format` how it renders, each swappable at runtime behind a one-function interface — so a text file, a structured transport, and a capturing array in a test are the same logger with different strategies, and the sink receives the formatter so it decides whether formatting happens at all | [logging.js](../../src/main/javascript/it/d4np/utils/logging.js) | [ADR-0027](../adr/0027-logging-formatter-sink-split.md) |
+| 9 | Facade (logger) | Implemented | Five level methods and `child()` over a subsystem of threshold comparison, record construction, clock and correlation-id resolution, formatting, dispatch, and failure containment — call sites say `log.info('…')` and never learn that any of it exists | [logging.js](../../src/main/javascript/it/d4np/utils/logging.js) | [ADR-0027](../adr/0027-logging-formatter-sink-split.md) |
 
 
 ## Rejected
 
-_No rejections recorded yet._
-
 | # | Pattern | Considered for | Rejected because | ADR / PR |
 |---|---------|----------------|------------------|----------|
-| — | —       | —              | —                | —        |
+| 1 | Singleton | A module-level default logger (`import { log } from 'egl-utils-js/logging'`), so call sites need no construction | Module-level mutable state is what spec 01 §4 forbids for the dual-package hazard — two realms would hold two loggers, and one realm's reconfiguration would silently not apply to the other. It also makes tests order-dependent (whoever reconfigures the shared instance last wins) and makes two components unable to hold different levels. A factory costs one line at the call site and removes all three problems | [ADR-0027](../adr/0027-logging-formatter-sink-split.md) |
 
 ## Superseded
 

@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-06 — createResource, and M9 complete`](docs/journal/2026/08/2026-08-06-create-resource.md).
+  [`2026-08-06 — the /logging subpath, and spec 02 complete`](docs/journal/2026/08/2026-08-06-logging-subpath.md).
 
 ## Model & effort routing
 
@@ -157,7 +157,7 @@ platform APIs, testable from day one. Spec: [`docs/specs/02_spec_core_extensions
 Level-thresholded logger with a pure formatter and a pluggable sink contract on a
 `/logging` subpath (spec 02 §2, F40–F41).
 
-- [ ] 10.1 `/logging` subpath: logger factory (level threshold, child contexts, injected clock/sink/format/id), formatLogLine, formatTimestamp, LOG_LEVELS; throwing sinks contained; CRLF-hardened lines (spec 02 F40–F41) _(route: frontier-reasoning/high — sets-pattern: the sink/formatter contract every future adapter copies)_
+- [x] 10.1 `/logging` subpath: logger factory (level threshold, child contexts, injected clock/sink/format/id), formatLogLine, formatTimestamp, LOG_LEVELS; throwing sinks contained; CRLF-hardened lines (spec 02 F40–F41) _(route: frontier-reasoning/high — sets-pattern: the sink/formatter contract every future adapter copies)_
 
 
 ---
@@ -183,11 +183,11 @@ progress · ✅ done · ❎ N/A.
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 (02) | Objective & business context | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | 🚧 |
-| §2 (02) | Functional requirements F26–F41 | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | 🚧 |
-| §3 (02) | Non-functional requirements | 9.1, 9.2, 9.3, 9.5, 9.6, 10.1 | 🚧 |
-| §4 (02) | Logical architecture | 9.1, 9.3, 10.1 | 🚧 |
-| §5 (02) | Public interface | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | 🚧 |
-| §6 (02) | Verification & test strategy | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | 🚧 |
+| §1 (02) | Objective & business context | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ✅ |
+| §2 (02) | Functional requirements F26–F41 | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ✅ |
+| §3 (02) | Non-functional requirements | 9.1, 9.2, 9.3, 9.5, 9.6, 10.1 | ✅ |
+| §4 (02) | Logical architecture | 9.1, 9.3, 10.1 | ✅ |
+| §5 (02) | Public interface | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ✅ |
+| §6 (02) | Verification & test strategy | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ✅ |
 
 _Spec 02 stays 🚧 until M10 (F40–F41, the `/logging` subpath) lands; F26–F39 are complete._

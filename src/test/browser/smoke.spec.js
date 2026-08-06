@@ -249,6 +249,83 @@ test.describe('cookieHelper — the real document.cookie accessor', () => {
   });
 });
 
+test.describe('/logging — the built bundle in a real engine', () => {
+  // Spec 02 §6 asks for browser proof of two things a Node suite cannot give:
+  // that the entry loads as a real ES module in every engine, and that the
+  // DEFAULT sink reaches an actual `console` — every Node test injects a
+  // capturing sink, so the console path had never run against a real one.
+
+  test('loads and logs through the default console sink', async ({ page }) => {
+    /** @type {{ type: string, text: string }[]} */
+    const consoleLines = [];
+    page.on('console', (message) =>
+      consoleLines.push({ type: message.type(), text: message.text() }),
+    );
+
+    await page.evaluate(() => {
+      const { logger } = window.egl.logging;
+      const log = logger({ level: 'trace', name: 'checkout', id: 'a1b2c3d4' });
+      log.trace('trace line');
+      log.info('info line');
+      log.warn('warn line');
+      log.error('error line');
+      log.debug('below nothing');
+      log.child('db').info('child line');
+    });
+
+    const text = consoleLines.map((line) => line.text).join('\n');
+    expect(text).toContain('INFO  a1b2c3d4 --- [            checkout] info line');
+    // trace maps onto console.debug deliberately: console.trace prints a stack.
+    expect(text).toContain('TRACE');
+    expect(text).toContain('[         checkout.db] child line');
+    // The engine's own severity routing, not ours: warn and error are separate
+    // console channels, which is why the level -> method map exists at all.
+    const types = consoleLines.filter((line) => /warn line|error line/.test(line.text));
+    expect(types.map((line) => line.type).sort()).toEqual(['error', 'warning']);
+  });
+
+  test('a record renders as exactly one line, even when the message carries breaks', async ({
+    page,
+  }) => {
+    // The log-injection guarantee, checked where a console really parses lines.
+    const lines = await page.evaluate(() => {
+      const { formatLogLine } = window.egl.logging;
+      return [
+        formatLogLine({
+          ts: Date.now(),
+          level: 'info',
+          name: 'a\nb',
+          id: 'c\r\nd',
+          message: 'first\nINFO forged',
+          args: [],
+        }),
+      ];
+    });
+    expect(lines[0]).not.toMatch(/[\r\n]/);
+    expect(lines[0]).toContain('first INFO forged');
+  });
+
+  test('a throwing sink never escapes into page code', async ({ page }) => {
+    /** @type {string[]} */
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(String(error)));
+
+    const outcome = await page.evaluate(() => {
+      const { logger } = window.egl.logging;
+      const log = logger({
+        sink: () => {
+          throw new Error('transport down');
+        },
+      });
+      log.info('still returns');
+      return 'returned normally';
+    });
+
+    expect(outcome).toBe('returned normally');
+    expect(pageErrors, 'a failing sink must not surface as a page error').toEqual([]);
+  });
+});
+
 test.describe('sanitizeHtml — non-execution in a real engine', () => {
   // The payloads below are assigned to a LIVE element's innerHTML after
   // sanitization. In a real browser that is the moment scripts would run, so a

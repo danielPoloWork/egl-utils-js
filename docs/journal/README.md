@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-06 — The /logging subpath, and spec 02 complete (roadmap 10.1)](2026/08/2026-08-06-logging-subpath.md)
 - [2026-08-06 — createResource, and M9 complete (roadmap 9.6)](2026/08/2026-08-06-create-resource.md)
 - [2026-08-06 — pageSessionId on /storage (roadmap 9.5)](2026/08/2026-08-06-page-session-id.md)
 - [2026-08-06 — Diagnostics: formatDuration and normalizeError (roadmap 9.4)](2026/08/2026-08-06-diagnostics-format-helpers.md)
