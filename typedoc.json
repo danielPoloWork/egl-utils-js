@@ -26,6 +26,8 @@
     "ErrorRecord",
     "HttpClient",
     "MeasureResult",
+    "Resource",
+    "ResourceOptions",
     "RetryAttempt"
   ]
 }

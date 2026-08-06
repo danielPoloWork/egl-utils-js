@@ -1,6 +1,6 @@
 [
   {
-    "name": "root - full import (NFR-01: measured 5520 B, ceiling 6 kB)",
+    "name": "root - full import (NFR-01: measured 5806 B, ceiling 6 kB; spec-02 root surface complete)",
     "path": "dist/esm/index.js",
     "limit": "5.85 kB"
   },
@@ -218,6 +218,12 @@
     "name": "single: validateEmail (NFR-01 <= 1 kB / NFR-02)",
     "path": "dist/esm/index.js",
     "import": "{ validateEmail }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: createResource (NFR-08 <= 1 kB / NFR-02; the client is injected, not imported)",
+    "path": "dist/esm/index.js",
+    "import": "{ createResource }",
     "limit": "1 kB"
   },
   {

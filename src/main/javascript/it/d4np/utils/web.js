@@ -262,3 +262,137 @@ export function httpClient(config = {}) {
     delete: verb('DELETE'),
   };
 }
+
+// ---------------------------------------------------------------------------
+// createResource (spec 02 §2 item F38, ADR-0025) — Repository, docs/patterns
+// ---------------------------------------------------------------------------
+
+/** The verbs a transport must expose to back a resource. */
+const RESOURCE_VERBS = /** @type {const} */ (['get', 'post', 'put', 'patch', 'delete']);
+
+/**
+ * @typedef {object} ResourceOptions
+ * @property {(id: unknown) => string} [id] - Derive the URL segment from the id
+ *   argument; defaults to `String`. Supply one for composite keys
+ *   (`({ tenant, key }) => \`${tenant}:${key}\``). Whatever it returns is
+ *   percent-encoded as a **single** segment.
+ */
+
+/**
+ * @typedef {object} Resource
+ * @property {(query?: Record<string, unknown>, options?: RequestOptions) => Promise<unknown>} list - `GET path?query`
+ * @property {(id: unknown, options?: RequestOptions) => Promise<unknown>} get - `GET path/id`
+ * @property {(body?: unknown, options?: RequestOptions) => Promise<unknown>} create - `POST path`
+ * @property {(id: unknown, body?: unknown, options?: RequestOptions) => Promise<unknown>} update - `PUT path/id`
+ * @property {(id: unknown, body?: unknown, options?: RequestOptions) => Promise<unknown>} patch - `PATCH path/id`
+ * @property {(id: unknown, options?: RequestOptions) => Promise<unknown>} remove - `DELETE path/id`
+ */
+
+/**
+ * Build a REST resource over an injected client (spec 02 F38, ADR-0025;
+ * Repository — docs/patterns).
+ *
+ * One collection of endpoints usually means six near-identical methods written
+ * by hand, and rewritten per resource — where the interesting variation is only
+ * the path. This collapses them into one factory whose only knowledge is the
+ * path and the client.
+ *
+ * **The client is a parameter, never an import.** Anything exposing
+ * `get`/`post`/`put`/`patch`/`delete` works — {@link httpClient}, a test double,
+ * or another library's client — so this function costs a caller who never uses
+ * it nothing, and a test needs no network and no mocking framework. The five
+ * verbs are checked once, when the resource is built, so a mis-wired transport
+ * fails at startup rather than on the first request.
+ *
+ * **Ids are data, and are encoded as exactly one path segment.** An id
+ * containing `/` or `..` can never widen the path it was meant to address; a
+ * `null`/`undefined` id is refused rather than silently requesting
+ * `…/undefined`. The configured `path` keeps its own separators (so
+ * `'admin/users'` nests) and a leading `/` is preserved, since that is the
+ * caller declaring an absolute path.
+ *
+ * Bodies are sent as JSON through the client's `json` option; per-call
+ * `RequestOptions` (`signal`, `timeout`, `headers`) pass straight through.
+ *
+ * @example
+ * const users = createResource(api, 'users');
+ * await users.list({ page: 2, active: true }); // GET users?page=2&active=true
+ * await users.get(42); //                        GET users/42
+ * await users.create({ name: 'Ada' }); //         POST users
+ * await users.update(42, { name: 'Ada L.' }); //  PUT users/42
+ * await users.remove(42, { timeout: 5_000 }); //  DELETE users/42
+ *
+ * @example
+ * // A composite key, rendered as one segment:
+ * const memberships = createResource(api, 'memberships', {
+ *   id: ({ tenant, user }) => `${tenant}:${user}`,
+ * });
+ * await memberships.get({ tenant: 'acme', user: 'ada' }); // GET memberships/acme%3Aada
+ *
+ * @param {Pick<HttpClient, 'get' | 'post' | 'put' | 'patch' | 'delete'>} client - The
+ *   transport; only these five methods are used.
+ * @param {string} path - Collection path, relative to the client's base URL.
+ * @param {ResourceOptions} [options]
+ * @returns {Resource}
+ * @throws {TypeError} If `client` lacks one of the five verbs, `path` is not a
+ *   non-empty string, or `options.id` is not a function.
+ */
+export function createResource(client, path, options = {}) {
+  for (const method of RESOURCE_VERBS) {
+    if (typeof (/** @type {Record<string, unknown>} */ (client)?.[method]) !== 'function') {
+      throw new TypeError(`client must expose a ${method}() method`);
+    }
+  }
+  if (typeof path !== 'string' || path === '') {
+    throw new TypeError('path must be a non-empty string');
+  }
+  const { id: toSegment = String } = options;
+  if (typeof toSegment !== 'function') {
+    throw new TypeError('options.id must be a function');
+  }
+
+  // Each configured segment is encoded on its own, so the caller's separators
+  // survive while a segment containing a space or an accent is escaped.
+  const base =
+    (path.startsWith('/') ? '/' : '') +
+    path
+      .split('/')
+      .filter((segment) => segment !== '')
+      .map(encodeURIComponent)
+      .join('/');
+
+  /** @param {unknown} id @returns {string} */
+  function itemPath(id) {
+    if (id === null || id === undefined) {
+      throw new TypeError('id must not be null or undefined');
+    }
+    return `${base}/${encodeURIComponent(String(toSegment(id)))}`;
+  }
+
+  /** @param {RequestOptions} options @param {unknown} body @returns {RequestOptions} */
+  function withBody(options, body) {
+    return body === undefined ? options : { ...options, json: body };
+  }
+
+  return {
+    list(query, options = {}) {
+      const search = query === undefined || query === null ? '' : urlSearchParams(query);
+      return client.get(search === '' ? base : `${base}?${search}`, options);
+    },
+    get(id, options = {}) {
+      return client.get(itemPath(id), options);
+    },
+    create(body, options = {}) {
+      return client.post(base, withBody(options, body));
+    },
+    update(id, body, options = {}) {
+      return client.put(itemPath(id), withBody(options, body));
+    },
+    patch(id, body, options = {}) {
+      return client.patch(itemPath(id), withBody(options, body));
+    },
+    remove(id, options = {}) {
+      return client.delete(itemPath(id), options);
+    },
+  };
+}

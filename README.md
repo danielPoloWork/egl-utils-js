@@ -135,7 +135,7 @@ const onScroll = throttle((event) => updatePosition(event), 100); // at most onc
 ### Web (`egl-utils-js`)
 
 ```js
-import { httpClient, urlSearchParams } from 'egl-utils-js';
+import { httpClient, urlSearchParams, createResource } from 'egl-utils-js';
 
 const api = httpClient({
   baseUrl: 'https://api.example.test/v1/',
@@ -146,6 +146,18 @@ await api.post('users', { json: { name: 'Ada' } });
 
 urlSearchParams({ q: 'a b', tag: ['x', 'y'], page: 2, empty: undefined });
 // -> 'q=a+b&tag=x&tag=y&page=2' — arrays repeat the key, nullish values are skipped
+
+// One REST collection, six methods, one line. The client is a PARAMETER, never an
+// import (ADR-0025): any object with get/post/put/patch/delete works — httpClient, a
+// test double, another library's client — so this costs 505 B, not the 1.3 kB facade.
+const users = createResource(api, 'users');
+await users.list({ page: 2, tag: ['x'] }); // GET  users?page=2&tag=x
+await users.get(42); //                       GET  users/42
+await users.create({ name: 'Ada' }); //       POST users
+await users.update(42, { name: 'Ada L.' }); //PUT  users/42
+await users.remove(42, { timeout: 5_000 }); //DELETE users/42 — per-call options pass through
+// An id is data: it is encoded as exactly ONE segment, so `../admin` addresses a key
+// with that name and can never widen the path. A null/undefined id throws.
 ```
 
 ### Crypto (`egl-utils-js`)
@@ -376,7 +388,7 @@ deliberately does not cover.
 | 6 | Storage & sanitize subpaths | ✅ done |
 | 7 | Benchmarks & release readiness | ✅ done |
 | 8 | Post-0.1.0 follow-ups | ✅ done |
-| 9 | Text, net & query utilities | ⏳ planned |
+| 9 | Text, net & query utilities | ✅ done |
 | 10 | Structured logging | ⏳ planned |
 
 

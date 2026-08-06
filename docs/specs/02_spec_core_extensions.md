@@ -90,9 +90,11 @@ Logging — `egl-utils-js/logging`:
   [ADR-0024](../adr/0024-page-session-id-scope-and-budget.md). A wrappers-only import is
   1698 B, so the cost falls only on consumers of F39, and that scenario is a permanent
   size-limit row). The **root row re-baselines as root exports land** and tightens to measured at
-  wave end (**landed 9.4: measured 5520 B, row 5.85 kB**; the remaining root addition F38
-  is expected to leave under ~130 B of ceiling headroom, at which point the row becomes
-  the 6 kB ceiling itself). Every new root export gets its own 1 kB single-import scenario row; a
+  wave end (**complete as of 9.6: measured 5806 B, row tightened to 5.85 kB** — F36-F38
+  were the wave's only root additions. The ceiling crunch ADR-0023 anticipated did not
+  occur: F38 measured 286 B rather than the ~350 B estimated, because its client is
+  injected rather than imported ([ADR-0025](../adr/0025-resource-repository-over-an-injected-client.md))).
+  Every new root export gets its own 1 kB single-import scenario row; a
   composite that cannot meet 1 kB takes a **named, measured exception row** documented
   ADR-0015-style. **Landed exception: `comparator` at 1.05 kB** (measured 1006 B — six
   bytes over, see [ADR-0022](../adr/0022-comparator-total-order-semantics.md)); the
