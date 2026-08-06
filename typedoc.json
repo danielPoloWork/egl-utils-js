@@ -6,7 +6,8 @@
     "src/main/javascript/it/d4np/utils/sanitize.js",
     "src/main/javascript/it/d4np/utils/errors.js",
     "src/main/javascript/it/d4np/utils/text.js",
-    "src/main/javascript/it/d4np/utils/net.js"
+    "src/main/javascript/it/d4np/utils/net.js",
+    "src/main/javascript/it/d4np/utils/table.js"
   ],
   "tsconfig": "tsconfig.json",
   "out": "docs/api",

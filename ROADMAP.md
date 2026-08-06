@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-06 — the /net subpath`](docs/journal/2026/08/2026-08-06-net-subpath.md).
+  [`2026-08-06 — the /table query primitives`](docs/journal/2026/08/2026-08-06-table-query-primitives.md).
 
 ## Model & effort routing
 
@@ -144,7 +144,7 @@ platform APIs, testable from day one. Spec: [`docs/specs/02_spec_core_extensions
 
 - [x] 9.1 `/text` subpath: truncate, wrapText, fixedWidth string helpers (spec 02 F26–F28) _(route: standard/medium)_ — code-unit semantics and the subpath-family policy fixed by [ADR-0019](docs/adr/0019-subpath-family-and-code-unit-text-semantics.md)
 - [x] 9.2 `/net` subpath: strict IPv4 parse/format/validate, sortable fixed-width key codec, CIDR prefix → subnet mask (spec 02 F29–F32) _(route: standard/high — security: address parsing is input validation)_ — strictness and the key encoding fixed by [ADR-0020](docs/adr/0020-strict-ipv4-parsing-and-the-sortable-key-codec.md)
-- [ ] 9.3 `/table` subpath, query primitives: filter-expression compiler with pluggable operators, typed comparators (Intl.Collator collation, auto type detection, empties-last), paginate (spec 02 F33–F35) _(route: frontier-reasoning/high — sets-pattern + decision-heavy: the query contract the spec-03 table pipeline builds on)_
+- [x] 9.3 `/table` subpath, query primitives: filter-expression compiler with pluggable operators, typed comparators (Intl.Collator collation, auto type detection, empties-last), paginate (spec 02 F33–F35) _(route: frontier-reasoning/high — sets-pattern + decision-heavy: the query contract the spec-03 table pipeline builds on)_ — grammar totality fixed by [ADR-0021](docs/adr/0021-filter-expression-grammar.md), order semantics by [ADR-0022](docs/adr/0022-comparator-total-order-semantics.md)
 - [ ] 9.4 diagnostics: formatDuration (parseDuration round-trip) + normalizeError (any thrown value → uniform diagnostic record) (spec 02 F36–F37) _(route: standard/medium)_
 - [ ] 9.5 storage: pageSessionId — per-tab stable id on the storage-wrapper contract with private-mode fallback (spec 02 F39) _(route: standard/medium)_
 - [ ] 9.6 web: createResource — repository factory over an injected httpClient-compatible transport (spec 02 F38) _(route: standard/high — sets-pattern: the repository contract)_

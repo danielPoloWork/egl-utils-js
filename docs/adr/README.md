@@ -36,3 +36,5 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0018](0018-version-on-the-root-surface.md) | Re-export `VERSION` from the root entry | Accepted |
 | [0019](0019-subpath-family-and-code-unit-text-semantics.md) | The spec-02 subpath family, and code units as the text measure | Accepted |
 | [0020](0020-strict-ipv4-parsing-and-the-sortable-key-codec.md) | Strict IPv4 parsing, and a fixed-width sortable key codec | Accepted |
+| [0021](0021-filter-expression-grammar.md) | A total filter-expression grammar, interpreted without regular expressions | Accepted |
+| [0022](0022-comparator-total-order-semantics.md) | Comparator semantics — a total order, pinned blanks, and locale by opt-in | Accepted |

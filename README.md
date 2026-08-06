@@ -205,6 +205,41 @@ fixedWidth('42', 6, { align: 'right', pad: '0' }); // '000042'
 fixedWidth('com.example.Service', 12, { truncate: 'start' }); // 'mple.Service'
 ```
 
+### Tabular query primitives (`egl-utils-js/table`)
+
+The three operations every data table needs before it needs a table. Pure and Node-safe,
+so they run server-side too; the spec-03 table pipeline will compose them on this entry.
+
+```js
+import { compileFilter, comparator, paginate } from 'egl-utils-js/table';
+
+// A filter box compiles on every keystroke — the grammar is total, so a
+// half-typed expression is a valid program, never an exception (ADR-0021).
+const matches = compileFilter('>=100');
+rows.filter((row) => matches(row.amount));
+
+// text | =text | !=text | ^prefix | suffix$ | >n >=n <n <=n
+// =null | =empty | =blank  (and !null / !empty / !blank) — the sentinels nest
+compileFilter('^192.168')('192.168.1.10'); // true
+compileFilter('!blank')('   '); // false
+compileFilter('')(anything); // true — an empty filter filters nothing
+
+// Custom operators plug into the same grammar, sharing its normalization:
+compileFilter('~50', {
+  operators: {
+    '~': (operand, { toNumber }) => (value) => Math.abs(toNumber(value) - toNumber(operand)) <= 10,
+  },
+});
+
+// A total order in every mode: blanks are pinned to one end regardless of
+// direction, mixed types order by type then value, text collates naturally.
+rows.sort(comparator({ type: 'number', direction: 'desc' }));
+['item 10', 'item 9'].sort(comparator({ locale: 'en' })); // ['item 9', 'item 10']
+
+paginate(rows, { page: 99, pageSize: 25 });
+// { items, page: 4, pageCount: 4, total: 100 } — the page is clamped, not rejected
+```
+
 ### IPv4 & CIDR (`egl-utils-js/net`)
 
 Strict by design (ADR-0020): four decimal octets, no leading zeros, none of the legacy

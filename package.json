@@ -88,6 +88,16 @@
         "default": "./dist/cjs/text.cjs"
       }
     },
+    "./table": {
+      "import": {
+        "types": "./dist/esm/table.d.ts",
+        "default": "./dist/esm/table.js"
+      },
+      "require": {
+        "types": "./dist/cjs/table.d.cts",
+        "default": "./dist/cjs/table.cjs"
+      }
+    },
     "./net": {
       "import": {
         "types": "./dist/esm/net.d.ts",
