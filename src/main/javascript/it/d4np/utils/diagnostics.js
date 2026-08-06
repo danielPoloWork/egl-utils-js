@@ -1,6 +1,7 @@
 /**
- * egl-utils-js — diagnostics utilities (spec §2 items 20, 25; pure by
- * contract: timing a function never changes what it returns or throws).
+ * egl-utils-js — diagnostics utilities (spec §2 items 20, 25; spec 02 §2 items
+ * F36-F37; pure by contract: timing a function never changes what it returns or
+ * throws, and normalizing an error never alters or consumes it).
  *
  * @module egl-utils-js/diagnostics
  */
@@ -19,9 +20,61 @@ const UNITS = {
   s: { ms: 1_000, rank: 1 },
 };
 
+/**
+ * The units in the order `formatDuration` emits them — descending by rank,
+ * which is the one order `parseDuration` accepts (ADR-0009). Written as a
+ * literal rather than derived from `UNITS` at module scope: a computed
+ * top-level expression is not statically analyzable as side-effect-free, so a
+ * bundler retains this whole module in every root import and NFR-02
+ * tree-shaking silently regresses. The round-trip property test is what keeps
+ * this list honest against `UNITS`.
+ */
+const UNITS_DESCENDING = /** @type {const} */ (['h', 'm', 's']);
+
 /** @param {number} code @returns {boolean} */
 function isDigit(code) {
   return code >= 48 && code <= 57; // '0'..'9'
+}
+
+/**
+ * Read a property without trusting the value: a thrown value may be a proxy or
+ * carry a getter that throws, and the normalizer must survive it.
+ *
+ * @param {unknown} value
+ * @param {string} key
+ * @returns {unknown} The property, or `undefined` if reading it failed.
+ */
+function safeRead(value, key) {
+  try {
+    return /** @type {Record<string, unknown>} */ (value)[key];
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * A short, safe description of a value that carries no `message` of its own.
+ *
+ * @param {unknown} value
+ * @returns {string}
+ */
+function describe(value) {
+  // JSON renders a structure usefully, but would wrap a thrown string in
+  // quotes — so it is only for composites. `null` is deliberately included:
+  // `JSON.stringify(null)` is the string 'null', which is what we want.
+  if (typeof value === 'object' || typeof value === 'function') {
+    try {
+      const json = JSON.stringify(value);
+      if (typeof json === 'string') return json;
+    } catch {
+      // Circular, BigInt, or a throwing toJSON — fall through to String().
+    }
+  }
+  try {
+    return String(value);
+  } catch {
+    return '';
+  }
 }
 
 /**
@@ -156,4 +209,150 @@ export function parseDuration(input) {
   }
 
   return total;
+}
+
+/**
+ * Format a duration in milliseconds as an `h`/`m`/`s` string (spec 02 F36).
+ *
+ * The inverse of {@link parseDuration}, and deliberately its exact inverse:
+ * output uses the same ADR-0009 grammar — descending units, each at most once,
+ * no zero-valued segments — so `parseDuration(formatDuration(ms)) === ms` for
+ * every whole number of seconds. That round-trip is a property test, not a
+ * hope.
+ *
+ * Sub-second remainders are **truncated**, so a duration under a second reads
+ * as `'0s'` rather than rounding up to a second that did not elapse. Fractional
+ * input is accepted precisely so the output of {@link measure} can be handed
+ * straight over.
+ *
+ * @example
+ * formatDuration(5_400_000); // '1h30m'
+ * formatDuration(61_000); // '1m1s'
+ * formatDuration(0); // '0s'
+ *
+ * @example
+ * const { result, ms } = await measure(() => rebuildIndex());
+ * log.info(`rebuilt in ${formatDuration(ms)}`); // e.g. 'rebuilt in 2m3s'
+ *
+ * @param {number} ms - A duration in milliseconds; `0` to `Number.MAX_SAFE_INTEGER`.
+ * @returns {string} The canonical duration string; never empty.
+ * @throws {TypeError} If `ms` is not a finite number in range (a programmer
+ *   error, ADR-0004 split — the grammar has no sign and no infinity).
+ */
+export function formatDuration(ms) {
+  if (typeof ms !== 'number' || !Number.isFinite(ms) || ms < 0 || ms > Number.MAX_SAFE_INTEGER) {
+    throw new TypeError('ms must be a finite number between 0 and Number.MAX_SAFE_INTEGER');
+  }
+
+  let remaining = Math.floor(ms / 1000) * 1000;
+  let out = '';
+  for (const unit of UNITS_DESCENDING) {
+    const unitMs = UNITS[unit].ms;
+    const count = Math.floor(remaining / unitMs);
+    if (count > 0) {
+      out += `${count}${unit}`;
+      remaining -= count * unitMs;
+    }
+  }
+  // Every zero-valued segment is omitted, so a sub-second duration would
+  // otherwise format as the empty string, which parseDuration rejects.
+  return out === '' ? '0s' : out;
+}
+
+/**
+ * @typedef {object} ErrorRecord
+ * @property {string} name - The error's `name`, the constructor's name, or the
+ *   capitalized `typeof` for a thrown primitive (`'String'`, `'Null'`, …).
+ * @property {string} message - The error's `message`, or a safe description of
+ *   whatever was thrown instead.
+ * @property {string} [stack] - Present only when the value carried a string stack.
+ * @property {string | number} [code] - Stable identifier when the value carried
+ *   one: this library's `EGL_*` codes, Node's `ENOENT`-style codes, or a numeric one.
+ * @property {number} [status] - Numeric `status` or `statusCode`, for
+ *   response-shaped failures.
+ * @property {unknown} [detail] - The first of `body`, `data`, or `responseText`
+ *   the value carried — the payload behind a failed response.
+ * @property {unknown} cause - **The original thrown value, untouched**, so the
+ *   record can be logged while the real error is still rethrown.
+ */
+
+/**
+ * Normalize anything that was thrown into a uniform diagnostic record
+ * (spec 02 F37).
+ *
+ * `catch` blocks receive `unknown`: an `Error`, a string, a rejected response
+ * object, `null`, a symbol. Every logger, reporter, and error boundary then
+ * re-implements the same defensive shuffle to find a message. This does it
+ * once, and is **total** — it never throws, whatever it is handed, including a
+ * value whose `message` getter throws or that cannot be stringified at all.
+ *
+ * It is also non-destructive: the original value is returned as `cause`, so the
+ * idiomatic use is to log the record and rethrow the original.
+ *
+ * @example
+ * try {
+ *   await api.get('/users');
+ * } catch (error) {
+ *   log.error(normalizeError(error)); // { name: 'HttpError', status: 503, … }
+ *   throw error; // the original, unwrapped
+ * }
+ *
+ * @example
+ * normalizeError('boom'); // { name: 'String', message: 'boom', cause: 'boom' }
+ * normalizeError(null); // { name: 'Null', message: 'null', cause: null }
+ *
+ * @param {unknown} value - Anything a `catch` block can receive.
+ * @returns {ErrorRecord} A record with the optional fields present only when
+ *   the value carried them.
+ */
+export function normalizeError(value) {
+  const isComposite = (typeof value === 'object' && value !== null) || typeof value === 'function';
+
+  const rawName = isComposite ? safeRead(value, 'name') : undefined;
+  let name;
+  if (typeof rawName === 'string' && rawName !== '') {
+    name = rawName;
+  } else if (isComposite) {
+    const ctor = safeRead(value, 'constructor');
+    const ctorName = typeof ctor === 'function' ? safeRead(ctor, 'name') : undefined;
+    name = typeof ctorName === 'string' && ctorName !== '' ? ctorName : 'Object';
+  } else {
+    // A thrown primitive: 'String', 'Number', 'Undefined', 'Null', …
+    const kind = value === null ? 'null' : typeof value;
+    name = kind.charAt(0).toUpperCase() + kind.slice(1);
+  }
+
+  const rawMessage = isComposite ? safeRead(value, 'message') : undefined;
+
+  /** @type {ErrorRecord} */
+  const record = {
+    name,
+    message: typeof rawMessage === 'string' ? rawMessage : describe(value),
+    cause: value,
+  };
+
+  if (!isComposite) return record;
+
+  const stack = safeRead(value, 'stack');
+  if (typeof stack === 'string') record.stack = stack;
+
+  const code = safeRead(value, 'code');
+  if (typeof code === 'string' || typeof code === 'number') record.code = code;
+
+  const status = safeRead(value, 'status');
+  const statusCode = safeRead(value, 'statusCode');
+  if (typeof status === 'number') record.status = status;
+  else if (typeof statusCode === 'number') record.status = statusCode;
+
+  // `body` is this library's own HttpError shape; the other two cover the
+  // conventions the common HTTP clients use.
+  for (const key of ['body', 'data', 'responseText']) {
+    const detail = safeRead(value, key);
+    if (detail !== undefined) {
+      record.detail = detail;
+      break;
+    }
+  }
+
+  return record;
 }

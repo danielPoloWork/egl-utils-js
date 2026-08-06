@@ -163,12 +163,25 @@ await hashString('abc', 'SHA-512'); // SHA-256 / SHA-384 / SHA-512 only
 ### Diagnostics (`egl-utils-js`)
 
 ```js
-import { measure, parseDuration } from 'egl-utils-js';
+import { measure, parseDuration, formatDuration, normalizeError } from 'egl-utils-js';
 
 const { result, ms } = await measure(() => expensiveSort(data)); // works for sync or async fn
 
 parseDuration('1h30m'); // -> 5_400_000 (ms). Strict grammar: h > m > s, each at most once —
 parseDuration('30m1h'); //    throws DurationParseError (out of order), never returns NaN
+
+formatDuration(5_400_000); // -> '1h30m' — the exact inverse; the round-trip is a property test
+formatDuration(ms); // takes measure()'s fractional ms; truncates, so under a second is '0s'
+
+// A catch block receives `unknown`. This makes it loggable without losing it:
+try {
+  await api.get('/users');
+} catch (error) {
+  log.error(normalizeError(error)); // { name: 'HttpError', message, status: 503, detail, cause }
+  throw error; //                      `cause` is the original, so rethrow is lossless
+}
+normalizeError('boom'); // { name: 'String', message: 'boom', cause: 'boom' } — never throws,
+//                         whatever it is handed: primitives, null, symbols, hostile getters
 ```
 
 ### Package version (`egl-utils-js`)

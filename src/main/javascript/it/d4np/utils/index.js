@@ -48,8 +48,10 @@ export { httpClient, urlSearchParams } from './web.js';
 // conditional-import shim; Math.random is never a fallback (ADR-0008).
 export { uuid, hashString } from './crypto.js';
 
-// Diagnostics utilities (spec §2 items 20, 25).
-export { measure, parseDuration } from './diagnostics.js';
+// Diagnostics utilities (spec §2 items 20, 25; spec 02 §2 items F36-F37,
+// ADR-0023 — formatDuration inverts parseDuration, normalizeError makes an
+// unknown catch value loggable).
+export { measure, parseDuration, formatDuration, normalizeError } from './diagnostics.js';
 
 // Package version constant (ROADMAP 8.2, ADR-0018) — a meta export outside the
 // 25 numbered functional items, kept in lockstep with package.json.

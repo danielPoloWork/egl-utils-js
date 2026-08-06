@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-06 — Diagnostics: formatDuration and normalizeError (roadmap 9.4)](2026/08/2026-08-06-diagnostics-format-helpers.md)
 - [2026-08-06 — The /table query primitives (roadmap 9.3)](2026/08/2026-08-06-table-query-primitives.md)
 - [2026-08-06 — The /net subpath (roadmap 9.2)](2026/08/2026-08-06-net-subpath.md)
 - [2026-08-06 — The /text subpath (roadmap 9.1)](2026/08/2026-08-06-text-subpath.md)

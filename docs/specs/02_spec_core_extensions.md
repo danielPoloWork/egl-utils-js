@@ -85,7 +85,10 @@ Logging — `egl-utils-js/logging`:
   pre-implementation 1.6 kB ceiling was an unmeasured estimate; the three primitives
   carry five comparison modes, locale-aware numeric reading, and a thirteen-token grammar
   between them); `/logging` ≤ 1.6 kB; `/storage` stays ≤ 2 kB (spec 01 NFR-01) with F39
-  included. Every new root export gets its own 1 kB single-import scenario row; a
+  included. The **root row re-baselines as root exports land** and tightens to measured at
+  wave end (**landed 9.4: measured 5520 B, row 5.85 kB**; the remaining root addition F38
+  is expected to leave under ~130 B of ceiling headroom, at which point the row becomes
+  the 6 kB ceiling itself). Every new root export gets its own 1 kB single-import scenario row; a
   composite that cannot meet 1 kB takes a **named, measured exception row** documented
   ADR-0015-style. **Landed exception: `comparator` at 1.05 kB** (measured 1006 B — six
   bytes over, see [ADR-0022](../adr/0022-comparator-total-order-semantics.md)); the
