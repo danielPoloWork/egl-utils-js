@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-06 — The /dom foundation, and the floor gate learns to see the DOM (roadmap 11.1)](2026/08/2026-08-06-dom-foundation.md)
 - [2026-08-06 — v0.3.0 shipped, and spec 03 planned (M11–M13)](2026/08/2026-08-06-spec-03-planning.md)
 - [2026-08-06 — The /logging subpath, and spec 02 complete (roadmap 10.1)](2026/08/2026-08-06-logging-subpath.md)
 - [2026-08-06 — createResource, and M9 complete (roadmap 9.6)](2026/08/2026-08-06-create-resource.md)

@@ -108,6 +108,16 @@
         "default": "./dist/cjs/net.cjs"
       }
     },
+    "./dom": {
+      "import": {
+        "types": "./dist/esm/dom.d.ts",
+        "default": "./dist/esm/dom.js"
+      },
+      "require": {
+        "types": "./dist/cjs/dom.d.cts",
+        "default": "./dist/cjs/dom.cjs"
+      }
+    },
     "./logging": {
       "import": {
         "types": "./dist/esm/logging.d.ts",

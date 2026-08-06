@@ -8,7 +8,8 @@
     "src/main/javascript/it/d4np/utils/text.js",
     "src/main/javascript/it/d4np/utils/net.js",
     "src/main/javascript/it/d4np/utils/table.js",
-    "src/main/javascript/it/d4np/utils/logging.js"
+    "src/main/javascript/it/d4np/utils/logging.js",
+    "src/main/javascript/it/d4np/utils/dom.js"
   ],
   "tsconfig": "tsconfig.json",
   "out": "docs/api",
@@ -23,6 +24,8 @@
   },
   "intentionallyNotExported": [
     "AsyncQueue",
+    "BindElementsOptions",
+    "BoundElements",
     "Debounced",
     "ErrorRecord",
     "HttpClient",

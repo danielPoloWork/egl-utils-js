@@ -13,6 +13,7 @@ const entry = {
   net: 'src/main/javascript/it/d4np/utils/net.js',
   table: 'src/main/javascript/it/d4np/utils/table.js',
   logging: 'src/main/javascript/it/d4np/utils/logging.js',
+  dom: 'src/main/javascript/it/d4np/utils/dom.js',
 };
 
 const shared = {

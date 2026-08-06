@@ -27,9 +27,9 @@
     "limit": "1.55 kB"
   },
   {
-    "name": "/errors (measured 291 B)",
+    "name": "/errors (measured 317 B; +26 B for DomContractError, F43)",
     "path": "dist/esm/errors.js",
-    "limit": "310 B"
+    "limit": "340 B"
   },
   {
     "name": "/text (NFR-08: measured 837 B)",
@@ -80,6 +80,29 @@
     "name": "single: paginate (NFR-08 <= 1 kB / NFR-02)",
     "path": "dist/esm/table.js",
     "import": "{ paginate }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "/dom - full import (NFR-12: measured 639 B, clause 4 kB)",
+    "path": "dist/esm/dom.js",
+    "limit": "0.7 kB"
+  },
+  {
+    "name": "single: bindElements (NFR-12 <= 1 kB / NFR-02)",
+    "path": "dist/esm/dom.js",
+    "import": "{ bindElements }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: isElement (NFR-12 <= 1 kB / NFR-02)",
+    "path": "dist/esm/dom.js",
+    "import": "{ isElement }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: requireDocument (NFR-12 <= 1 kB / NFR-02)",
+    "path": "dist/esm/dom.js",
+    "import": "{ requireDocument }",
     "limit": "1 kB"
   },
   {
@@ -304,7 +327,7 @@
     "limit": "1 kB"
   },
   {
-    "name": "single: httpClient (1.35 kB \u2014 documented NFR-01 exception, ADR-0015)",
+    "name": "single: httpClient (1.35 kB — documented NFR-01 exception, ADR-0015)",
     "path": "dist/esm/index.js",
     "import": "{ httpClient }",
     "limit": "1.35 kB"
