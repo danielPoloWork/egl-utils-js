@@ -78,6 +78,16 @@
         "default": "./dist/cjs/sanitize.cjs"
       }
     },
+    "./text": {
+      "import": {
+        "types": "./dist/esm/text.d.ts",
+        "default": "./dist/esm/text.js"
+      },
+      "require": {
+        "types": "./dist/cjs/text.d.cts",
+        "default": "./dist/cjs/text.cjs"
+      }
+    },
     "./errors": {
       "import": {
         "types": "./dist/esm/errors.d.ts",

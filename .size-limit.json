@@ -20,6 +20,29 @@
     "limit": "310 B"
   },
   {
+    "name": "/text (NFR-08: measured 837 B)",
+    "path": "dist/esm/text.js",
+    "limit": "0.9 kB"
+  },
+  {
+    "name": "single: truncate (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/text.js",
+    "import": "{ truncate }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: wrapText (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/text.js",
+    "import": "{ wrapText }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: fixedWidth (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/text.js",
+    "import": "{ fixedWidth }",
+    "limit": "1 kB"
+  },
+  {
     "name": "single: delay (NFR-01 <= 1 kB / NFR-02)",
     "path": "dist/esm/index.js",
     "import": "{ delay }",
