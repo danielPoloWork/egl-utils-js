@@ -80,11 +80,16 @@ Logging — `egl-utils-js/logging`:
   its measured size plus ≈7% headroom when the entry lands**, and the measured figure is
   recorded in the size-limit row name — the pre-implementation figures below are ceilings
   on that landing measurement, not predictions to be met exactly: `/text` ≤ 0.9 kB
-  (**landed: measured 837 B**); `/net` ≤ 0.9 kB; `/table` (query primitives,
-  pre-pipeline) ≤ 1.6 kB; `/logging` ≤ 1.6 kB; `/storage` stays ≤ 2 kB (spec 01 NFR-01)
-  with F39 included. Every new root export gets its own 1 kB single-import scenario row;
-  a composite that cannot meet 1 kB takes a **named, measured exception row** documented
-  ADR-0015-style (candidate: `compileFilter` at ≤ 1.2 kB).
+  (**landed: measured 837 B**); `/net` ≤ 0.9 kB (**landed: measured 709 B**); `/table`
+  (query primitives, pre-pipeline) ≤ 1.8 kB (**landed: measured 1722 B** — the
+  pre-implementation 1.6 kB ceiling was an unmeasured estimate; the three primitives
+  carry five comparison modes, locale-aware numeric reading, and a thirteen-token grammar
+  between them); `/logging` ≤ 1.6 kB; `/storage` stays ≤ 2 kB (spec 01 NFR-01) with F39
+  included. Every new root export gets its own 1 kB single-import scenario row; a
+  composite that cannot meet 1 kB takes a **named, measured exception row** documented
+  ADR-0015-style. **Landed exception: `comparator` at 1.05 kB** (measured 1006 B — six
+  bytes over, see [ADR-0022](../adr/0022-comparator-total-order-semantics.md)); the
+  candidate this clause anticipated, `compileFilter`, needed none (measured 954 B).
 - NFR-09 Filter-grammar totality & input hardening: `compileFilter` never throws for any
   string expression (fast-check property over arbitrary Unicode — NFR-05's style);
   expressions beyond 1,024 code units degrade to plain substring matching; **no RegExp

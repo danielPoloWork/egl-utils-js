@@ -11,6 +11,7 @@ const entry = {
   errors: 'src/main/javascript/it/d4np/utils/errors.js',
   text: 'src/main/javascript/it/d4np/utils/text.js',
   net: 'src/main/javascript/it/d4np/utils/net.js',
+  table: 'src/main/javascript/it/d4np/utils/table.js',
 };
 
 const shared = {

@@ -12,6 +12,18 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- New `egl-utils-js/table` entry (ROADMAP 9.3, spec 02 F33-F35): `compileFilter`,
+  `comparator`, and `paginate` — the query primitives behind a data table, pure and
+  Node-safe. `compileFilter` interprets a small filter grammar (substring, `=`, `!=`,
+  `^prefix`, `suffix$`, `>` `>=` `<` `<=`, and the nesting `null`/`empty`/`blank`
+  sentinels) that is **total**: every string compiles, so a filter box can compile on
+  every keystroke, and **no `RegExp` is ever built from user input**
+  ([ADR-0021](docs/adr/0021-filter-expression-grammar.md)). Custom operators plug in
+  through `options.operators`. `comparator` returns a genuine total order — blanks pinned
+  to one end regardless of direction, mixed types ordered by type then value,
+  `Intl.Collator` for text, locale opt-in for numbers
+  ([ADR-0022](docs/adr/0022-comparator-total-order-semantics.md)). `paginate` clamps an
+  out-of-range page instead of failing.
 - New `egl-utils-js/net` entry (ROADMAP 9.2, spec 02 F29-F32): `isIpv4`, `parseIpv4`,
   `formatIpv4`, `ipv4ToKey`, `ipv4FromKey`, and `subnetMaskFromPrefix`
   ([ADR-0020](docs/adr/0020-strict-ipv4-parsing-and-the-sortable-key-codec.md)). Parsing is

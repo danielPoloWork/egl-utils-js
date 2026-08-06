@@ -48,6 +48,29 @@
     "limit": "0.8 kB"
   },
   {
+    "name": "/table (NFR-08: measured 1722 B)",
+    "path": "dist/esm/table.js",
+    "limit": "1.8 kB"
+  },
+  {
+    "name": "single: compileFilter (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/table.js",
+    "import": "{ compileFilter }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: comparator (1.05 kB - documented NFR-08 exception, ADR-0022)",
+    "path": "dist/esm/table.js",
+    "import": "{ comparator }",
+    "limit": "1.05 kB"
+  },
+  {
+    "name": "single: paginate (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/table.js",
+    "import": "{ paginate }",
+    "limit": "1 kB"
+  },
+  {
     "name": "single: isIpv4 (NFR-08 <= 1 kB / NFR-02)",
     "path": "dist/esm/net.js",
     "import": "{ isIpv4 }",
