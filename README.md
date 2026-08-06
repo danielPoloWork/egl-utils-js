@@ -333,8 +333,38 @@ resurfaces much later as *"cannot read properties of null"*, far from its cause.
 `missing` array is the point: one report, at startup, next to the contract it describes.
 
 The returned `elements` object is a **snapshot, not a live view** — after a re-render the
-nodes are different objects. For anything that re-renders, delegate instead (arriving in
-11.2).
+nodes are different objects. For anything that re-renders, delegate instead:
+
+```js
+import { delegate, setEnabled, setVisible, setValue } from 'egl-utils-js/dom';
+
+// ONE listener for a table that re-renders on every keystroke. Nodes come and go
+// beneath it and nothing needs rebinding — no per-row bind, no teardown pass to forget.
+const off = delegate(tbody, 'click', 'tr[data-id]', (event, row) => {
+  openRecord(row.dataset.id); // `row` is the MATCHED element, not event.target,
+}); //                            which may be a cell or an icon inside it
+off(); // detach — idempotent; or pass { signal } and let an AbortSignal do it
+
+// `focus` does not bubble, so delegation needs the capture phase:
+delegate(form, 'focus', 'input', highlight, { capture: true });
+
+// Setters: no-ops on null, so an optional element needs no guard at the call site.
+setEnabled(elements.submit, form.checkValidity());
+setVisible(elements.spinner, isLoading); //           drives the `hidden` attribute
+setVisible(elements.panel, false, { hiddenClass: 'is-hidden' }); // that class INSTEAD
+
+setValue(elements.name, record.name); //   text, textarea
+setValue(elements.subscribed, true); //    checkbox / radio -> checked
+setValue(elements.country, 'IT'); //       select -> selects that option
+setValue(elements.tags, ['a', 'b']); //    multiple select
+setValue(elements.name, null); //          clears, rather than writing "null"
+```
+
+`setVisible` drives **one** mechanism, never two: hide and show therefore always undo each
+other, which is not true of the common hand-rolled pair that clears two mechanisms and sets
+one. `setValue` dispatches **no** `input` or `change` event — a plain assignment does not
+either, and synthesising one could re-enter the handler that called it; dispatch explicitly
+when a listener must run.
 
 ### Structured logging (`egl-utils-js/logging`)
 

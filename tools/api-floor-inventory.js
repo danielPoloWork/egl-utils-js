@@ -140,6 +140,22 @@ export const MEMBERS = {
       'crypto.js throws a TypeError naming the secure-context requirement when subtle is absent, rather than degrading (ADR-0008)',
   },
   'performance.now': { bcd: 'api.Performance.now' },
+  // Passing `{signal}` to addEventListener — the API `delegate` (F44) builds its
+  // entire teardown on (ADR-0029). Declared by hand because the scanner cannot
+  // see the call site: it is `root.addEventListener(...)` on a parameter, not
+  // `EventTarget.addEventListener`. So this entry exists for check 2, the BCD
+  // floor comparison, rather than to satisfy check 3's deny-by-default scan —
+  // the documented limit of a regex scanner (ADR-0028), and exactly the case
+  // where a hand-written declaration earns its keep.
+  //
+  // Checked rather than assumed: Safari 15 and Node 15.4, both **below** the
+  // 15.4/18 matrix, so it needs no guard. The first draft of this entry claimed
+  // Safari added it in exactly 15.4 — wrong, and the kind of hand-typed version
+  // claim this file exists to stop.
+  'EventTarget.addEventListener': {
+    bcd: 'api.EventTarget.addEventListener.options_parameter.options_signal_parameter',
+    why: 'delegate() registers with an internal AbortController signal, so unsubscribe is one abort() and cannot leak a retained handler reference',
+  },
   'document.cookie': {
     guardReason: 'context',
     bcd: 'api.Document.cookie',

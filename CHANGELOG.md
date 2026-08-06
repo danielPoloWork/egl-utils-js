@@ -12,6 +12,23 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **`delegate`, `setEnabled`, `setVisible` and `setValue`** on `egl-utils-js/dom`
+  (ROADMAP 11.2, spec 03 F44–F45,
+  [ADR-0029](docs/adr/0029-delegation-teardown-and-setter-symmetry.md)). `delegate` attaches
+  **one** listener that serves every current and future descendant matching a selector, so a
+  re-render needs no rebinding and there is no teardown pass to forget; the handler receives
+  the **matched** element rather than `event.target` (which is the deeper node actually
+  clicked), and matching is bounded by `root` so `closest` cannot reach an ancestor outside
+  the delegated subtree. Teardown is an internal `AbortController`: unsubscribe is one
+  `abort()` — idempotent by construction, with no retained handler reference — and a caller
+  `signal` is bridged so it cleans up in both directions. The setters are **no-ops on
+  nullish** (an absent optional element is a normal state, and requiring `if (el)` at every
+  call site is how those guards get forgotten) and throw `TypeError` on a wrong type.
+  `setVisible` drives the `hidden` attribute, or a given class **instead** — never both, so
+  hide and show always undo each other. `setValue` covers text, textarea, checkbox, radio and
+  single/multiple selects, clears on nullish, leaves no phantom selection when no option
+  matches, and deliberately **dispatches no event**, matching the assignment it replaces.
+
 - **`egl-utils-js/dom`** — a new browser-leaning entry, opened with `bindElements`,
   `isElement` and `requireDocument` (ROADMAP 11.1, spec 03 F43,
   [ADR-0028](docs/adr/0028-dom-entry-fails-fast-and-the-floor-gate-sees-the-dom.md)).

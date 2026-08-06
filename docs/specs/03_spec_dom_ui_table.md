@@ -85,10 +85,16 @@ UI components — `egl-utils-js/dom` (stateful; instance-based, framework-agnost
   Measured by a `vitest bench` case with a pinned fixture; this is an **absolute budget,
   not a parity claim** (see NFR-04 non-extension below).
 - NFR-14 Node-safety split, both directions: importing `egl-utils-js/table` and calling
-  every export — F42 included — **succeeds on Node ≥ 18 with no DOM present**, and every
-  `egl-utils-js/dom` export throws **`DomContractError`** (never `ReferenceError`, never a
-  silent no-op) when `document` is absent. Both directions are proved on the CI matrix, so
-  an SSR consumer gets a diagnosable failure and the pipeline stays server-usable.
+  every export — F42 included — **succeeds on Node ≥ 18 with no DOM present**; and on
+  `egl-utils-js/dom`, an export that must resolve the **ambient** document (one whose
+  root or target defaults to `document`) throws **`DomContractError`** when there is none —
+  never `ReferenceError`, never a silent no-op. **Amended in 11.2** (the original clause
+  said *every* `/dom` export): an export handed an explicit element or root operates on
+  that node and needs no global document, which is what makes `bindElements(map, {root})`
+  and `delegate(root, …)` usable inside a server-side DOM implementation. Requiring an
+  ambient document a function does not use would be a check for its own sake. Importing the
+  entry is always safe; failure happens on use. Both directions are proved on the CI matrix,
+  so an SSR consumer gets a diagnosable failure and the pipeline stays server-usable.
 - NFR-15 Teardown completeness: for every export that attaches a listener, starts a timer,
   or subscribes (F44, F46, F49, F50, F51), the returned unbind/destroy function and an
   aborted `AbortSignal` each leave **zero live listeners, zero pending timers and zero

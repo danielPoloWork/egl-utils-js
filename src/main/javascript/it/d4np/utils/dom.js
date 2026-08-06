@@ -17,3 +17,6 @@
 
 // DOM helpers (spec 03 §2 items F43-F48, ADR-0028).
 export { bindElements, isElement, requireDocument } from './dom-helpers.js';
+
+// Event delegation and native element setters (spec 03 §2 items F44-F45, ADR-0029).
+export { delegate, setEnabled, setValue, setVisible } from './dom-events.js';
