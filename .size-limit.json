@@ -5,9 +5,21 @@
     "limit": "5.85 kB"
   },
   {
-    "name": "/storage (NFR-01: measured 1706 B)",
+    "name": "/storage - full import (2.1 kB - documented NFR-01 divergence, ADR-0024: measured 2027 B)",
     "path": "dist/esm/storage.js",
-    "limit": "1.81 kB"
+    "limit": "2.1 kB"
+  },
+  {
+    "name": "/storage - wrappers only (NFR-02: F39 costs non-importers nothing; measured 1698 B)",
+    "path": "dist/esm/storage.js",
+    "import": "{ localStorageWrapper, sessionStorageWrapper, cookieHelper }",
+    "limit": "1.75 kB"
+  },
+  {
+    "name": "single: pageSessionId (composes uuid + the session wrapper; measured 888 B)",
+    "path": "dist/esm/storage.js",
+    "import": "{ pageSessionId }",
+    "limit": "0.95 kB"
   },
   {
     "name": "/sanitize (measured 1457 B; DOMPurify is external)",

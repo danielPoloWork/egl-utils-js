@@ -21,6 +21,7 @@
  */
 
 import { StorageError } from './errors.js';
+import { uuid } from './crypto.js';
 
 const PROBE_KEY = '__egl_storage_probe__';
 
@@ -195,6 +196,83 @@ export const sessionStorageWrapper = createStorageWrapper(
   () => /** @type {Storage | undefined} */ (globalThis.sessionStorage),
   'sessionStorage',
 );
+
+// ---------------------------------------------------------------------------
+// pageSessionId (spec 02 §2 item F39, ADR-0024)
+// ---------------------------------------------------------------------------
+
+/** Namespaced so it cannot collide with an application's own session keys. */
+const PAGE_SESSION_ID_KEY = 'egl.pageSessionId';
+
+/**
+ * @typedef {object} PageSessionIdOptions
+ * @property {string} [key='egl.pageSessionId'] - Storage key holding the id.
+ *   Distinct keys yield distinct, independent ids.
+ * @property {StorageWrapper} [storage] - Where to persist it; defaults to
+ *   {@link sessionStorageWrapper}. Injectable for tests, or to scope the id to
+ *   `localStorage` semantics instead (see the caveat below).
+ */
+
+/**
+ * Get — or mint, once — a stable identifier for this browser tab
+ * (spec 02 F39, ADR-0024).
+ *
+ * The id is a v4 UUID from the platform CSPRNG (ADR-0008), stored under
+ * `sessionStorage` semantics: it **survives reloads and in-tab navigation, dies
+ * with the tab, and differs between tabs** — which is exactly the scope needed
+ * to correlate a user's log lines, telemetry, or requests within one browsing
+ * session without identifying the user.
+ *
+ * **It is a correlation id, not a credential.** Nothing about it is
+ * authenticated, and it is readable by any script on the page; never use it to
+ * authorize anything (ADR-0024 records why).
+ *
+ * Degradation is silent by design, because a diagnostics helper must not be the
+ * thing that breaks a page: where storage is unavailable or blocked (Node,
+ * private browsing, a sandboxed iframe) the wrapper's in-memory fallback takes
+ * over and the id is stable only for the life of the realm — so a reload mints
+ * a new one. A value that cannot be read back (another script overwrote the key
+ * with non-JSON) is replaced rather than thrown over. Use
+ * `sessionStorageWrapper.isPersistent()` when the difference matters.
+ *
+ * @example
+ * const tabId = pageSessionId();
+ * log.info(`[${tabId}] checkout started`); // same id after F5, different in a new tab
+ *
+ * @example
+ * // Independent ids for independent concerns:
+ * const traceId = pageSessionId({ key: 'app.traceId' });
+ *
+ * @param {PageSessionIdOptions} [options]
+ * @returns {string} The tab's id — the same string on every call with the same
+ *   key, for as long as the backing store keeps it.
+ * @throws {TypeError} If `key` is not a string, or `storage` is not a
+ *   {@link StorageWrapper}.
+ */
+export function pageSessionId(options = {}) {
+  const { key = PAGE_SESSION_ID_KEY, storage = sessionStorageWrapper } = options;
+  assertKey(key);
+  if (typeof storage?.get !== 'function' || typeof storage?.set !== 'function') {
+    throw new TypeError('options.storage must be a StorageWrapper with get and set');
+  }
+
+  try {
+    const existing = storage.get(key);
+    if (typeof existing === 'string' && existing !== '') return existing;
+  } catch {
+    // Unreadable (non-JSON left by another script): mint a fresh id below
+    // rather than propagate a StorageError out of a diagnostics helper.
+  }
+
+  const id = uuid();
+  try {
+    storage.set(key, id);
+  } catch {
+    // Quota or a read-only store: the id is still valid for this call, it just
+    // will not survive a reload. Losing correlation beats breaking the page.
+  }
+  return id;
+}
 
 // ---------------------------------------------------------------------------
 // cookieHelper (spec §2 item 23, ADR-0011)

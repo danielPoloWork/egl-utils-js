@@ -39,3 +39,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0021](0021-filter-expression-grammar.md) | A total filter-expression grammar, interpreted without regular expressions | Accepted |
 | [0022](0022-comparator-total-order-semantics.md) | Comparator semantics — a total order, pinned blanks, and locale by opt-in | Accepted |
 | [0023](0023-duration-round-trip-and-the-error-record.md) | `formatDuration` as an exact inverse, and one record shape for any thrown value | Accepted |
+| [0024](0024-page-session-id-scope-and-budget.md) | `pageSessionId` — a correlation id, not a credential, and the 2 kB `/storage` clause it breaks | Accepted |

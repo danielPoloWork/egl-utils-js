@@ -84,8 +84,12 @@ Logging — `egl-utils-js/logging`:
   (query primitives, pre-pipeline) ≤ 1.8 kB (**landed: measured 1722 B** — the
   pre-implementation 1.6 kB ceiling was an unmeasured estimate; the three primitives
   carry five comparison modes, locale-aware numeric reading, and a thirteen-token grammar
-  between them); `/logging` ≤ 1.6 kB; `/storage` stays ≤ 2 kB (spec 01 NFR-01) with F39
-  included. The **root row re-baselines as root exports land** and tightens to measured at
+  between them); `/logging` ≤ 1.6 kB; `/storage` **≤ 2.1 kB** with F39 included (**landed 9.5: measured
+  2027 B** — this prediction was wrong: F39 reuses `uuid` per ADR-0008, which costs the
+  entry 329 B, so spec 01 NFR-01's `/storage` clause is amended by
+  [ADR-0024](../adr/0024-page-session-id-scope-and-budget.md). A wrappers-only import is
+  1698 B, so the cost falls only on consumers of F39, and that scenario is a permanent
+  size-limit row). The **root row re-baselines as root exports land** and tightens to measured at
   wave end (**landed 9.4: measured 5520 B, row 5.85 kB**; the remaining root addition F38
   is expected to leave under ~130 B of ceiling headroom, at which point the row becomes
   the 6 kB ceiling itself). Every new root export gets its own 1 kB single-import scenario row; a
