@@ -10,6 +10,7 @@ const entry = {
   sanitize: 'src/main/javascript/it/d4np/utils/sanitize.js',
   errors: 'src/main/javascript/it/d4np/utils/errors.js',
   text: 'src/main/javascript/it/d4np/utils/text.js',
+  net: 'src/main/javascript/it/d4np/utils/net.js',
 };
 
 const shared = {

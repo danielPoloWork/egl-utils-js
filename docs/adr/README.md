@@ -35,3 +35,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0017](0017-platform-api-floor-gate.md) | Verifying the platform-API floor — BCD data plus a deny-by-default inventory | Accepted |
 | [0018](0018-version-on-the-root-surface.md) | Re-export `VERSION` from the root entry | Accepted |
 | [0019](0019-subpath-family-and-code-unit-text-semantics.md) | The spec-02 subpath family, and code units as the text measure | Accepted |
+| [0020](0020-strict-ipv4-parsing-and-the-sortable-key-codec.md) | Strict IPv4 parsing, and a fixed-width sortable key codec | Accepted |
