@@ -43,3 +43,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0025](0025-resource-repository-over-an-injected-client.md) | A REST resource as a Repository over an injected client | Accepted |
 | [0026](0026-brace-expansion-override-replaces-the-audit-exception.md) | A range-scoped override replaces the `brace-expansion` audit exception | Accepted |
 | [0027](0027-logging-formatter-sink-split.md) | A logger split into a threshold, a formatter, and a sink | Accepted |
+| [0028](0028-dom-entry-fails-fast-and-the-floor-gate-sees-the-dom.md) | The `/dom` entry fails fast, and the floor gate learns to see the DOM | Accepted |

@@ -195,3 +195,38 @@ export class DurationParseError extends EglError {
     super(message, options);
   }
 }
+
+/**
+ * Raised by the `egl-utils-js/dom` entry when its environmental contract is not
+ * met: no DOM is present, or a required element is missing (spec 03 §2 item
+ * F43). Code: `EGL_DOM_CONTRACT`.
+ *
+ * `/dom` fails fast rather than degrading. The storage wrappers' silent
+ * in-memory fallback (ADR-0010) is right because degraded storage still has
+ * meaning; a no-op `setVisible` has none — it would report success while the
+ * page stayed unchanged. A typed error with a stable code also keeps a
+ * server-side render diagnosable, where a bare `ReferenceError: document is not
+ * defined` names the symptom rather than the contract (ADR-0028).
+ */
+export class DomContractError extends EglError {
+  name = 'DomContractError';
+  code = 'EGL_DOM_CONTRACT';
+
+  /**
+   * @param {string} message
+   * @param {ErrorOptions & { missing?: readonly string[] }} [options]
+   *   `missing` lists the names whose selector matched nothing, for the
+   *   `bindElements` strict-mode failure.
+   */
+  constructor(message, options) {
+    super(message, options);
+
+    /**
+     * Names whose selector matched no element, when this error came from
+     * `bindElements({ strict: true })`; otherwise an empty array.
+     *
+     * @type {readonly string[]}
+     */
+    this.missing = options?.missing ?? [];
+  }
+}

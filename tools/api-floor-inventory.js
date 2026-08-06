@@ -60,6 +60,51 @@ export const GLOBALS = {
   structuredClone: { bcd: 'api.structuredClone' },
   clearTimeout: { bcd: 'api.clearTimeout' },
   setTimeout: { bcd: 'api.setTimeout' },
+
+  // --- globals read through `globalThis` (spec 03 NFR-16) ---
+  //
+  // These eight reads existed long before this wave and were invisible to the
+  // gate: it matched `Global.member` and `Global(`, so the deliberately safe
+  // form — `globalThis.document`, the only way to read a possibly-absent global
+  // without risking a ReferenceError — slipped through every scan. Declaring
+  // them is the point of a deny-by-default inventory; a GLOBALS entry authorizes
+  // reading the global and nothing more, so each member reached off it still
+  // needs its own entry below.
+  crypto: {
+    guardReason: 'context',
+    bcd: 'api.crypto',
+    guarded:
+      'the #webcrypto shims resolve globalThis.crypto and fall back to node:crypto webcrypto on the Node 18 floor (ADR-0008)',
+  },
+  document: {
+    guardReason: 'context',
+    bcd: 'api.Window.document',
+    guarded:
+      'dom-helpers.js `requireDocument` throws DomContractError naming the contract, and storage.js probes for the cookie accessor before using it (ADR-0028, ADR-0011)',
+  },
+  fetch: {
+    guardReason: 'context',
+    bcd: 'api.fetch',
+    guarded:
+      'web.js takes `config.fetch` and only defaults to globalThis.fetch, so a runtime without it is served by injection (ADR-0007)',
+  },
+  localStorage: {
+    guardReason: 'context',
+    bcd: 'api.Window.localStorage',
+    guarded:
+      'storage.js proves availability with a write+remove probe, else an in-memory Map (ADR-0010)',
+  },
+  location: {
+    guardReason: 'context',
+    bcd: 'api.Window.location',
+    guarded:
+      'storage.js reads the protocol only to decide the Secure cookie attribute, behind a presence check (ADR-0011)',
+  },
+  sessionStorage: {
+    guardReason: 'context',
+    bcd: 'api.Window.sessionStorage',
+    guarded: 'same write+remove probe and in-memory fallback as localStorage (ADR-0010)',
+  },
 };
 
 /**

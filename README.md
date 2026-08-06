@@ -299,6 +299,43 @@ ipv4ToKey('192.168.1.10').startsWith(ipv4ToKey('192.168', { octets: 2 })); // tr
 subnetMaskFromPrefix('/24'); // '255.255.255.0' — '/24', '24', and 24 are interchangeable
 ```
 
+### DOM helpers (`egl-utils-js/dom`)
+
+Browser-only by contract: every export here needs a live document and says so with a typed
+`DomContractError` instead of degrading (ADR-0028). Importing the entry is safe anywhere —
+the document is resolved per call — so a server render fails on *use*, with a message
+naming the DOM-free alternative, rather than on import.
+
+```js
+import { bindElements, isElement } from 'egl-utils-js/dom';
+
+// Resolve a whole markup contract in one pass, and learn what is missing:
+const { elements, missing } = bindElements({
+  form: '#checkout-form',
+  submit: '#checkout-submit',
+  total: '[data-total]',
+});
+if (missing.length > 0) log.warn('markup contract drifted', missing); // e.g. ['total']
+elements.submit?.addEventListener('click', onSubmit);
+
+// Or refuse to boot at all rather than limp along with half a page:
+bindElements({ app: '#app' }, { strict: true }); // throws DomContractError, .missing = ['app']
+
+// Scope lookups to a subtree — a component need not know the whole document:
+bindElements({ title: '.panel-title' }, { root: panelEl });
+
+isElement(node); // structural (nodeType + querySelector), so a node from an iframe
+//                  or a second jsdom realm passes where `instanceof Element` fails
+```
+
+Binding one element at a time turns a selector typo into a `null` that travels and
+resurfaces much later as *"cannot read properties of null"*, far from its cause. The
+`missing` array is the point: one report, at startup, next to the contract it describes.
+
+The returned `elements` object is a **snapshot, not a live view** — after a re-render the
+nodes are different objects. For anything that re-renders, delegate instead (arriving in
+11.2).
+
 ### Structured logging (`egl-utils-js/logging`)
 
 One threshold instead of a flag per severity, and every seam injected: destination

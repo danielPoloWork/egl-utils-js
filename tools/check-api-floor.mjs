@@ -146,6 +146,13 @@ const KNOWN_MEMBERS = new Set(Object.keys(MEMBERS));
 
 // Platform globals worth policing. ES built-ins are deliberately absent (see
 // the inventory's SCOPE note) — `target`/`lib` govern those.
+//
+// The DOM block was added for spec 03 NFR-16. Until then this list held
+// `document` and `window` but none of the DOM *types*, so `x instanceof Element`
+// or `new CustomEvent(...)` passed the gate in silence — ADR-0017 promised
+// deny-by-default and delivered it only for the globals someone had thought to
+// list. A wave that touches the DOM has to close that, or the gate would be
+// weakest exactly where it is needed most.
 const POLICED = [
   'AbortController',
   'AbortSignal',
@@ -179,6 +186,23 @@ const POLICED = [
   'setTimeout',
   'structuredClone',
   'window',
+  // --- DOM surface (spec 03 NFR-16) ---
+  'CustomEvent',
+  'DocumentFragment',
+  'Element',
+  'Event',
+  'EventTarget',
+  'HTMLElement',
+  'HTMLInputElement',
+  'HTMLSelectElement',
+  'HTMLTextAreaElement',
+  'MutationObserver',
+  'Node',
+  'NodeFilter',
+  'ResizeObserver',
+  'cancelAnimationFrame',
+  'getComputedStyle',
+  'requestAnimationFrame',
 ];
 
 /** Strip comments and strings so documentation prose is not scanned as code. */
@@ -205,7 +229,11 @@ for (const file of jsFiles(SOURCE_DIR)) {
       // availability question is the storage object, not each method.
       const normalized =
         global === 'localStorage' || global === 'sessionStorage' ? `${global}.getItem` : key;
-      if (!KNOWN_MEMBERS.has(normalized) && !KNOWN_GLOBALS.has(global)) {
+      // A GLOBALS entry authorizes reading the global itself, never its members:
+      // `document` being declared says nothing about whether `document.fooBar`
+      // exists at the floor. Consulting KNOWN_GLOBALS here would have let one
+      // bare-global entry blanket-authorize every member reached off it.
+      if (!KNOWN_MEMBERS.has(normalized)) {
         failures.push(
           `  ✗ ${short}: uses \`${key}\` — not in the inventory. Add it to ` +
             'tools/api-floor-inventory.js with its BCD path (deny-by-default).',
@@ -218,6 +246,35 @@ for (const file of jsFiles(SOURCE_DIR)) {
     if (barePattern.test(code) && !KNOWN_GLOBALS.has(global) && !KNOWN_MEMBERS.has(global)) {
       failures.push(
         `  ✗ ${short}: calls \`${global}()\` — not in the inventory. Add it to ` +
+          'tools/api-floor-inventory.js with its BCD path (deny-by-default).',
+      );
+    }
+
+    // Two reference forms neither pattern above can see, because the member one
+    // needs a `.` on the right and the call one needs a `(` (NFR-16):
+    //
+    //   `x instanceof Element`   — a DOM *type* used as a value, which is how a
+    //                             type dependency normally enters this codebase;
+    //   `globalThis.document`    — the safe way to read a possibly-absent global,
+    //                             and therefore the form every guarded use takes.
+    //
+    // Deliberately NOT flagged: `typeof X` (a feature test is a declaration that
+    // absence is handled, not an unguarded dependency) and object/destructuring
+    // property keys — `{ fetch: impl }` and `const { window } = options` name a
+    // property, not a global. An earlier draft matched any bare identifier and
+    // reported exactly those two shapes in web.js and sanitize.js, which are not
+    // uses at all.
+    const referencePatterns = [
+      new RegExp(`\\binstanceof\\s+${global}\\b`),
+      new RegExp(`\\bglobalThis\\s*\\.\\s*${global}\\b`),
+    ];
+    if (
+      referencePatterns.some((pattern) => pattern.test(code)) &&
+      !KNOWN_GLOBALS.has(global) &&
+      !KNOWN_MEMBERS.has(global)
+    ) {
+      failures.push(
+        `  ✗ ${short}: references \`${global}\` — not in the inventory. Add it to ` +
           'tools/api-floor-inventory.js with its BCD path (deny-by-default).',
       );
     }

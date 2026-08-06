@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-06 — v0.3.0 shipped, and spec 03 planned`](docs/journal/2026/08/2026-08-06-spec-03-planning.md).
+  [`2026-08-06 — the /dom foundation, and the floor gate`](docs/journal/2026/08/2026-08-06-dom-foundation.md).
 
 ## Model & effort routing
 
@@ -167,7 +167,7 @@ Level-thresholded logger with a pure formatter and a pluggable sink contract on 
 The browser-leaning `/dom` entry and the helpers everything above it reuses (spec 03 §2,
 F43–F48). Spec: [`docs/specs/03_spec_dom_ui_table.md`](docs/specs/03_spec_dom_ui_table.md).
 
-- [ ] 11.1 `/dom` subpath foundation: entry wiring, `bindElements` with a missing-element report and a `strict` mode, `DomContractError` on `egl-utils-js/errors`, and the deny-by-default api-floor scanner extended to policed DOM globals (spec 03 F43, NFR-14, NFR-16) _(route: frontier-reasoning/high — sets-pattern + security: extends the ADR-0017 gate to the DOM; the fail-fast contract every /dom export copies)_
+- [x] 11.1 `/dom` subpath foundation: entry wiring, `bindElements` with a missing-element report and a `strict` mode, `DomContractError` on `egl-utils-js/errors`, and the deny-by-default api-floor scanner extended to policed DOM globals (spec 03 F43, NFR-14, NFR-16) _(route: frontier-reasoning/high — sets-pattern + security: extends the ADR-0017 gate to the DOM; the fail-fast contract every /dom export copies)_
 - [ ] 11.2 `delegate` with AbortController teardown, plus the `setEnabled`/`setVisible`/`setValue` native setters (spec 03 F44–F45, NFR-15) _(route: standard/high — teardown lifecycle is classically leak-prone)_
 - [ ] 11.3 `injectFragment` with a mandatory caller-supplied sanitizer, `autoGrow` behind an injected measure seam, and `withUrlParams` (spec 03 F46–F48) _(route: frontier-reasoning/high — security: the sanitize boundary is the deliverable)_
 
@@ -230,9 +230,9 @@ _Spec 02 is complete as of M10 (v0.3.0): F26–F41 all delivered._
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 (03) | Objective & business context | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ⏳ |
-| §2 (03) | Functional requirements F42–F51 | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ⏳ |
-| §3 (03) | Non-functional requirements | 11.1, 11.2, 12.1, 12.2, 13.1, 13.2 | ⏳ |
-| §4 (03) | Logical architecture | 11.1, 13.1, 13.2 | ⏳ |
-| §5 (03) | Public interface | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ⏳ |
-| §6 (03) | Verification & test strategy | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ⏳ |
+| §1 (03) | Objective & business context | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | 🚧 |
+| §2 (03) | Functional requirements F42–F51 | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | 🚧 |
+| §3 (03) | Non-functional requirements | 11.1, 11.2, 12.1, 12.2, 13.1, 13.2 | 🚧 |
+| §4 (03) | Logical architecture | 11.1, 13.1, 13.2 | 🚧 |
+| §5 (03) | Public interface | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | 🚧 |
+| §6 (03) | Verification & test strategy | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | 🚧 |
