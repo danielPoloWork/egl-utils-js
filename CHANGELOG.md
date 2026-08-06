@@ -12,6 +12,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- New `egl-utils-js/net` entry (ROADMAP 9.2, spec 02 F29-F32): `isIpv4`, `parseIpv4`,
+  `formatIpv4`, `ipv4ToKey`, `ipv4FromKey`, and `subnetMaskFromPrefix`
+  ([ADR-0020](docs/adr/0020-strict-ipv4-parsing-and-the-sortable-key-codec.md)). Parsing is
+  strict — four decimal octets, no leading zeros, none of the legacy `inet_aton` shorthand,
+  octal, hex, or bare-integer forms that different parsers resolve differently — so a
+  validity check and the parse that follows it can never disagree. The key codec renders three
+  zero-padded digits per octet, making lexicographic order match numeric address order and
+  octet-aligned network containment a `startsWith`. Invalid content returns `null`; only a
+  wrong argument type throws.
 - New `egl-utils-js/text` entry (ROADMAP 9.1, spec 02 F26-F28): `truncate`, `wrapText`, and
   `fixedWidth` — pure string-shaping helpers that measure in UTF-16 code units and never emit a
   lone surrogate ([ADR-0019](docs/adr/0019-subpath-family-and-code-unit-text-semantics.md)).

@@ -43,6 +43,47 @@
     "limit": "1 kB"
   },
   {
+    "name": "/net (NFR-08: measured 709 B)",
+    "path": "dist/esm/net.js",
+    "limit": "0.8 kB"
+  },
+  {
+    "name": "single: isIpv4 (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/net.js",
+    "import": "{ isIpv4 }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: parseIpv4 (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/net.js",
+    "import": "{ parseIpv4 }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: formatIpv4 (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/net.js",
+    "import": "{ formatIpv4 }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: ipv4ToKey (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/net.js",
+    "import": "{ ipv4ToKey }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: ipv4FromKey (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/net.js",
+    "import": "{ ipv4FromKey }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: subnetMaskFromPrefix (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/net.js",
+    "import": "{ subnetMaskFromPrefix }",
+    "limit": "1 kB"
+  },
+  {
     "name": "single: delay (NFR-01 <= 1 kB / NFR-02)",
     "path": "dist/esm/index.js",
     "import": "{ delay }",

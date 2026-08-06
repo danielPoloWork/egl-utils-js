@@ -205,6 +205,40 @@ fixedWidth('42', 6, { align: 'right', pad: '0' }); // '000042'
 fixedWidth('com.example.Service', 12, { truncate: 'start' }); // 'mple.Service'
 ```
 
+### IPv4 & CIDR (`egl-utils-js/net`)
+
+Strict by design (ADR-0020): four decimal octets, no leading zeros, none of the legacy
+`inet_aton` forms that different parsers resolve differently. Invalid content returns
+`null` — only a wrong argument *type* throws.
+
+```js
+import {
+  isIpv4,
+  parseIpv4,
+  formatIpv4,
+  ipv4ToKey,
+  ipv4FromKey,
+  subnetMaskFromPrefix,
+} from 'egl-utils-js/net';
+
+isIpv4('192.168.1.10'); // true
+isIpv4('192.168.01.10'); // false — a leading zero is ambiguous (octal elsewhere)
+isIpv4('127.1'); // false — shorthand form
+
+parseIpv4('192.168.1.10'); // [192, 168, 1, 10]
+formatIpv4([192, 168, 1, 10]); // '192.168.1.10' — exact inverse
+
+// Fixed-width keys sort as addresses, not as strings:
+ipv4ToKey('192.168.1.10'); // '192168001010'
+ipv4FromKey('192168001010'); // '192.168.1.10'
+addresses.sort((a, b) => ipv4ToKey(a).localeCompare(ipv4ToKey(b)));
+
+// A prefix key is a literal prefix of the key, so containment is startsWith:
+ipv4ToKey('192.168.1.10').startsWith(ipv4ToKey('192.168', { octets: 2 })); // true
+
+subnetMaskFromPrefix('/24'); // '255.255.255.0' — '/24', '24', and 24 are interchangeable
+```
+
 ### Errors (`egl-utils-js/errors`)
 
 One base class, one stable `.code` per subtype — check identity via `.code`, never
