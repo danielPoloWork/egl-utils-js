@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-06 — the /logging subpath, and spec 02 complete`](docs/journal/2026/08/2026-08-06-logging-subpath.md).
+  [`2026-08-06 — v0.3.0 shipped, and spec 03 planned`](docs/journal/2026/08/2026-08-06-spec-03-planning.md).
 
 ## Model & effort routing
 
@@ -162,6 +162,40 @@ Level-thresholded logger with a pure formatter and a pluggable sink contract on 
 
 ---
 
+## Milestone 11 — DOM foundation
+
+The browser-leaning `/dom` entry and the helpers everything above it reuses (spec 03 §2,
+F43–F48). Spec: [`docs/specs/03_spec_dom_ui_table.md`](docs/specs/03_spec_dom_ui_table.md).
+
+- [ ] 11.1 `/dom` subpath foundation: entry wiring, `bindElements` with a missing-element report and a `strict` mode, `DomContractError` on `egl-utils-js/errors`, and the deny-by-default api-floor scanner extended to policed DOM globals (spec 03 F43, NFR-14, NFR-16) _(route: frontier-reasoning/high — sets-pattern + security: extends the ADR-0017 gate to the DOM; the fail-fast contract every /dom export copies)_
+- [ ] 11.2 `delegate` with AbortController teardown, plus the `setEnabled`/`setVisible`/`setValue` native setters (spec 03 F44–F45, NFR-15) _(route: standard/high — teardown lifecycle is classically leak-prone)_
+- [ ] 11.3 `injectFragment` with a mandatory caller-supplied sanitizer, `autoGrow` behind an injected measure seam, and `withUrlParams` (spec 03 F46–F48) _(route: frontier-reasoning/high — security: the sanitize boundary is the deliverable)_
+
+
+---
+
+## Milestone 12 — UI components
+
+Instance-based, framework-agnostic components: no design system in a default (spec 03 §2,
+F49–F50).
+
+- [ ] 12.1 `inlineAlert`: per-instance timers and bindings, injectable class/icon maps, `textContent` by default with an opt-in `{html, sanitize}` pair (spec 03 F49) _(route: frontier-reasoning/high — sets-pattern: the component contract 12.2 and spec 04 copy)_
+- [ ] 12.2 `loadingOverlay`: reference counting, a minimum-visible clock started when the presentation settles, and focus save/blur/restore over injected `onShow`/`onHide` hooks (spec 03 F50) _(route: standard/high — the refcount and anti-flicker interplay is classically bug-prone)_
+
+
+---
+
+## Milestone 13 — Composable table pipeline
+
+One owner of state, pure stages, one derived view — so filtering and sorting compose
+instead of discarding each other (spec 03 §2, F42 and F51).
+
+- [ ] 13.1 `tablePipeline` on `/table`: commands, a memoized `view()`, one `'change'` event composing EventEmitter, over the spec-02 query primitives; pure and SSR-safe (spec 03 F42, NFR-13) _(route: frontier-reasoning/high — decision-heavy: the wave's flagship contract)_
+- [ ] 13.2 `bindTableControls` in `/dom`: debounced filter/search inputs, one delegated sort-header listener with `aria-sort`, pagination reflection, structural teardown, plus the Playwright end-to-end scenario (spec 03 F51, NFR-15) _(route: standard/high)_
+
+
+---
+
 ## Spec Coverage Map
 
 Tracks which spec section is fulfilled by which roadmap item(s). Every spec section has a
@@ -190,4 +224,15 @@ progress · ✅ done · ❎ N/A.
 | §5 (02) | Public interface | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ✅ |
 | §6 (02) | Verification & test strategy | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ✅ |
 
-_Spec 02 stays 🚧 until M10 (F40–F41, the `/logging` subpath) lands; F26–F39 are complete._
+_Spec 02 is complete as of M10 (v0.3.0): F26–F41 all delivered._
+
+### Spec 03 — DOM toolkit, UI components & the table pipeline (F42–F51)
+
+| Spec § | Requirement | Roadmap items | Status |
+|--------|-------------|---------------|--------|
+| §1 (03) | Objective & business context | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ⏳ |
+| §2 (03) | Functional requirements F42–F51 | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ⏳ |
+| §3 (03) | Non-functional requirements | 11.1, 11.2, 12.1, 12.2, 13.1, 13.2 | ⏳ |
+| §4 (03) | Logical architecture | 11.1, 13.1, 13.2 | ⏳ |
+| §5 (03) | Public interface | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ⏳ |
+| §6 (03) | Verification & test strategy | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ⏳ |
