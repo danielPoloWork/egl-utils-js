@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-06 — pageSessionId on /storage`](docs/journal/2026/08/2026-08-06-page-session-id.md).
+  [`2026-08-06 — createResource, and M9 complete`](docs/journal/2026/08/2026-08-06-create-resource.md).
 
 ## Model & effort routing
 
@@ -147,7 +147,7 @@ platform APIs, testable from day one. Spec: [`docs/specs/02_spec_core_extensions
 - [x] 9.3 `/table` subpath, query primitives: filter-expression compiler with pluggable operators, typed comparators (Intl.Collator collation, auto type detection, empties-last), paginate (spec 02 F33–F35) _(route: frontier-reasoning/high — sets-pattern + decision-heavy: the query contract the spec-03 table pipeline builds on)_ — grammar totality fixed by [ADR-0021](docs/adr/0021-filter-expression-grammar.md), order semantics by [ADR-0022](docs/adr/0022-comparator-total-order-semantics.md)
 - [x] 9.4 diagnostics: formatDuration (parseDuration round-trip) + normalizeError (any thrown value → uniform diagnostic record) (spec 02 F36–F37) _(route: standard/medium)_ — round-trip and record contracts fixed by [ADR-0023](docs/adr/0023-duration-round-trip-and-the-error-record.md)
 - [x] 9.5 storage: pageSessionId — per-tab stable id on the storage-wrapper contract with private-mode fallback (spec 02 F39) _(route: standard/medium)_ — scope (a correlation id, not a credential) and the amended `/storage` budget fixed by [ADR-0024](docs/adr/0024-page-session-id-scope-and-budget.md)
-- [ ] 9.6 web: createResource — repository factory over an injected httpClient-compatible transport (spec 02 F38) _(route: standard/high — sets-pattern: the repository contract)_
+- [x] 9.6 web: createResource — repository factory over an injected httpClient-compatible transport (spec 02 F38) _(route: standard/high — sets-pattern: the repository contract)_ — injection over import, and id-as-one-segment, fixed by [ADR-0025](docs/adr/0025-resource-repository-over-an-injected-client.md)
 
 
 ---
@@ -189,3 +189,5 @@ progress · ✅ done · ❎ N/A.
 | §4 (02) | Logical architecture | 9.1, 9.3, 10.1 | 🚧 |
 | §5 (02) | Public interface | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | 🚧 |
 | §6 (02) | Verification & test strategy | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | 🚧 |
+
+_Spec 02 stays 🚧 until M10 (F40–F41, the `/logging` subpath) lands; F26–F39 are complete._

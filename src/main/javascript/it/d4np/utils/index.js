@@ -40,9 +40,10 @@ export { validateEmail } from './validation.js';
 // Typed event helpers (spec §2 items 6–8), stateful by contract (ADR-0006).
 export { EventEmitter, debounce, throttle } from './events.js';
 
-// Web utilities (spec §2 items 16–17) — fetch facade with the no-token-storage
-// auth contract (ADR-0007).
-export { httpClient, urlSearchParams } from './web.js';
+// Web utilities (spec §2 items 16–17; spec 02 §2 item F38) — fetch facade with
+// the no-token-storage auth contract (ADR-0007), and the resource factory that
+// composes any compatible client by injection (ADR-0025).
+export { httpClient, urlSearchParams, createResource } from './web.js';
 
 // Crypto utilities (spec §2 items 18–19) — Web Crypto only via the #webcrypto
 // conditional-import shim; Math.random is never a fallback (ADR-0008).

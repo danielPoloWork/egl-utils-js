@@ -12,6 +12,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `createResource` on the root entry (ROADMAP 9.6, spec 02 F38,
+  [ADR-0025](docs/adr/0025-resource-repository-over-an-injected-client.md)): a REST
+  resource factory returning `{ list, get, create, update, patch, remove }` over a
+  **client passed as a parameter, never imported** — anything exposing
+  `get`/`post`/`put`/`patch`/`delete` works, so it costs 505 B rather than inheriting the
+  1304 B `httpClient` facade, and a test needs no network and no mocking framework. Ids are
+  encoded as exactly one path segment (an id containing `/` or `..` can never widen the
+  path) and a `null`/`undefined` id throws rather than requesting `…/undefined`; per-call
+  `signal`/`timeout`/`headers` pass straight through.
 - `pageSessionId` on `egl-utils-js/storage` (ROADMAP 9.5, spec 02 F39,
   [ADR-0024](docs/adr/0024-page-session-id-scope-and-budget.md)): a v4 UUID held under
   `sessionStorage` semantics, so it survives reloads and in-tab navigation, dies with the
