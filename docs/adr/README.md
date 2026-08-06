@@ -42,3 +42,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0024](0024-page-session-id-scope-and-budget.md) | `pageSessionId` — a correlation id, not a credential, and the 2 kB `/storage` clause it breaks | Accepted |
 | [0025](0025-resource-repository-over-an-injected-client.md) | A REST resource as a Repository over an injected client | Accepted |
 | [0026](0026-brace-expansion-override-replaces-the-audit-exception.md) | A range-scoped override replaces the `brace-expansion` audit exception | Accepted |
+| [0027](0027-logging-formatter-sink-split.md) | A logger split into a threshold, a formatter, and a sink | Accepted |

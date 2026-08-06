@@ -83,6 +83,35 @@
     "limit": "1 kB"
   },
   {
+    "name": "/logging - full import (NFR-08: measured 1390 B, clause 1.6 kB)",
+    "path": "dist/esm/logging.js",
+    "limit": "1.45 kB"
+  },
+  {
+    "name": "single: logger (1.45 kB - documented NFR-08 exception, ADR-0027: measured 1361 B)",
+    "path": "dist/esm/logging.js",
+    "import": "{ logger }",
+    "limit": "1.45 kB"
+  },
+  {
+    "name": "single: formatLogLine (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/logging.js",
+    "import": "{ formatLogLine }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: formatTimestamp (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/logging.js",
+    "import": "{ formatTimestamp }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: LOG_LEVELS (NFR-08 <= 1 kB / NFR-02)",
+    "path": "dist/esm/logging.js",
+    "import": "{ LOG_LEVELS }",
+    "limit": "1 kB"
+  },
+  {
     "name": "single: isIpv4 (NFR-08 <= 1 kB / NFR-02)",
     "path": "dist/esm/net.js",
     "import": "{ isIpv4 }",

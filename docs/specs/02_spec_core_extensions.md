@@ -66,7 +66,7 @@ Storage — `egl-utils-js/storage` (stateful):
 Logging — `egl-utils-js/logging`:
 
 - F40 logger({level='info', name, sink, format, now, id}?) — level-thresholded structured logger: methods trace/debug/info/warn/error gated by one threshold over LOG_LEVELS (trace < debug < info < warn < error < silent); child(context) returns a logger with 'parent.context' name; clock (now), sink, format, and id are injected with safe defaults; a throwing sink is caught and last-resorted to console.error — logging never throws into application code
-- F41 formatLogLine(record) — pure line formatter 'YYYY-MM-DD HH:mm:ss.SSS LEVEL id --- [name] message' with fixed-width columns (F28) and CR/LF stripped from the message (log-injection hardening); formatTimestamp(date, {fractional=true}) — 'YYYY-MM-DD HH:mm:ss[.SSS]', no trailing separator when fractional is off; LOG_LEVELS — the frozen ordered level vocabulary
+- F41 formatLogLine(record) — pure line formatter 'YYYY-MM-DD HH:mm:ss.SSS LEVEL id --- [name] message' with fixed-width columns (F28) and CR/LF stripped from the message — and, one step stronger than this clause first required, from the `name` and `id` columns as well, so the one-record-one-line guarantee is total for every input rather than only for the message (log-injection hardening, ADR-0027); the `id` and `[name]` groups are omitted when empty rather than padded to blanks; formatTimestamp(date, {fractional=true}) — 'YYYY-MM-DD HH:mm:ss[.SSS]' in local time, accepting a Date or epoch milliseconds, no trailing separator when fractional is off; LOG_LEVELS — the frozen ordered level vocabulary
 
 ## 3. Non-Functional Requirements
 
@@ -84,7 +84,8 @@ Logging — `egl-utils-js/logging`:
   (query primitives, pre-pipeline) ≤ 1.8 kB (**landed: measured 1722 B** — the
   pre-implementation 1.6 kB ceiling was an unmeasured estimate; the three primitives
   carry five comparison modes, locale-aware numeric reading, and a thirteen-token grammar
-  between them); `/logging` ≤ 1.6 kB; `/storage` **≤ 2.1 kB** with F39 included (**landed 9.5: measured
+  between them); `/logging` ≤ 1.6 kB (**landed: measured 1390 B**, row tightened to
+  1.45 kB); `/storage` **≤ 2.1 kB** with F39 included (**landed 9.5: measured
   2027 B** — this prediction was wrong: F39 reuses `uuid` per ADR-0008, which costs the
   entry 329 B, so spec 01 NFR-01's `/storage` clause is amended by
   [ADR-0024](../adr/0024-page-session-id-scope-and-budget.md). A wrappers-only import is
@@ -96,8 +97,13 @@ Logging — `egl-utils-js/logging`:
   injected rather than imported ([ADR-0025](../adr/0025-resource-repository-over-an-injected-client.md))).
   Every new root export gets its own 1 kB single-import scenario row; a
   composite that cannot meet 1 kB takes a **named, measured exception row** documented
-  ADR-0015-style. **Landed exception: `comparator` at 1.05 kB** (measured 1006 B — six
-  bytes over, see [ADR-0022](../adr/0022-comparator-total-order-semantics.md)); the
+  ADR-0015-style. **Landed exceptions: `comparator` at 1.05 kB** (measured 1006 B — six
+  bytes over, see [ADR-0022](../adr/0022-comparator-total-order-semantics.md)) and
+  **`logger` at 1.45 kB** (measured 1361 B: the factory composes the default formatter,
+  the default sink, and F28 `fixedWidth`, so importing it is importing the subsystem —
+  the same composition argument ADR-0015 accepted for `httpClient`, recorded in
+  [ADR-0027](../adr/0027-logging-formatter-sink-split.md); the formatter alone is 876 B
+  and `LOG_LEVELS` alone is 60 B, so the composition is what costs, not the entry); the
   candidate this clause anticipated, `compileFilter`, needed none (measured 954 B).
 - NFR-09 Filter-grammar totality & input hardening: `compileFilter` never throws for any
   string expression (fast-check property over arbitrary Unicode — NFR-05's style);

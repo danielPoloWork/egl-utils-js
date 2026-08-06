@@ -299,6 +299,47 @@ ipv4ToKey('192.168.1.10').startsWith(ipv4ToKey('192.168', { octets: 2 })); // tr
 subnetMaskFromPrefix('/24'); // '255.255.255.0' — '/24', '24', and 24 are interchangeable
 ```
 
+### Structured logging (`egl-utils-js/logging`)
+
+One threshold instead of a flag per severity, and every seam injected: destination
+(`sink`), line shape (`format`), clock (`now`), correlation id (`id`). Stateful by
+contract — a logger holds its configuration (ADR-0027).
+
+```js
+import { logger, formatLogLine, formatTimestamp, LOG_LEVELS } from 'egl-utils-js/logging';
+
+const log = logger({ level: 'debug', name: 'checkout' });
+log.info('order placed', { id: 42 }); // args stay separate, so a console still
+log.debug('cart contents', cart); //     renders them as inspectable objects
+log.trace('not emitted — below the threshold');
+
+// 2026-08-06 09:30:12.007 INFO  --- [            checkout] order placed
+// The level and name columns are fixed-width, and the name is cut from the LEFT, so
+// the specific tail of `it.d4np.utils.checkout.PaymentService` stays aligned and legible.
+
+const db = log.child('db'); // named 'checkout.db' — an explicit string, so it survives
+db.warn('slow query'); //      minification (reflection over fn.name does not)
+
+// A sink receives the record AND the formatter, so it chooses whether to format at all:
+logger({ sink: (record) => queue.push(JSON.stringify(record)) }); // structured, no line built
+logger({ sink: (record, format) => appendFile(format(record) + '\n') }); // text
+
+// Logging never throws into your code: a dead transport, a throwing clock, a hostile
+// toString — each costs that one record and is reported once via console.error.
+logger({ sink: () => { throw new Error('transport down'); } }).info('still returns');
+
+// Tests need no console spy: freeze the clock, capture the records.
+const lines = [];
+const test = logger({ now: () => 0, sink: (r, format) => lines.push(format(r)) });
+
+formatTimestamp(Date.now(), { fractional: false }); // '2026-08-06 09:30:12' — no trailing dot
+LOG_LEVELS; // ['trace','debug','info','warn','error','silent'] — frozen; 'silent' is a floor
+```
+
+CR and LF are collapsed to a space in the message **and** in the name and id columns, so
+one record is always exactly one line — a newline arriving through an injected `id` cannot
+forge a log entry (log injection).
+
 ### Errors (`egl-utils-js/errors`)
 
 One base class, one stable `.code` per subtype — check identity via `.code`, never
@@ -389,7 +430,7 @@ deliberately does not cover.
 | 7 | Benchmarks & release readiness | ✅ done |
 | 8 | Post-0.1.0 follow-ups | ✅ done |
 | 9 | Text, net & query utilities | ✅ done |
-| 10 | Structured logging | ⏳ planned |
+| 10 | Structured logging | ✅ done |
 
 
 ## License
