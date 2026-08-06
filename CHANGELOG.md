@@ -12,6 +12,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `pageSessionId` on `egl-utils-js/storage` (ROADMAP 9.5, spec 02 F39,
+  [ADR-0024](docs/adr/0024-page-session-id-scope-and-budget.md)): a v4 UUID held under
+  `sessionStorage` semantics, so it survives reloads and in-tab navigation, dies with the
+  tab, and differs between tabs — the scope needed to correlate logs and telemetry within
+  one browsing session. It is a **correlation id, not a credential**: unauthenticated and
+  readable by any script on the page. Where storage is unavailable or blocked it falls back
+  to memory (stable for the realm) and never throws, because a diagnostics helper must not
+  be what breaks a page.
 - `formatDuration` and `normalizeError` on the root entry (ROADMAP 9.4, spec 02 F36-F37,
   [ADR-0023](docs/adr/0023-duration-round-trip-and-the-error-record.md)). `formatDuration` is
   the exact inverse of `parseDuration` — same ADR-0009 grammar, so

@@ -309,7 +309,12 @@ try {
 Browser-leaning; kept off the root entry so Node-only consumers pull none of it in.
 
 ```js
-import { localStorageWrapper, sessionStorageWrapper, cookieHelper } from 'egl-utils-js/storage';
+import {
+  localStorageWrapper,
+  sessionStorageWrapper,
+  cookieHelper,
+  pageSessionId,
+} from 'egl-utils-js/storage';
 
 localStorageWrapper.set('profile', { name: 'Ada', tags: ['x'] }); // JSON under the hood
 localStorageWrapper.get('profile'); // -> { name: 'Ada', tags: ['x'] }
@@ -319,6 +324,12 @@ localStorageWrapper.isPersistent(); // false in Node / private browsing — sile
 cookieHelper.set('theme', 'dark', { maxAge: 60 * 60 * 24 * 365 }); // SameSite=Lax, Secure
 cookieHelper.get('theme'); //                                          on HTTPS by default
 cookieHelper.remove('theme'); //                                       (ADR-0011)
+
+pageSessionId(); // a v4 UUID that survives reloads, dies with the tab, differs per tab —
+//                  for correlating logs and telemetry within one browsing session.
+//                  A correlation id, NOT a credential: unauthenticated and readable by
+//                  any script on the page (ADR-0024). Where storage is blocked it falls
+//                  back to memory, so it is stable only for the realm — never throws.
 ```
 
 ### Sanitize (`egl-utils-js/sanitize`)

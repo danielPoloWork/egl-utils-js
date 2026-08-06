@@ -105,6 +105,38 @@ test.describe('storage wrappers — a real Web Storage, not the fallback', () =>
     expect(result).toEqual({ local: 'local', session: 'session', sessionPersistent: true });
   });
 
+  test('pageSessionId survives a reload but differs between tabs', async ({ page, context }) => {
+    // The whole point of F39, and the one claim Node cannot check: the Node
+    // suite only ever sees the in-memory fallback, where a "reload" is a fresh
+    // realm and there are no tabs at all.
+    const first = await page.evaluate(() => window.egl.storage.pageSessionId());
+    expect(first).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+
+    await page.reload();
+    await page.evaluate(() => window.__eglReady);
+    const afterReload = await page.evaluate(() => window.egl.storage.pageSessionId());
+    expect(afterReload, 'the id must survive a reload').toBe(first);
+
+    const otherTab = await context.newPage();
+    await otherTab.goto(FIXTURE);
+    await otherTab.evaluate(() => window.__eglReady);
+    const otherId = await otherTab.evaluate(() => window.egl.storage.pageSessionId());
+    expect(otherId, 'a second tab must get its own id').not.toBe(first);
+    await otherTab.close();
+  });
+
+  test('pageSessionId really lands in sessionStorage, and dies with the tab', async ({ page }) => {
+    const raw = await page.evaluate(() => {
+      const id = window.egl.storage.pageSessionId();
+      return { id, stored: sessionStorage.getItem('egl.pageSessionId') };
+    });
+    // Stored through the wrapper, so it is JSON — a quoted string.
+    expect(raw.stored).toBe(JSON.stringify(raw.id));
+    // localStorage is deliberately untouched: the scope is the tab, not the browser.
+    const inLocal = await page.evaluate(() => localStorage.getItem('egl.pageSessionId'));
+    expect(inLocal).toBeNull();
+  });
+
   test('corrupt JSON written out-of-band surfaces as StorageError', async ({ page }) => {
     const code = await page.evaluate(() => {
       localStorage.setItem('bad', 'not json{');
