@@ -431,6 +431,9 @@ deliberately does not cover.
 | 8 | Post-0.1.0 follow-ups | ✅ done |
 | 9 | Text, net & query utilities | ✅ done |
 | 10 | Structured logging | ✅ done |
+| 11 | DOM foundation | ⏳ planned |
+| 12 | UI components | ⏳ planned |
+| 13 | Composable table pipeline | ⏳ planned |
 
 
 ## License
