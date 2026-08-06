@@ -12,6 +12,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- New `egl-utils-js/text` entry (ROADMAP 9.1, spec 02 F26-F28): `truncate`, `wrapText`, and
+  `fixedWidth` — pure string-shaping helpers that measure in UTF-16 code units and never emit a
+  lone surrogate ([ADR-0019](docs/adr/0019-subpath-family-and-code-unit-text-semantics.md)).
+  `fixedWidth` returns exactly the requested width for any input, `truncate` counts its marker
+  inside the budget and is idempotent, and `wrapText` preserves paragraph breaks while
+  collapsing whitespace runs. The root entry is unchanged — importing nothing from `/text`
+  costs nothing.
+
 ### Changed
 
 ### Deprecated

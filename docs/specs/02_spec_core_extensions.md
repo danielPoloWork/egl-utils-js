@@ -32,8 +32,8 @@ browser-leaning entries).
 
 Text — `egl-utils-js/text` (pure):
 
-- F26 truncate(str, maxLength, {ellipsis='…', position='end'}) — returns `str` unchanged when it fits; otherwise an exactly-`maxLength`-code-unit string including the ellipsis; `position: 'end'|'start'`; TypeError on non-string input; `''` in → `''` out
-- F27 wrapText(str, width, {breakLongWords=false}) — `'\n'`-joined lines, each ≤ `width` code units (a single unbreakable word may exceed it unless `breakLongWords`); total function over strings — `''` → `''`, never throws on string input
+- F26 truncate(str, maxLength, {ellipsis='…', position='end'}) — returns `str` unchanged when it fits (so the marker is never re-applied: truncation is idempotent); otherwise a shortened string of **at most** `maxLength` code units including the ellipsis — exactly `maxLength`, except one unit shorter when the cut would split a surrogate pair (ADR-0019: a lone surrogate is never emitted); when `maxLength` is below the ellipsis length the ellipsis itself is truncated, so the budget always holds; `position: 'end'|'start'`; TypeError on non-string input; `''` in → `''` out
+- F27 wrapText(str, width, {breakLongWords=false}) — `'\n'`-joined lines, each ≤ `width` code units (a single unbreakable word may exceed it unless `breakLongWords`; with `breakLongWords` a width narrower than one code point overflows by one unit rather than looping); runs of whitespace collapse to one space and existing line breaks are preserved as paragraph boundaries, making re-wrapping at the same width a no-op; total function over strings — `''` → `''`, never throws on string input
 - F28 fixedWidth(str, width, {align='left', truncate='end', pad=' '}) — returns exactly `width` code units for every string input (pads or truncates); the logging column-alignment primitive
 
 Net — `egl-utils-js/net` (pure, total: `null` for invalid content, TypeError for wrong input type):
@@ -76,12 +76,15 @@ Logging — `egl-utils-js/logging`:
 - NFR-08 Bundle budgets (min+gzip, size-limit gate in CI): the root full-import ceiling
   is **unchanged at 6 kB** (spec 01 NFR-01 — this wave never re-negotiates it; the root
   size-limit row may re-baseline to measured+6% *within* that ceiling as F36–F38 land,
-  then tightens to measured at wave end). New entries: `/text` ≤ 0.8 kB; `/net` ≤ 0.8 kB;
-  `/table` (query primitives, pre-pipeline) ≤ 1.6 kB; `/logging` ≤ 1.6 kB; `/storage`
-  stays ≤ 2 kB (spec 01 NFR-01) with F39 included. Every new root export gets its own
-  1 kB single-import scenario row; a composite that cannot meet 1 kB takes a **named,
-  measured exception row** documented ADR-0015-style (candidate: `compileFilter` at
-  ≤ 1.2 kB).
+  then tightens to measured at wave end). Each **new entry's whole-entry budget is set to
+  its measured size plus ≈7% headroom when the entry lands**, and the measured figure is
+  recorded in the size-limit row name — the pre-implementation figures below are ceilings
+  on that landing measurement, not predictions to be met exactly: `/text` ≤ 0.9 kB
+  (**landed: measured 837 B**); `/net` ≤ 0.9 kB; `/table` (query primitives,
+  pre-pipeline) ≤ 1.6 kB; `/logging` ≤ 1.6 kB; `/storage` stays ≤ 2 kB (spec 01 NFR-01)
+  with F39 included. Every new root export gets its own 1 kB single-import scenario row;
+  a composite that cannot meet 1 kB takes a **named, measured exception row** documented
+  ADR-0015-style (candidate: `compileFilter` at ≤ 1.2 kB).
 - NFR-09 Filter-grammar totality & input hardening: `compileFilter` never throws for any
   string expression (fast-check property over arbitrary Unicode — NFR-05's style);
   expressions beyond 1,024 code units degrade to plain substring matching; **no RegExp

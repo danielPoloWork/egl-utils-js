@@ -19,4 +19,5 @@ _(newest first)_
 
 #### August
 
+- [2026-08-06 — The /text subpath (roadmap 9.1)](2026/08/2026-08-06-text-subpath.md)
 - [2026-08-05 — Utility wave planning (spec 02, M9–M10)](2026/08/2026-08-05-utility-wave-planning.md)

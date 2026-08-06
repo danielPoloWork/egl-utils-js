@@ -9,6 +9,7 @@ const entry = {
   storage: 'src/main/javascript/it/d4np/utils/storage.js',
   sanitize: 'src/main/javascript/it/d4np/utils/sanitize.js',
   errors: 'src/main/javascript/it/d4np/utils/errors.js',
+  text: 'src/main/javascript/it/d4np/utils/text.js',
 };
 
 const shared = {

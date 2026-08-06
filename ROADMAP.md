@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-05 — utility wave planning`](docs/journal/2026/08/2026-08-05-utility-wave-planning.md).
+  [`2026-08-06 — the /text subpath`](docs/journal/2026/08/2026-08-06-text-subpath.md).
 
 ## Model & effort routing
 
@@ -142,7 +142,7 @@ out-of-scope findings become roadmap items in the same PR).
 Pure, universal utilities on Node-safe entries (spec 02 §2, F26–F39): zero DOM, zero new
 platform APIs, testable from day one. Spec: [`docs/specs/02_spec_core_extensions.md`](docs/specs/02_spec_core_extensions.md).
 
-- [ ] 9.1 `/text` subpath: truncate, wrapText, fixedWidth string helpers (spec 02 F26–F28) _(route: standard/medium)_
+- [x] 9.1 `/text` subpath: truncate, wrapText, fixedWidth string helpers (spec 02 F26–F28) _(route: standard/medium)_ — code-unit semantics and the subpath-family policy fixed by [ADR-0019](docs/adr/0019-subpath-family-and-code-unit-text-semantics.md)
 - [ ] 9.2 `/net` subpath: strict IPv4 parse/format/validate, sortable fixed-width key codec, CIDR prefix → subnet mask (spec 02 F29–F32) _(route: standard/high — security: address parsing is input validation)_
 - [ ] 9.3 `/table` subpath, query primitives: filter-expression compiler with pluggable operators, typed comparators (Intl.Collator collation, auto type detection, empties-last), paginate (spec 02 F33–F35) _(route: frontier-reasoning/high — sets-pattern + decision-heavy: the query contract the spec-03 table pipeline builds on)_
 - [ ] 9.4 diagnostics: formatDuration (parseDuration round-trip) + normalizeError (any thrown value → uniform diagnostic record) (spec 02 F36–F37) _(route: standard/medium)_
@@ -183,9 +183,9 @@ progress · ✅ done · ❎ N/A.
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 (02) | Objective & business context | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ⏳ |
-| §2 (02) | Functional requirements F26–F41 | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ⏳ |
-| §3 (02) | Non-functional requirements | 9.1, 9.2, 9.3, 9.5, 9.6, 10.1 | ⏳ |
-| §4 (02) | Logical architecture | 9.1, 9.3, 10.1 | ⏳ |
-| §5 (02) | Public interface | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ⏳ |
-| §6 (02) | Verification & test strategy | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | ⏳ |
+| §1 (02) | Objective & business context | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | 🚧 |
+| §2 (02) | Functional requirements F26–F41 | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | 🚧 |
+| §3 (02) | Non-functional requirements | 9.1, 9.2, 9.3, 9.5, 9.6, 10.1 | 🚧 |
+| §4 (02) | Logical architecture | 9.1, 9.3, 10.1 | 🚧 |
+| §5 (02) | Public interface | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | 🚧 |
+| §6 (02) | Verification & test strategy | 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 10.1 | 🚧 |

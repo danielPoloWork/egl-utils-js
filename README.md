@@ -183,6 +183,28 @@ import { VERSION } from 'egl-utils-js';
 VERSION; // -> '0.1.0'
 ```
 
+### Text shaping (`egl-utils-js/text`)
+
+Pure string helpers that measure in UTF-16 code units — the unit `String.length` reports —
+and never emit a lone surrogate (ADR-0019). Its own entry, so nothing here reaches the
+root bundle.
+
+```js
+import { truncate, wrapText, fixedWidth } from 'egl-utils-js/text';
+
+truncate('The quick brown fox', 10); // 'The quick…' — marker counts toward the budget
+truncate('short', 10); // 'short' — unchanged, so truncate is idempotent
+truncate('/very/long/path/file.txt', 12, { position: 'start' }); // '…th/file.txt'
+
+wrapText('the quick brown fox jumps', 10); // 'the quick\nbrown fox\njumps'
+wrapText('supercalifragilistic', 8, { breakLongWords: true }); // splits the long word;
+//                                       by default a long word overflows its own line
+
+fixedWidth('INFO', 8); // 'INFO    ' — exactly 8 code units, always
+fixedWidth('42', 6, { align: 'right', pad: '0' }); // '000042'
+fixedWidth('com.example.Service', 12, { truncate: 'start' }); // 'mple.Service'
+```
+
 ### Errors (`egl-utils-js/errors`)
 
 One base class, one stable `.code` per subtype — check identity via `.code`, never

@@ -4,7 +4,8 @@
     "src/main/javascript/it/d4np/utils/index.js",
     "src/main/javascript/it/d4np/utils/storage.js",
     "src/main/javascript/it/d4np/utils/sanitize.js",
-    "src/main/javascript/it/d4np/utils/errors.js"
+    "src/main/javascript/it/d4np/utils/errors.js",
+    "src/main/javascript/it/d4np/utils/text.js"
   ],
   "tsconfig": "tsconfig.json",
   "out": "docs/api",
