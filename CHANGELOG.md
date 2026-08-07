@@ -12,6 +12,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `bindTableControls` on `egl-utils-js/dom` (roadmap 13.2, spec 03 F51, ADR-0035): wires
+  filter, search, sort-header, pagination and page-size controls to a `tablePipeline`
+  through its public commands only, and reflects the derived view back — `aria-sort` on
+  every header, pagination enabled from the view, and an injectable `formatStatus` whose
+  default assumes no language. Filter inputs are deliberately one-way, sort headers use one
+  delegated listener that survives re-renders, and teardown is structural: the returned
+  unbind (or an aborted signal) detaches every listener, cancels every pending debounce and
+  unsubscribes from the pipeline. Row rendering stays the caller's.
+
 - `tablePipeline` on `egl-utils-js/table` (roadmap 13.1, spec 03 F42, ADR-0034): one owner
   of a row set deriving one memoized view through a fixed
   `filters → search → sort → paginate` order, so filtering and sorting compose instead of

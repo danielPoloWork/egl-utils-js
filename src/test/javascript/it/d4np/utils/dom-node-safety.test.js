@@ -11,6 +11,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   bindElements,
+  bindTableControls,
   delegate,
   injectFragment,
   inlineAlert,
@@ -23,6 +24,7 @@ import {
   withUrlParams,
 } from '../../../../../main/javascript/it/d4np/utils/dom.js';
 import { DomContractError } from '../../../../../main/javascript/it/d4np/utils/errors.js';
+import { tablePipeline } from '../../../../../main/javascript/it/d4np/utils/table.js';
 
 describe('the /dom entry with no DOM present', () => {
   it('imports without throwing, so a server render can load the module', () => {
@@ -235,6 +237,32 @@ describe('the /dom entry with no DOM present', () => {
 
     expect(calls).toEqual(['show', 'hide']);
     expect(overlay.isShown()).toBe(false);
+  });
+
+  it('bindTableControls demands a document only when it must resolve selectors', () => {
+    // With an explicit root there is nothing ambient to reach for, which is what
+    // makes the binding usable inside a server-side DOM implementation.
+    const pipeline = tablePipeline({ source: [{ name: 'ada' }] });
+    let thrown;
+    try {
+      bindTableControls(pipeline, { search: '#q' });
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toBeInstanceOf(DomContractError);
+    expect(thrown.code).toBe('EGL_DOM_CONTRACT');
+
+    // A binding with no selectors to resolve needs no document at all.
+    expect(() =>
+      bindTableControls(pipeline, {}, { root: /** @type {never} */ ({}) }),
+    ).not.toThrow();
+  });
+
+  it('bindTableControls validates its arguments before reaching for the document', () => {
+    expect(() => bindTableControls(/** @type {never} */ (null), {})).toThrow(TypeError);
+    expect(() => bindTableControls(/** @type {never} */ ({}), /** @type {never} */ (null))).toThrow(
+      TypeError,
+    );
   });
 
   it('loadingOverlay throws DomContractError only when focus.save asks for a document', () => {

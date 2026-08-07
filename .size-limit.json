@@ -95,9 +95,9 @@
     "limit": "1 kB"
   },
   {
-    "name": "/dom - full import (NFR-12: measured 3436 B after 12.2, clause 4 kB)",
+    "name": "/dom - full import (NFR-12: measured 4718 B after 13.2, clause 5 kB per ADR-0035)",
     "path": "dist/esm/dom.js",
-    "limit": "3.68 kB"
+    "limit": "4.93 kB"
   },
   {
     "name": "single: bindElements (NFR-12 <= 1 kB / NFR-02)",
@@ -164,6 +164,12 @@
     "path": "dist/esm/dom.js",
     "import": "{ inlineAlert }",
     "limit": "1.48 kB"
+  },
+  {
+    "name": "single: bindTableControls (2.2 kB - documented NFR-12 composing-facade row, ADR-0035; measured 2093 B)",
+    "path": "dist/esm/dom.js",
+    "import": "{ bindTableControls }",
+    "limit": "2.2 kB"
   },
   {
     "name": "single: loadingOverlay (NFR-12 component row: measured 958 B, clause 1.25 kB)",

@@ -508,6 +508,45 @@ throws into your code — a spinner that cannot render must not fail the save it
 (the rule `logger` applies to a failing sink). Only `focus.save` needs a document, so the
 gate's timing logic runs under Node too.
 
+### Table controls (`egl-utils-js/dom`)
+
+The bridge between a [table pipeline](#table-pipeline-egl-utils-jstable) and its controls
+— and the only place the two halves meet. Commands flow one way, state reflects back, and
+**row rendering stays yours** (ADR-0035).
+
+```js
+import { bindTableControls, delegate } from 'egl-utils-js/dom';
+
+const unbind = bindTableControls(
+  table,
+  {
+    filters: { name: '#f-name', status: '#f-status' }, // debounced -> setFilter
+    search: '#q', //                                      debounced -> setSearch
+    sortHeaders: { root: 'thead', selector: 'th[data-sort-key]' },
+    pagination: { prev: '#prev', next: '#next', status: '#page' },
+    pageSize: '#page-size', // a blank value ("All") stops paginating
+  },
+  { debounceMs: 200 },
+);
+
+// Rows are yours to render — and ONE delegated listener outlives every re-render,
+// so there is no per-row rebinding to forget:
+table.on('change', (view) => {
+  tbody.replaceChildren(...view.rows.map(toRow));
+});
+delegate(tbody, 'click', 'tr[data-id]', (event, row) => open(row.dataset.id));
+
+unbind(); // detaches every listener, cancels every pending debounce, unsubscribes
+```
+
+Sort headers receive `aria-sort` on every change and pagination buttons are enabled from
+the derived view. The status text defaults to `'1 / 4'` — digits only, no language
+assumed; pass `formatStatus: (view) => \`Pagina ${view.page} di ${view.pageCount}\`` for
+words. Filter inputs are deliberately **not** written back: a control that rewrites the
+field you are typing in fights its own user. A selector that matches nothing throws
+`DomContractError` rather than binding a control that silently does nothing — omit the
+binding for controls your table does not have.
+
 ### Structured logging (`egl-utils-js/logging`)
 
 One threshold instead of a flag per severity, and every seam injected: destination
