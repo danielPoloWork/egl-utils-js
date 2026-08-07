@@ -24,5 +24,5 @@ export { delegate, setEnabled, setValue, setVisible } from './dom-events.js';
 // Fragment injection, textarea auto-grow, URL parameters (spec 03 §2 items F46-F48, ADR-0030).
 export { autoGrow, injectFragment, withUrlParams } from './dom-fragment.js';
 
-// Instance-based UI components (spec 03 §2 item F49, ADR-0031).
-export { inlineAlert } from './dom-components.js';
+// Instance-based UI components (spec 03 §2 items F49-F50, ADR-0031/0032).
+export { inlineAlert, loadingOverlay } from './dom-components.js';

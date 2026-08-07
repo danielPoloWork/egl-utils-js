@@ -15,6 +15,7 @@ import {
   injectFragment,
   inlineAlert,
   isElement,
+  loadingOverlay,
   requireDocument,
   setEnabled,
   setValue,
@@ -215,5 +216,38 @@ describe('the /dom entry with no DOM present', () => {
 
   it('inlineAlert validates its arguments before reaching for the document', () => {
     expect(() => inlineAlert(/** @type {never} */ ('#host'))).toThrow(TypeError);
+  });
+
+  // The overlay's timing logic is pure — only focus handling needs a document,
+  // so the gate itself is usable (and testable) with no DOM at all.
+  it('loadingOverlay runs its whole cycle with no document', async () => {
+    const calls = [];
+    const overlay = loadingOverlay({
+      onShow: () => calls.push('show'),
+      onHide: () => calls.push('hide'),
+      minVisibleMs: 0,
+    });
+
+    const release = overlay.show();
+    expect(overlay.isShown()).toBe(true);
+    release();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+
+    expect(calls).toEqual(['show', 'hide']);
+    expect(overlay.isShown()).toBe(false);
+  });
+
+  it('loadingOverlay throws DomContractError only when focus.save asks for a document', () => {
+    const hooks = { onShow: () => {}, onHide: () => {} };
+    let thrown;
+    try {
+      loadingOverlay({ ...hooks, focus: { save: true } });
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toBeInstanceOf(DomContractError);
+    expect(thrown.code).toBe('EGL_DOM_CONTRACT');
+    // …and without that option there is nothing to demand.
+    expect(() => loadingOverlay(hooks)).not.toThrow();
   });
 });

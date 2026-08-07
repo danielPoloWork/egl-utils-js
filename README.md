@@ -425,6 +425,42 @@ alerts.destroy(); // removes its node, its listener, and any pending timer — a
 //                   than quietly doing nothing
 ```
 
+`loadingOverlay` owns *when* an overlay is visible; your `onShow`/`onHide` own *what* is
+visible — so one gate drives a modal, a spinner, or a bar (ADR-0032). It fixes the three
+things hand-rolled overlays get wrong: a concurrent operation tearing the overlay down
+early, a minimum-visible floor measured from the call instead of from the appearance, and a
+hide that arrives while the overlay is still animating in.
+
+```js
+import { loadingOverlay } from 'egl-utils-js/dom';
+
+const overlay = loadingOverlay({
+  onShow: () => modal.show(),
+  onHide: () => modal.hide(),
+  minVisibleMs: 400, // measured from when onShow SETTLES, so an animation is not
+  focus: { save: true, root: modalElement }, // counted against the overlay's own floor
+});
+
+const release = overlay.show(); // reference counted: two overlapping operations show once
+try {
+  await save();
+} finally {
+  release(); // idempotent — hides only when the LAST holder releases
+}
+
+// Same thing without the try/finally, releasing on success, rejection, and sync throw:
+const user = await overlay.wrap(() => api.get('users/42'));
+await Promise.all([overlay.wrap(loadA()), overlay.wrap(loadB())]); // stays up for both
+
+overlay.isShown(); // true from the first show(), including while still appearing
+overlay.destroy(); // hides now, bypassing the floor, and clears the timer
+```
+
+A failing `onShow`/`onHide` is contained: the gate returns to a consistent state and never
+throws into your code — a spinner that cannot render must not fail the save it decorates
+(the rule `logger` applies to a failing sink). Only `focus.save` needs a document, so the
+gate's timing logic runs under Node too.
+
 ### Structured logging (`egl-utils-js/logging`)
 
 One threshold instead of a flag per severity, and every seam injected: destination
@@ -558,7 +594,7 @@ deliberately does not cover.
 | 9 | Text, net & query utilities | ✅ done |
 | 10 | Structured logging | ✅ done |
 | 11 | DOM foundation | ✅ done |
-| 12 | UI components | ⏳ planned |
+| 12 | UI components | ✅ done |
 | 13 | Composable table pipeline | ⏳ planned |
 
 
