@@ -722,12 +722,19 @@ test.describe('/table + /dom — controls driving a pipeline (roadmap 13.2, F51)
   });
 
   test('one delegated listener survives every re-render of the rows', async ({ page }) => {
-    await page.click('#rows tr:first-child');
+    // Click a CELL, not the row (BUG-0001). A real user clicks a cell and the
+    // event bubbles to the delegated listener on `#rows`, which is exactly what
+    // this test is here to prove. Aiming at the `<tr>` instead made the test
+    // depend on engine-specific hit-testing: WebKit resolves the row's centre
+    // point to the ancestor `<table>`, which then "intercepts pointer events"
+    // and Playwright refuses to click through it, while Chromium and Firefox
+    // resolve it to the `<td>` and pass.
+    await page.click('#rows tr:first-child td');
     await expect(page.locator('#opened')).toHaveText('Charlie');
 
     // Sort, which replaces every row node the listener could have been on.
     await page.click('th[data-sort-key="name"]');
-    await page.click('#rows tr:first-child');
+    await page.click('#rows tr:first-child td');
     await expect(page.locator('#opened')).toHaveText('ada');
   });
 });
