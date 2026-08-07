@@ -101,6 +101,29 @@ Note the failure mode to remember: a Node-major bump or a runner-image platform 
 retires the tag and silently stops absolute enforcement. The gate says so per entry — a
 visible non-enforcement rather than a fabricated verdict — and re-recording is one dispatch.
 
+## Found on the way: the browser gate is red on `main`
+
+Running this branch's CI surfaced a failure that is **not** from this work. `browser` has
+been red since 13.2 merged (PR #86): one Playwright case fails on **WebKit only** — *"one
+delegated listener survives every re-render of the rows"* — and the same failure is on #86's
+own pre-merge run and on `main` after it. Recorded as
+[BUG-0001](../../../bugs/2026/08/BUG-0001-webkit-row-click-intercepted.md) — the first entry
+in the bug ledger.
+
+Root cause, from Playwright's own call log: `locator resolved to <tr data-name="ada">` …
+`<table>…</table> intercepts pointer events`. Playwright hit-tests the row's centre point;
+WebKit returns the ancestor `<table>` there, while Chromium and Firefox return the `<td>`. So
+it is a **test-aiming defect**, not a library one — the same test's *first* click proves
+`delegate` works, and the fix is to click `#rows tr:first-child td`, which is also what a
+real user does.
+
+Two lessons. First, the local blind spot is now costly and confirmed twice: Firefox and
+WebKit cannot launch on this workstation, so "Chromium green locally" is not evidence, and
+13.2 shipped on it. Second, a red gate is worse than an absent one — a genuine browser
+regression would now arrive in an already-red job. Filed rather than fixed here because this
+PR delivers 13.3 and the repo's rule is one roadmap item per PR; it wants its own one-line
+`fix(tests)` PR.
+
 ## Where the project stands
 
 **M13 is complete and spec 03 is fully delivered** — coverage rows §1–§6 all ✅. Milestones
@@ -112,9 +135,12 @@ applies on the runner and reports *not comparable* on a workstation.
 
 ## How the next session resumes
 
-1. Merge this PR (one PR at a time).
-2. Cut **v0.6.0**: `release-version.yml` pushes `changeset-release/main` — branch off it,
+1. Merge this PR (one PR at a time). Note its `browser` check is red for BUG-0001, which
+   `main` already carries — nothing in this PR touches library or browser code.
+2. Fix **BUG-0001** in a one-line `fix(tests)` PR (`#rows tr:first-child td`), so v0.6.0 does
+   not ship behind a red gate.
+3. Cut **v0.6.0**: `release-version.yml` pushes `changeset-release/main` — branch off it,
    restore the Keep-a-Changelog skeleton `changeset version` destroys, write
    `docs/changelog/v0/v0.6.0.md` **and** `docs/releases/v0.6.0.md` with both index rows in
    the same commit.
-3. Then PR #0c: spec 04 + ROADMAP M14–M16 (the Bootstrap toolkit, 24-component catalog).
+4. Then PR #0c: spec 04 + ROADMAP M14–M16 (the Bootstrap toolkit, 24-component catalog).
