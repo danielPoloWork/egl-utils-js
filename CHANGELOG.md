@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.6.0
+
+### Minor Changes
+
+- 579da67: `bindTableControls` on the `egl-utils-js/dom` entry (ROADMAP 13.2, spec 03 F51, ADR-0035):
+  the bridge between a `tablePipeline` and its DOM controls, and the last item of the tabular
+  wave. Filter and search inputs are debounced into public commands, sort headers share one
+  delegated listener and receive `aria-sort`, pagination controls are enabled from the derived
+  view, and the status text comes from an injectable `formatStatus` whose default assumes no
+  language. Teardown is structural — the returned unbind function, or an aborted signal,
+  detaches every listener, cancels every pending debounce and unsubscribes from the pipeline.
+  Row rendering stays the caller's.
+- 6c2faf1: `tablePipeline` on the `egl-utils-js/table` entry (ROADMAP 13.1, spec 03 F42, ADR-0034):
+  one owner of the row set derives one memoized view through a fixed
+  `filters → search → sort → paginate` order, so filtering and sorting compose rather than
+  discarding each other. Commands are transactions emitting exactly one `'change'` carrying
+  that view, `batch()` makes several commands one, and the observer surface delegates to an
+  internal `EventEmitter` with `emit` kept private. The pipeline is pure and DOM-free, so it
+  derives unchanged on a server; the query primitives stay individually importable at their
+  unchanged 1714 B.
+
 All notable changes to `egl-utils-js` are documented here, following
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning 2.0.0](https://semver.org/).

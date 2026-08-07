@@ -1,6 +1,6 @@
 {
   "name": "egl-utils-js",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Universal JavaScript async, data, and event utilities for Node.js and modern browsers",
   "keywords": [
     "utilities",
