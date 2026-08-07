@@ -1,23 +1,23 @@
 ---
 id: BUG-0001
 title: WebKit browser smoke fails — a <tr> click target is intercepted by <table>
-status: open
+status: fixed
 severity: low
 reporter: internal
 discovered: 2026-08-07
 affected-versions: none released — the defect is in the test suite, not in shipped code
-fixed-in:
+fixed-in: v0.6.0
 ---
 
 # BUG-0001: WebKit browser smoke fails — a `<tr>` click target is intercepted by `<table>`
 
 ## Summary
 
-The `browser` CI job has been red on `main` since roadmap 13.2 merged (PR #86). One
-Playwright case fails on **WebKit only** — `smoke.spec.js` › *"one delegated listener
+The `browser` CI job was red on `main` from roadmap 13.2 (PR #86) until this record closed.
+One Playwright case failed on **WebKit only** — `smoke.spec.js` › *"one delegated listener
 survives every re-render of the rows"* — timing out after 30 s while trying to click a table
-row. Chromium and Firefox pass. **No shipped code is affected**: the defect is in how the
-test aims its click, and the library behaviour the test exists to prove is in fact working.
+row; Chromium and Firefox passed. **No shipped code was affected**: the defect was in how the
+test aimed its click, and the library behaviour the test exists to prove worked throughout.
 
 ## Environment
 
@@ -82,14 +82,14 @@ directly. Nothing in F44/F51 is implicated.
 
 ## Impact
 
-- **CI:** the `browser` job is red on `main` and on every branch cut from it, so a genuine
-  browser regression would now arrive in an already-red gate — the real cost, and why this is
-  recorded rather than left as folklore.
-- **Consumers:** none. No shipped behaviour differs on WebKit; the library's delegation works
+- **CI:** while open, the `browser` job was red on `main` and on every branch cut from it, so
+  a genuine browser regression would have arrived in an already-red gate — the real cost, and
+  why this was recorded rather than left as folklore.
+- **Consumers:** none. No shipped behaviour differed on WebKit; the library's delegation works
   in all three engines.
 
-Severity is `low` on consumer impact, but the gate's credibility makes it worth fixing
-promptly.
+Severity is `low` on consumer impact; the gate's credibility is what made it worth fixing
+before v0.6.0.
 
 ## Fix / workaround
 
@@ -101,13 +101,18 @@ would also pass, but it would stop exercising real hit-testing, the point of a b
 suite.)
 
 **Verification is CI's, not the workstation's.** Because the defect does not reproduce
-locally, a local pass cannot demonstrate the fix; it only demonstrates non-regression
-(Chromium and WebKit both green on the case here, before and after). The proof is the
-`browser` job on the fixing PR — the same job that has been red on `main` since 13.2.
+locally, a local pass could only demonstrate non-regression (Chromium and WebKit both green
+on the case here, before and after). The proof is the `browser` job on the fixing PR — the
+same job that had been red on `main` since 13.2.
+
+**Confirmed fixed** by run
+[31179602957](https://github.com/danielPoloWork/egl-utils-js/actions/runs/31179602957):
+**90/90 passed** across Chromium, Firefox and WebKit, with the previously-failing case green
+on WebKit in **520 ms** instead of exhausting a 30 s timeout.
 
 ## References
 
-- Fixing PR: _open_
-- `CHANGELOG` entry: _open_
+- Fixing PR: [#89](https://github.com/danielPoloWork/egl-utils-js/pull/89)
+- `CHANGELOG` entry: `[Unreleased]` → *Fixed*, releasing in v0.6.0
 - Related: roadmap 13.2 (PR #86, where the case was added), spec 03 F44/F51,
   [ADR-0029](../../../adr/0029-delegation-teardown-and-setter-symmetry.md)

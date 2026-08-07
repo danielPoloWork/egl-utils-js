@@ -49,6 +49,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- Browser smoke: the table-delegation case now clicks a cell rather than the row
+  ([BUG-0001](docs/bugs/2026/08/BUG-0001-webkit-row-click-intercepted.md)). Aiming at the
+  `<tr>` made the test depend on a hit-test the standard does not pin down — the CI WebKit
+  build resolved the row's centre to the ancestor `<table>`, which Playwright refuses to click
+  through — leaving the `browser` gate red since roadmap 13.2. No library behaviour was
+  affected; delegation worked in every engine throughout.
+
 ### Security
 
 ---
