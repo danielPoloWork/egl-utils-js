@@ -3,181 +3,181 @@
   "threshold": 0.1,
   "floor": 0.9,
   "absoluteCollapseFloor": 0.25,
-  "environment": "win32-x64-node24-local",
+  "environment": "linux-x64-node20-ci",
   "runs": 3,
   "groups": {
     "deepClone vs lodash.cloneDeep": {
-      "ratio": 1.8392,
+      "ratio": 1.3762,
       "baselineName": "lodash cloneDeep",
       "enforced": true,
-      "observedSpread": "1.444..1.966"
+      "observedSpread": "1.357..1.406"
     },
     "deepMerge vs lodash.merge — array-free input (the like-for-like number)": {
-      "ratio": 6.42,
+      "ratio": 5.9354,
       "baselineName": "lodash merge({}, a, b) (non-mutating idiom)",
       "enforced": true,
-      "observedSpread": "3.194..6.541"
+      "observedSpread": "5.728..5.941"
     },
     "deepMerge vs lodash.merge — array-heavy input (NOT a parity claim)": {
-      "ratio": 220.8899,
+      "ratio": 172.6152,
       "baselineName": "lodash merge (merges arrays element-wise)",
       "enforced": false,
       "notEnforcedBecause": "the ratio reflects a semantic difference (we replace arrays, lodash merges element-wise), not speed (ADR-0013)",
-      "observedSpread": "188.808..240.464"
+      "observedSpread": "172.165..174.558"
     },
     "groupBy vs lodash.groupBy": {
-      "ratio": 1.4844,
+      "ratio": 1.3277,
       "baselineName": "lodash groupBy (-> object)",
       "enforced": true,
-      "observedSpread": "1.411..1.758"
+      "observedSpread": "1.270..1.329"
     },
     "omit vs lodash.omit": {
-      "ratio": 2.0164,
+      "ratio": 1.9496,
       "baselineName": "lodash omit",
       "enforced": true,
-      "observedSpread": "1.897..2.054"
+      "observedSpread": "1.728..1.952"
     },
     "parallelLimit settle mode — no baseline (absolute only) > egl parallelLimit(tasks, 16, { settle: true })": {
-      "hz": 1838.24,
-      "meanMs": 0.544,
-      "p99Ms": 1.609,
-      "environment": "win32-x64-node24-local",
+      "hz": 4008.6,
+      "meanMs": 0.2495,
+      "p99Ms": 0.6939,
+      "environment": "linux-x64-node20-ci",
       "enforced": true,
-      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'win32-x64-node24-local' (an absolute figure does not cancel machine speed)",
-      "observedSpread": "1793..1886 hz"
+      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'linux-x64-node20-ci' (an absolute figure does not cancel machine speed)",
+      "observedSpread": "3991..4269 hz"
     },
     "parallelLimit vs p-limit — 100 immediate tasks, concurrency 4": {
-      "ratio": 2.1095,
+      "ratio": 1.7852,
       "baselineName": "p-limit + Promise.all wrapper",
       "enforced": true,
-      "observedSpread": "2.002..2.118"
+      "observedSpread": "1.733..1.832"
     },
     "parallelLimit vs p-limit — 1000 immediate tasks, concurrency 16": {
-      "ratio": 3.795,
+      "ratio": 3.7114,
       "baselineName": "p-limit + Promise.all wrapper",
       "enforced": true,
-      "observedSpread": "3.563..3.830"
+      "observedSpread": "3.466..3.715"
     },
     "parseDuration > egl parseDuration over valid duration strings": {
-      "hz": 400537.84,
-      "meanMs": 0.002,
-      "p99Ms": 0.003,
-      "environment": "win32-x64-node24-local",
+      "hz": 1137384.13,
+      "meanMs": 0.0008792,
+      "p99Ms": 0.001032,
+      "environment": "linux-x64-node20-ci",
       "enforced": true,
-      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'win32-x64-node24-local' (an absolute figure does not cancel machine speed)",
-      "observedSpread": "308118..411036 hz"
+      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'linux-x64-node20-ci' (an absolute figure does not cancel machine speed)",
+      "observedSpread": "1118686..1146015 hz"
     },
     "pick vs lodash.pick": {
-      "ratio": 4.4399,
+      "ratio": 4.2568,
       "baselineName": "lodash pick",
       "enforced": true,
-      "observedSpread": "4.420..4.591"
+      "observedSpread": "3.923..4.305"
     },
     "retry — immediate success (pure overhead, no timers involved)": {
-      "ratio": 10.3177,
+      "ratio": 16.7687,
       "baselineName": "p-retry",
       "enforced": true,
-      "observedSpread": "8.108..10.761"
+      "observedSpread": "16.289..16.954"
     },
     "retry — two transient failures, zero backoff (orchestration overhead)": {
-      "ratio": 1.0143,
+      "ratio": 1.0063,
       "baselineName": "p-retry",
       "enforced": false,
       "notEnforcedBecause": "the only comparison whose true value is GENUINE PARITY (~1.0), so it sits at the floor rather than far above it; its timer-bound ±10% swing therefore can and does cross 0.9 (observed 0.85). Parity here is real and verified by the 7.1 suite — it simply cannot be gated at a 10% tolerance (ADR-0013, ADR-0014)",
-      "observedSpread": "0.883..1.036"
+      "observedSpread": "1.006..1.006"
     },
     "tablePipeline.view() — NFR-13 budget: 10k rows, 3 filters, 2-key sort <= 50 ms > egl view() full derivation (filter -> search -> sort -> paginate)": {
-      "hz": 52.4,
-      "meanMs": 19.083,
-      "p99Ms": 30.546,
-      "environment": "win32-x64-node24-local",
+      "hz": 97.66,
+      "meanMs": 10.24,
+      "p99Ms": 11.96,
+      "environment": "linux-x64-node20-ci",
       "enforced": true,
-      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'win32-x64-node24-local' (an absolute figure does not cancel machine speed)",
-      "observedSpread": "34..55 hz"
+      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'linux-x64-node20-ci' (an absolute figure does not cancel machine speed)",
+      "observedSpread": "97..100 hz"
     },
     "tablePipeline.view() — the stages, so a regression can be located > egl view() with a global search over 10k rows": {
-      "hz": 334.59,
-      "meanMs": 2.989,
-      "p99Ms": 4.693,
-      "environment": "win32-x64-node24-local",
+      "hz": 893.08,
+      "meanMs": 1.12,
+      "p99Ms": 1.317,
+      "environment": "linux-x64-node20-ci",
       "enforced": true,
-      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'win32-x64-node24-local' (an absolute figure does not cancel machine speed)",
-      "observedSpread": "318..338 hz"
+      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'linux-x64-node20-ci' (an absolute figure does not cancel machine speed)",
+      "observedSpread": "880..919 hz"
     },
     "tablePipeline.view() — the stages, so a regression can be located > egl view() with a two-key sort over 10k rows": {
-      "hz": 24.9,
-      "meanMs": 40.164,
-      "p99Ms": 44.494,
-      "environment": "win32-x64-node24-local",
+      "hz": 65.99,
+      "meanMs": 15.15,
+      "p99Ms": 15.78,
+      "environment": "linux-x64-node20-ci",
       "enforced": true,
-      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'win32-x64-node24-local' (an absolute figure does not cancel machine speed)",
-      "observedSpread": "21..26 hz"
+      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'linux-x64-node20-ci' (an absolute figure does not cancel machine speed)",
+      "observedSpread": "66..67 hz"
     },
     "tablePipeline.view() — the stages, so a regression can be located > egl view() with one filter over 10k rows": {
-      "hz": 646.55,
-      "meanMs": 1.547,
-      "p99Ms": 2.577,
-      "environment": "win32-x64-node24-local",
+      "hz": 1881.43,
+      "meanMs": 0.5315,
+      "p99Ms": 0.8484,
+      "environment": "linux-x64-node20-ci",
       "enforced": true,
-      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'win32-x64-node24-local' (an absolute figure does not cancel machine speed)",
-      "observedSpread": "613..681 hz"
+      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'linux-x64-node20-ci' (an absolute figure does not cancel machine speed)",
+      "observedSpread": "1879..1891 hz"
     },
     "type guards > egl isEmpty over 1000 records": {
-      "hz": 7259.31,
-      "meanMs": 0.138,
-      "p99Ms": 0.245,
-      "environment": "win32-x64-node24-local",
+      "hz": 18969.92,
+      "meanMs": 0.05272,
+      "p99Ms": 0.07459,
+      "environment": "linux-x64-node20-ci",
       "enforced": true,
-      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'win32-x64-node24-local' (an absolute figure does not cancel machine speed)",
-      "observedSpread": "5693..7289 hz"
+      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'linux-x64-node20-ci' (an absolute figure does not cancel machine speed)",
+      "observedSpread": "18184..19609 hz"
     },
     "type guards > egl isObject over 1000 records": {
-      "hz": 9202.27,
-      "meanMs": 0.109,
-      "p99Ms": 0.196,
-      "environment": "win32-x64-node24-local",
+      "hz": 25085.57,
+      "meanMs": 0.03986,
+      "p99Ms": 0.05302,
+      "environment": "linux-x64-node20-ci",
       "enforced": true,
-      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'win32-x64-node24-local' (an absolute figure does not cancel machine speed)",
-      "observedSpread": "8608..9318 hz"
+      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'linux-x64-node20-ci' (an absolute figure does not cancel machine speed)",
+      "observedSpread": "24824..25370 hz"
     },
     "uniq vs lodash.uniq": {
-      "ratio": 1.647,
+      "ratio": 1.5144,
       "baselineName": "lodash uniq",
       "enforced": true,
-      "observedSpread": "1.605..1.700"
+      "observedSpread": "1.490..1.534"
     },
     "uniq with iteratee vs lodash.uniqBy": {
-      "ratio": 1.2129,
+      "ratio": 1.3656,
       "baselineName": "lodash uniqBy",
       "enforced": true,
-      "observedSpread": "1.003..1.239"
+      "observedSpread": "1.284..1.591"
     },
     "urlSearchParams > egl urlSearchParams over an object with arrays and skipped values": {
-      "hz": 248828.5,
-      "meanMs": 0.004,
-      "p99Ms": 0.006,
-      "environment": "win32-x64-node24-local",
+      "hz": 637297.9,
+      "meanMs": 0.001569,
+      "p99Ms": 0.002184,
+      "environment": "linux-x64-node20-ci",
       "enforced": true,
-      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'win32-x64-node24-local' (an absolute figure does not cancel machine speed)",
-      "observedSpread": "193777..256436 hz"
+      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'linux-x64-node20-ci' (an absolute figure does not cancel machine speed)",
+      "observedSpread": "632850..638211 hz"
     },
     "uuid (bounded by the platform CSPRNG, not by our code) > egl uuid()": {
-      "hz": 1250912.37,
-      "meanMs": 0.001,
-      "p99Ms": 0.003,
-      "environment": "win32-x64-node24-local",
+      "hz": 3136866.17,
+      "meanMs": 0.0003188,
+      "p99Ms": 0.000701,
+      "environment": "linux-x64-node20-ci",
       "enforced": true,
-      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'win32-x64-node24-local' (an absolute figure does not cancel machine speed)",
-      "observedSpread": "1164184..1290198 hz"
+      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'linux-x64-node20-ci' (an absolute figure does not cancel machine speed)",
+      "observedSpread": "3011902..3316224 hz"
     },
     "validateEmail (NFR-05 keeps this linear — no regex anywhere) > egl validateEmail over mixed valid and invalid inputs": {
-      "hz": 471677.72,
-      "meanMs": 0.002,
-      "p99Ms": 0.004,
-      "environment": "win32-x64-node24-local",
+      "hz": 927211.43,
+      "meanMs": 0.001079,
+      "p99Ms": 0.001263,
+      "environment": "linux-x64-node20-ci",
       "enforced": true,
-      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'win32-x64-node24-local' (an absolute figure does not cancel machine speed)",
-      "observedSpread": "304258..510051 hz"
+      "gate": "absolute collapse floor 0.25 of the recorded hz, enforced only while running in 'linux-x64-node20-ci' (an absolute figure does not cancel machine speed)",
+      "observedSpread": "916927..934621 hz"
     }
   }
 }

@@ -61,15 +61,38 @@ without changing the semantics ADR-0022 fixed; the isolated sort figure (38.1 ms
 essentially that cost. It is also why the composed case is *cheaper* than the isolated sort:
 the three filters cut the row set before the collator ever sees it.
 
-**Caveats.** These are workstation numbers on a warm cache; treat the ratio between the
-before/after columns as the durable result and the absolute figures as an upper-bound
-sanity check on a fast machine. Benchmarks in one process interfere — the search case
+### Addendum, 2026-08-07 (roadmap 13.3): the same benchmark on the CI runner
+
+NFR-13's clause is written "on the CI runner", and until roadmap 13.3 the collector
+discarded this benchmark, so only workstation figures existed. Recorded on
+GitHub `ubuntu-24.04` / Node 20 via `gh workflow run benchmark-nightly.yml -f record=true`,
+median of three passes:
+
+| Case | Workstation (this report) | CI runner | Runner is |
+|------|--------------------------|-----------|-----------|
+| **Full derivation (the NFR-13 budget)** | 19.1 ms mean, p99 30.5 | **10.24 ms mean, p99 11.96** | 1.9x faster |
+| Two-key sort over 10k rows | 40.2 ms | 15.15 ms | 2.7x faster |
+| Global search over 10k rows | 2.99 ms | 1.12 ms | 2.7x faster |
+| One filter over 10k rows | 1.55 ms | 0.53 ms | 2.9x faster |
+| Three-run spread, this benchmark | 1.62x | **1.03x** | far more stable |
+
+**The prediction in *Interpretation* above was wrong**: hosted runners are not "generally
+slower" than this workstation — this one is ~2x faster and an order of magnitude more
+reproducible (spread 1.01x–1.10x across all eleven absolute benchmarks, against
+1.05x–1.68x locally). The workstation is the noisy machine, being one that also runs an IDE
+and agent workloads. The conclusion that mattered still stands, and now stands on the right
+hardware: **the budget holds with 4.9x headroom (10.24 ms against 50 ms), p99 included.**
+
+**Caveats.** The figures in the tables above are workstation numbers on a warm cache; treat
+the ratio between the before/after columns as the durable result and the absolute figures as
+a sanity check — the CI addendum is the measurement the spec clause refers to. Benchmarks in one process interfere — the search case
 measured 11.7 ms in the first run and 2.9 ms in the second purely because the sort case
 preceding it allocated less the second time. **No parity claim is made** against any
 third-party library: no pinned baseline exists whose filtering, collation, and
 empties-last ordering mean the same thing as ours (ADR-0013's refuse-to-compare clause), so
-this scenario is recorded with `enforced: false` and read as a millisecond figure against
-the spec clause.
+this scenario is read as a millisecond figure against the spec clause rather than as a
+ratio. Since roadmap 13.3 it is also held to an absolute collapse floor against the
+CI-recorded figure (ADR-0036).
 
 ## Reproduce
 

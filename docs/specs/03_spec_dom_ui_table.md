@@ -103,9 +103,13 @@ UI components — `egl-utils-js/dom` (stateful; instance-based, framework-agnost
   was not, having been discarded by the collector — and is held to an **absolute collapse
   floor of 0.25** (4x slower than the recorded figure fails) within a matching environment
   tag. The 50 ms clause itself is verified at recording time and published in
-  `docs/benchmarks/`, not asserted as a hard gate: measured ambient swing on one machine
-  reaches 1.6x on this very benchmark, so a hard assertion would fail for reasons
-  unrelated to the code. Recorded position: **19.0 ms mean, 27.6 ms p99**.
+  `docs/benchmarks/`, not asserted as a hard gate: measured ambient swing on a developer
+  workstation reaches 1.6x on this very benchmark, so a hard assertion would fail for
+  reasons unrelated to the code. **Recorded position, now measured where the clause says —
+  on the GitHub `ubuntu-24.04` runner: 10.24 ms mean, 11.96 ms p99 (4.9x headroom), with a
+  1.03x three-run spread.** The workstation reads 19.1 ms mean / 30.5 ms p99; the runner is
+  ~2x faster and an order of magnitude more stable, correcting the 13.1 report's prediction
+  that hosted runners would be slower.
 - NFR-14 Node-safety split, both directions: importing `egl-utils-js/table` and calling
   every export — F42 included — **succeeds on Node ≥ 18 with no DOM present**; and on
   `egl-utils-js/dom`, an export that must resolve the **ambient** document (one whose
