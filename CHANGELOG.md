@@ -38,6 +38,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Security
 
+- Development dependencies only: js-yaml is lifted to `3.15.1` and `4.3.1` on their
+  respective major lines, clearing the two high advisories
+  ([GHSA-5p4m-2wfm-xmqj](https://github.com/advisories/GHSA-5p4m-2wfm-xmqj)) that reached the
+  tree through `@changesets/cli`. The published package is unaffected — it has zero runtime
+  dependencies (ADR-0033).
+
 ---
 
 ## Released versions
