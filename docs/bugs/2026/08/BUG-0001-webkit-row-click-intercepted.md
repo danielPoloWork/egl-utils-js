@@ -21,11 +21,16 @@ test aims its click, and the library behaviour the test exists to prove is in fa
 
 ## Environment
 
-- **Affected versions:** none released — test-suite only, reproducible from 13.2 onward
-- **Toolchain / platform:** Playwright WebKit on `ubuntu-24.04`, Node 20. Not reproducible on
-  this project's development workstation, where Playwright's Firefox and WebKit cannot launch
-  at all (`browserType.launch: spawn UNKNOWN`), so only Chromium is verifiable locally — the
-  reason 13.2 shipped without seeing this.
+- **Affected versions:** none released — test-suite only, present from 13.2 onward
+- **Toolchain / platform:** **CI only.** Deterministic on Playwright WebKit on
+  `ubuntu-24.04` / Node 20 — observed on three separate runs (PR #86's pre-merge run, and
+  `main` after it), retrying for the full 30 s timeout each time. **Corrected on
+  investigation:** it does *not* reproduce on this project's Windows workstation, where the
+  local WebKit build passes the case *even with the original `<tr>` target*. The engine
+  family is not the discriminator; the specific build and its layout metrics are.
+  (Playwright's **Firefox** is what cannot launch here — `browserType.launch: spawn UNKNOWN`;
+  Chromium and WebKit both run. So local browser runs are two-thirds of the story, not
+  one-third as first recorded.)
 - **Configuration:** `pnpm test:browser`, default `playwright.config.js`
 
 ## Reproduction
@@ -63,11 +68,13 @@ Playwright's call log names the cause exactly:
 
 ## Root cause
 
-A **test-aiming defect**, not a library defect. `<tr>` is a layout-transparent row container;
-WebKit's hit-testing at the row's centre point resolves to the `<table>`, whereas Chromium
-and Firefox resolve to the `<td>` under the cursor. The test therefore depends on
-engine-specific hit-test behaviour rather than on anything `delegate` or `bindTableControls`
-does.
+A **test-aiming defect**, not a library defect. `<tr>` is a layout-transparent row container,
+so where its centre point hit-tests is not something the standard pins down: on the CI
+WebKit build it resolves to the ancestor `<table>`, which Playwright then treats as an
+intercepting element and refuses to click through. The test depended on that
+build-specific behaviour rather than on anything `delegate` or `bindTableControls` does —
+which is also why it passes locally on a different WebKit build, and why "it works on my
+machine" was never evidence here.
 
 That `delegate` itself works is proved by the same test: the *first* click — before the sort
 re-render — updates `#opened` correctly, and the jsdom suites cover the re-render case
@@ -86,15 +93,17 @@ promptly.
 
 ## Fix / workaround
 
-Aim the click at a cell rather than the row — `#rows tr:first-child td` — which is both
-WebKit-safe and a better model of a real user, who clicks a cell and relies on the event
-bubbling to the delegated listener on `#rows`. (Programmatically dispatching the event would
-also pass, but it would stop exercising real hit-testing, which is the point of a browser
+Aim the click at a cell rather than the row — `#rows tr:first-child td`. That removes the
+dependency on how a `<tr>`'s centre hit-tests, and it is a better model of a real user, who
+clicks a cell and relies on the event bubbling to the delegated listener on `#rows` — which
+is precisely the behaviour the test exists to prove. (Dispatching the event programmatically
+would also pass, but it would stop exercising real hit-testing, the point of a browser
 suite.)
 
-Deliberately **not fixed in the PR that recorded this**: that PR delivers roadmap 13.3, and
-the repository's rule is one roadmap item per PR (AGENTS.md §6.1). The fix is a one-line
-change and wants its own `fix(tests)` PR.
+**Verification is CI's, not the workstation's.** Because the defect does not reproduce
+locally, a local pass cannot demonstrate the fix; it only demonstrates non-regression
+(Chromium and WebKit both green on the case here, before and after). The proof is the
+`browser` job on the fixing PR — the same job that has been red on `main` since 13.2.
 
 ## References
 
