@@ -51,3 +51,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0033](0033-js-yaml-overrides-stay-inside-their-major-line.md) | A patched js-yaml on both major lines — and why the replacement range is pinned, not open | Accepted |
 | [0034](0034-one-owner-one-derivation-and-the-pipeline-budget.md) | One owner, one derivation — and what the pipeline costs | Accepted |
 | [0035](0035-the-controls-bridge-and-the-dom-budget.md) | The controls bridge — one-way inputs, injected wording, and what /dom costs | Accepted |
+| [0036](0036-collecting-every-benchmark-and-the-collapse-floor.md) | Collect every benchmark, and gate the absolute ones on a collapse floor | Accepted |

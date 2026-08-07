@@ -97,7 +97,15 @@ UI components — `egl-utils-js/dom` (stateful; instance-based, framework-agnost
   filters and a 2-key sort completes in ≤ 50 ms** on the CI runner, and a repeated `view()`
   with no intervening command is **O(1)** (memoized — asserted by identity, not timing).
   Measured by a `vitest bench` case with a pinned fixture; this is an **absolute budget,
-  not a parity claim** (see NFR-04 non-extension below).
+  not a parity claim** (see NFR-04 non-extension below). **Extended in 13.3**
+  ([ADR-0036](../adr/0036-collecting-every-benchmark-and-the-collapse-floor.md)): the
+  figure is **collected and reported in milliseconds on every gate run** — it previously
+  was not, having been discarded by the collector — and is held to an **absolute collapse
+  floor of 0.25** (4x slower than the recorded figure fails) within a matching environment
+  tag. The 50 ms clause itself is verified at recording time and published in
+  `docs/benchmarks/`, not asserted as a hard gate: measured ambient swing on one machine
+  reaches 1.6x on this very benchmark, so a hard assertion would fail for reasons
+  unrelated to the code. Recorded position: **19.0 ms mean, 27.6 ms p99**.
 - NFR-14 Node-safety split, both directions: importing `egl-utils-js/table` and calling
   every export — F42 included — **succeeds on Node ≥ 18 with no DOM present**; and on
   `egl-utils-js/dom`, an export that must resolve the **ambient** document (one whose
@@ -124,9 +132,13 @@ UI components — `egl-utils-js/dom` (stateful; instance-based, framework-agnost
   whose floor is newer than Safari 15.4 / Node 18 is `guarded` with a stated reason.
 - NFR-04 non-extension (explicit, continuing spec 02): this wave makes **no
   performance-parity claims** against any third-party library — no pinned baselines are
-  added and the nightly parity gate's scope does not grow. NFR-13 is an absolute budget on
+  added and the nightly gate gains no parity comparison. NFR-13 is an absolute budget on
   our own fixture, which is a different instrument (ADR-0013's refuse-to-compare clause: no
-  fair baseline exists for a pipeline whose semantics we define).
+  fair baseline exists for a pipeline whose semantics we define). **Clarified in 13.3**: the
+  nightly gate does gain an *absolute* collapse floor over our own recorded figures
+  (ADR-0036). That is not a comparison against a third party and adds no parity claim, but
+  it does grow what the gate enforces — recorded here rather than left as a silent
+  divergence from the original clause.
 - NFR-01/02/03/05/06/07 (spec 01) and NFR-08 (spec 02) apply unchanged: coverage ≥ 95%
   lines and branches, tree-shakability proved per import, zero runtime dependencies (the
   sanitizer reaches F47 and F49 as a **parameter**, so `/dom` never depends on the
@@ -229,7 +241,11 @@ path. The suites are split to match the purity boundary, which is the point of t
   driven past every scheduled callback.
 - **NFR-13** is a `vitest bench` case on a pinned 10,000-row fixture, recorded in
   `docs/benchmarks/`; the memoization half is asserted by identity rather than by timing, so
-  it cannot flake.
+  it cannot flake. **From 13.3** the benchmark is also *provably collected*: the report
+  classifier is a pure function with its own unit suite, and a benchmark it cannot classify
+  fails the gate rather than dropping out of it — both failure paths (an unprefixed
+  benchmark, a collapsed figure) verified by planting them, as NFR-16 requires of the
+  api-floor scanner.
 - Packaging gates per PR: size-limit budgets (NFR-12), agadoo shakeability, publint +
   arethetypeswrong, zero-runtime-dependency check, typedoc warning-free. **`pnpm
   check:api-floor` must fail on an un-inventoried DOM global** — the scanner extension is

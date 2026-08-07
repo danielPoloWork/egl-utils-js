@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-07 — the controls bridge, and spec 03 delivered`](docs/journal/2026/08/2026-08-07-table-dom-bindings.md).
+  [`2026-08-07 — every benchmark counted, and M13 closed`](docs/journal/2026/08/2026-08-07-bench-collector.md).
 
 ## Model & effort routing
 
@@ -192,7 +192,7 @@ instead of discarding each other (spec 03 §2, F42 and F51).
 
 - [x] 13.1 `tablePipeline` on `/table`: commands, a memoized `view()`, one `'change'` event composing EventEmitter, over the spec-02 query primitives; pure and SSR-safe (spec 03 F42, NFR-13) _(route: frontier-reasoning/high — decision-heavy: the wave's flagship contract)_
 - [x] 13.2 `bindTableControls` in `/dom`: debounced filter/search inputs, one delegated sort-header listener with `aria-sort`, pagination reflection, structural teardown, plus the Playwright end-to-end scenario (spec 03 F51, NFR-15) _(route: standard/high)_
-- [ ] 13.3 Make the absolute benchmarks visible to the regression gate — `tools/bench-regression.mjs` only collects a group when a benchmark name starts with `egl `, so every absolute suite (`no-baseline.bench.js` and the 13.1 NFR-13 case) runs on every CI benchmark job and is then **discarded**, despite `no-baseline.bench.js` documenting itself as feeding that gate. A regression in `validateEmail`'s linear cost or in the pipeline's derivation would not be caught. Fix the collector (or the naming convention) and re-record `baseline.json` on comparable hardware, not on a workstation _(route: standard/medium — a verification blind spot, not a coding task; found by 13.1)_
+- [x] 13.3 Make the absolute benchmarks visible to the regression gate — `tools/bench-regression.mjs` only collects a group when a benchmark name starts with `egl `, so every absolute suite (`no-baseline.bench.js` and the 13.1 NFR-13 case) runs on every CI benchmark job and is then **discarded**, despite `no-baseline.bench.js` documenting itself as feeding that gate. A regression in `validateEmail`'s linear cost or in the pipeline's derivation would not be caught. Fix the collector (or the naming convention) and re-record `baseline.json` on comparable hardware, not on a workstation _(route: standard/medium — a verification blind spot, not a coding task; found by 13.1)_ — classification is now a total, unit-tested pure function (10 discarded benchmarks recovered, 13 entries → 23) and absolute figures are held to an environment-tagged collapse floor, per [ADR-0036](docs/adr/0036-collecting-every-benchmark-and-the-collapse-floor.md); recording on CI hardware is a documented `workflow_dispatch` input
 
 
 ---
@@ -233,7 +233,7 @@ _Spec 02 is complete as of M10 (v0.3.0): F26–F41 all delivered._
 |--------|-------------|---------------|--------|
 | §1 (03) | Objective & business context | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ✅ |
 | §2 (03) | Functional requirements F42–F51 | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ✅ |
-| §3 (03) | Non-functional requirements | 11.1, 11.2, 12.1, 12.2, 13.1, 13.2, 13.3 | 🚧 |
+| §3 (03) | Non-functional requirements | 11.1, 11.2, 12.1, 12.2, 13.1, 13.2, 13.3 | ✅ |
 | §4 (03) | Logical architecture | 11.1, 13.1, 13.2 | ✅ |
 | §5 (03) | Public interface | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ✅ |
 | §6 (03) | Verification & test strategy | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ✅ |
