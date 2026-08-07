@@ -58,34 +58,57 @@ and drop the rest — the original defect in miniature.
 **3. Absolute benchmarks are gated by a collapse floor of 0.25 (4x slower fails),
 enforced only when the recorded figure carries the same environment tag
 (`platform-arch-nodeMAJOR-ci|local`) as the running machine.** Otherwise the entry is
-reported as not comparable and nothing is enforced. Measured evidence for the width, all
-on one machine:
+reported as not comparable and nothing is enforced.
 
-| Benchmark | 3-run spread | Ratio |
+*Within* one environment, three runs of unchanged code:
+
+| Benchmark | Developer workstation | GitHub `ubuntu-24.04` runner |
 |---|---|---|
-| `validateEmail` | 503 k..515 k hz (and 304 k..510 k while recording) | up to **1.68x** |
-| NFR-13 full derivation | 34..56 hz | up to **1.6x** |
-| `parseDuration` | 308 k..432 k hz | **1.33x** |
-| `uniq` parity ratio, single pass | 0.655 observed against a 1.48..1.65 range | **2.4x** |
+| `validateEmail` | 304 k..510 k hz — **1.68x** | 917 k..935 k hz — **1.02x** |
+| NFR-13 full derivation | 34..56 hz — **1.62x** | 97..100 hz — **1.03x** |
+| `parseDuration` | 308 k..432 k hz — 1.33x | 1.119 M..1.146 M hz — 1.02x |
+| `urlSearchParams` | 235 k..331 k hz — 1.32x | 633 k..638 k hz — 1.01x |
+| (all 11 absolute entries) | 1.05x..**1.68x** | 1.01x..**1.10x** |
 
-Ambient variation on one machine reaches 1.68x, and a single pass of even a
-machine-cancelling *ratio* swung 2.4x. A shared CI runner adds its neighbours on top.
-Algorithmic collapse is a different population: a regex reaching `validateEmail`, or an
-accidental O(n²) over 10,000 rows, costs 10x and up. 0.25 sits in the empty band between
-them — a 2x floor would have flaked on the numbers above, and a looser one would miss the
-collapse. Both failure paths were verified by planting them: a 10x-inflated recorded
-figure and an unprefixed benchmark each exit non-zero (the NFR-16 discipline).
+*Across* environments, the same code differs by a consistent factor: the workstation runs
+at **47–57% of the runner's throughput** on all eleven absolute benchmarks.
+
+Three conclusions, in the order they constrain the design:
+
+- **The tag is necessary.** A 2x floor would have failed 4 of 11 benchmarks (47%, 49%,
+  49%, 50%) on a machine change alone. At 0.25 the same cross-environment comparison
+  happens to pass — but "it happened to pass" is not a safety property, so the comparison
+  is refused rather than permitted.
+- **0.25 is the right width.** Ambient variation on a loaded workstation reaches 1.68x,
+  and a single pass of even a machine-cancelling *parity ratio* swung 2.4x (`uniq` at
+  0.655 against a 1.48..1.65 range). Algorithmic collapse is a different population — a
+  regex reaching `validateEmail`, an accidental O(n²) over 10,000 rows: 10x and up. 0.25
+  sits in the empty band; tighter flakes, looser misses.
+- **A prior assumption was wrong, and is corrected here.** The 13.1 report predicted the
+  runner would be *slower* than the workstation and this ADR first assumed it would be
+  *noisier*. Measured, it is neither: ~2x faster and an order of magnitude more stable
+  (1.03x median spread against 1.28x). The workstation figure was the noisy one, being a
+  machine that also runs an IDE and agents. **This does not license tightening the floor
+  yet**: one job's internal consistency is not evidence of cross-job stability on a fleet
+  that varies by host and CPU model. Tightening needs several CI recordings first — and
+  the 13.1 lesson (a budget met by 8% is not met) argues for earning that with data rather
+  than one sample.
+
+Both failure paths were verified by planting them: a 10x-inflated recorded figure and an
+unprefixed benchmark each exit non-zero (the NFR-16 discipline).
 
 **4. Milliseconds are printed on every run.** `mean` and `p99` are reported per absolute
 benchmark with significant digits preserved across six orders of magnitude, so NFR-13's
 "≤ 50 ms" clause is readable directly (currently 19.0 ms mean, 27.6 ms p99) instead of
 being inferred from a hz figure.
 
-**5. Recording on CI hardware is a documented one-click job.** The nightly workflow gains
-a `record` dispatch input that runs `pnpm bench:baseline` and uploads the file as an
-artifact. The job stays `contents: read`; the maintainer lands the figures through a
-normal PR. Until a CI-recorded file exists, absolute entries report as not comparable —
-visible and honest, never a false pass.
+**5. Recording on CI hardware is a documented one-click job, and the committed baseline is
+CI-recorded.** The nightly workflow gains a `record` dispatch input that runs
+`pnpm bench:baseline` and uploads the file as an artifact; the job stays `contents: read`
+and the maintainer lands the figures through a normal PR. That recording has been taken:
+`docs/benchmarks/baseline.json` carries `linux-x64-node20-ci`, so **the collapse floor is
+live in CI**. Run locally, every absolute entry reports *not comparable* with both tags
+named — visible and honest, never a false pass in either direction.
 
 **6. Recorded entries not observed in a run are reported as stale.** A benchmark renamed
 or deleted otherwise takes its gate with it, silently — the same failure mode from the
@@ -122,10 +145,15 @@ other direction.
   collected, reported, and recorded.
 - A naming mistake can no longer shrink the gate: it fails the run, fast (classification
   problems skip the remaining passes).
-- Absolute enforcement is inert until the baseline is re-recorded on CI hardware via the
-  new dispatch input. This is deliberate and visible in the gate output; the roadmap item
-  is closed by the mechanism plus the documented procedure, and the maintainer decides
-  when to record.
+- Absolute enforcement is **live in CI**: the committed baseline was recorded on the runner
+  (`linux-x64-node20-ci`) through the new dispatch input. Locally the floor stays inert by
+  design, stating both tags. A Node-major bump or a runner-image change to a different
+  platform/arch retires the tag and silently stops absolute enforcement until the baseline
+  is re-recorded — the gate says so per entry, which is the intended failure mode (visible
+  non-enforcement rather than a fabricated verdict).
+- **NFR-13 finally has the measurement its clause always asked for.** The budget says
+  "≤ 50 ms on the CI runner"; until now it had only workstation figures. On the runner:
+  **10.24 ms mean, 11.96 ms p99** — 4.9x headroom, against 19.08 ms / 30.55 ms locally.
 - `baseline.json` gains a second entry shape (`hz`/`meanMs`/`p99Ms`/`environment`)
   alongside parity's `ratio`, and a top-level `absoluteCollapseFloor` and `environment`.
   Its `$comment` explains both, since the file is read by humans.

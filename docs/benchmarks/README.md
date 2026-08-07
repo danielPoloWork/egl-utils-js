@@ -41,8 +41,14 @@ directly rather than inferred.
 `platform-arch-nodeMAJOR-ci|local`. A workstation figure never judges a CI run, so absolute
 entries recorded locally report as *not comparable* in CI and enforce nothing.
 
-To record on the hardware the gate runs on, dispatch the nightly workflow with
-**`record: true`**:
+**Current recorded environment: `linux-x64-node20-ci`** (GitHub `ubuntu-24.04`), so the
+collapse floor is live in CI and reports *not comparable* on a workstation. Measured there,
+the runner is ~2x faster than this project's development machine and an order of magnitude
+more stable (three-run spread 1.01x–1.10x, against 1.05x–1.68x locally) — the opposite of
+what a hosted runner is usually assumed to be.
+
+To re-record on the hardware the gate runs on — after a Node-major bump or a runner-image
+change, which retire the tag — dispatch the nightly workflow with **`record: true`**:
 
 ```bash
 gh workflow run benchmark-nightly.yml -f record=true
