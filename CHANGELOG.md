@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.5.0
+
+### Minor Changes
+
+- 7489107: `inlineAlert` joins the `egl-utils-js/dom` entry (ROADMAP 12.1, spec 03 F49, ADR-0031): an
+  instance-based alert component that owns its nodes, its auto-hide timer and its close
+  binding, so two alerts on one page cannot cancel each other's timer or steal each other's
+  container. Class names and icons are injected maps over neutral, framework-free defaults;
+  messages render through `textContent` unless the caller passes the explicit
+  `{ html: true, sanitize }` pair; `destroy()` and an aborted `signal` each leave zero
+  listeners, timers, and nodes behind.
+- e1546f1: `loadingOverlay` joins `egl-utils-js/dom` and completes M12 (ROADMAP 12.2, spec 03 F50,
+  ADR-0032): a reference-counted visibility gate over an injected `onShow`/`onHide` pair.
+  `show()` returns an idempotent release and the overlay hides only when the last holder
+  releases, so overlapping operations cannot tear it down early; the minimum-visible floor is
+  measured from when `onShow` settles rather than when `show()` is called, so an animated
+  presentation is not counted against its own anti-flicker time and a hide requested
+  mid-appearance is honoured once the overlay is actually up. `wrap()` releases on success,
+  rejection, and synchronous throw alike, `focus.save` restores the pre-overlay focus, and a
+  failing presentation hook is contained rather than thrown into the calling code.
+
 All notable changes to `egl-utils-js` are documented here, following
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning 2.0.0](https://semver.org/).
