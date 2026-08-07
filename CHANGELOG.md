@@ -12,6 +12,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `loadingOverlay` on `egl-utils-js/dom` (spec 03 F50, ROADMAP 12.2): a reference-counted
+  visibility gate over an injected `onShow`/`onHide` pair, so one gate drives a modal, a
+  spinner, or a progress bar. `show()` returns an idempotent release and the overlay hides
+  only when the last holder releases; the minimum-visible floor is measured from when
+  `onShow` settles, so an animated presentation is not counted against its own anti-flicker
+  time and a hide arriving mid-appearance is still honoured. `wrap()` releases on success,
+  rejection, and synchronous throw; `focus.save` restores the pre-overlay focus and clears
+  focus out of the overlay before hiding; presentation failures are contained (ADR-0032).
+
 - `inlineAlert` on `egl-utils-js/dom` (spec 03 F49, ROADMAP 12.1): an instance-based,
   framework-agnostic alert component. Each instance owns its nodes, its auto-hide timer and
   its close binding, so two alerts on one page cannot interfere; class names and icons are

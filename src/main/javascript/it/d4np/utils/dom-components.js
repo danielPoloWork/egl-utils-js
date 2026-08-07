@@ -1,5 +1,5 @@
 /**
- * egl-utils-js — UI components (spec 03 §2 item F49).
+ * egl-utils-js — UI components (spec 03 §2 items F49-F50).
  *
  * Instance-based and framework-agnostic: a component here owns its own nodes,
  * its own timer, and its own listeners, and it never assumes a design system.
@@ -7,6 +7,10 @@
  * singleton with hardcoded framework classes — where a second alert on the page
  * silently steals the first one's container and cancels its timer, and where
  * adopting the component means adopting its CSS framework (ADR-0031).
+ *
+ * {@link loadingOverlay} takes the same shape one step further: it owns the
+ * *timing* of a presentation without owning the presentation itself, which is
+ * how one gate serves a modal, a spinner, or a bar (ADR-0032).
  *
  * @module egl-utils-js/dom
  */
@@ -364,4 +368,266 @@ function assertAutoHide(value, name, allowPinned = false) {
   if (allowPinned ? value < 0 : !(value > 0 && Number.isFinite(value))) {
     throw new TypeError(`inlineAlert: ${name} must be a positive finite number`);
   }
+}
+
+/**
+ * @typedef {object} OverlayFocusOptions
+ * @property {boolean} [save=false] - Capture the active element before showing
+ *   and restore it after hiding. Needs a document; without a `root` the ambient
+ *   one is used, so this is the one option that makes the gate browser-only.
+ * @property {Element} [root] - The overlay's own element. Focus inside it is
+ *   cleared before hiding — that is what prevents the "blocked aria-hidden on an
+ *   element because its descendant retained focus" warning. Its `ownerDocument`
+ *   is also used in preference to the ambient one.
+ */
+
+/**
+ * @typedef {object} LoadingOverlayOptions
+ * @property {() => void | Promise<void>} onShow - Presents the overlay. May be
+ *   async: the minimum-visible clock starts when it **settles**.
+ * @property {() => void | Promise<void>} onHide - Dismisses the overlay.
+ * @property {number} [minVisibleMs=400] - How long the overlay stays up once it
+ *   has actually appeared. `0` disables the anti-flicker floor.
+ * @property {OverlayFocusOptions} [focus] - Focus save/restore behaviour.
+ * @property {AbortSignal} [signal] - Destroys the gate when aborted (NFR-15).
+ */
+
+/**
+ * @typedef {object} LoadingOverlayInstance
+ * @property {() => () => void} show - Acquire the overlay; returns an idempotent
+ *   release.
+ * @property {<T>(operation: Promise<T> | (() => Promise<T> | T)) => Promise<T>} wrap
+ * @property {() => boolean} isShown
+ * @property {() => void} destroy
+ */
+
+/**
+ * A reference-counted visibility gate over an injected presentation (spec 03 F50).
+ *
+ * The gate owns *when* an overlay is visible; `onShow`/`onHide` own *what* is
+ * visible. That split is the whole design: one gate drives a modal, a spinner,
+ * or a progress bar, and none of them leak into this file (ADR-0032).
+ *
+ * Three problems it exists to solve, each of which is usually got wrong:
+ *
+ * 1. **Concurrent owners.** `show()` increments a count and returns an
+ *    idempotent release; the overlay hides only when the count returns to zero.
+ *    Two overlapping fetches therefore cannot tear the overlay down while the
+ *    other is still running — the bug a plain boolean flag guarantees.
+ * 2. **Flicker.** The minimum-visible clock starts when `onShow` **settles**,
+ *    not when `show()` is called, so an animated presentation cannot be measured
+ *    from before it appeared. A response that arrives in 30 ms still yields a
+ *    readable overlay instead of a flash.
+ * 3. **Focus.** With `focus.save` the active element is captured before showing,
+ *    focus inside the overlay is cleared before hiding — which is what avoids the
+ *    `aria-hidden` focus warning — and the original element is refocused
+ *    afterwards, but only if it is still in the document.
+ *
+ * A `hide` that arrives mid-appearance is honoured once the appearance completes
+ * and the floor has elapsed, so the gate can never be left up by a race.
+ *
+ * **Presentation failures are contained.** If `onShow` or `onHide` throws or
+ * rejects, the gate returns to a consistent state and the error is not thrown
+ * into the caller's code — the same rule the logger applies to a failing sink
+ * (ADR-0027). A spinner that cannot render must not fail the save it was
+ * decorating. Only programmer errors (bad options, use after `destroy()`) throw.
+ *
+ * @example
+ * const overlay = loadingOverlay({
+ *   onShow: () => modal.show(),
+ *   onHide: () => modal.hide(),
+ *   focus: { save: true, root: modalElement },
+ * });
+ *
+ * const release = overlay.show();
+ * try { await save(); } finally { release(); }
+ *
+ * @example
+ * // Same thing, without the try/finally — release happens either way:
+ * const user = await overlay.wrap(() => api.get('users/42'));
+ *
+ * @example
+ * // Nested operations: the overlay survives until the last one finishes.
+ * await Promise.all([overlay.wrap(loadA()), overlay.wrap(loadB())]);
+ *
+ * @param {LoadingOverlayOptions} options
+ * @returns {LoadingOverlayInstance}
+ * @throws {TypeError} If `onShow`/`onHide` are not functions, if `minVisibleMs`
+ *   is not a non-negative finite number, if `focus`/`focus.root` are of the wrong
+ *   type, or if `signal` is not an `AbortSignal`.
+ * @throws {DomContractError} If `focus.save` is set and there is no document to
+ *   read the active element from.
+ */
+export function loadingOverlay(options) {
+  const {
+    onShow,
+    onHide,
+    minVisibleMs = 400,
+    focus = {},
+    signal,
+  } = /** @type {Partial<LoadingOverlayOptions>} */ (options ?? {});
+
+  if (typeof onShow !== 'function' || typeof onHide !== 'function') {
+    throw new TypeError('loadingOverlay: options.onShow and options.onHide must be functions');
+  }
+  if (typeof minVisibleMs !== 'number' || !(minVisibleMs >= 0) || !Number.isFinite(minVisibleMs)) {
+    throw new TypeError(
+      'loadingOverlay: options.minVisibleMs must be a non-negative finite number',
+    );
+  }
+  if (focus === null || typeof focus !== 'object') {
+    throw new TypeError('loadingOverlay: options.focus must be an object');
+  }
+  const { save: saveFocus = false, root: focusRoot } = focus;
+  if (focusRoot !== undefined && !isElement(focusRoot)) {
+    throw new TypeError('loadingOverlay: options.focus.root must be an Element');
+  }
+  if (signal !== undefined && !isAbortSignal(signal)) {
+    throw new TypeError('loadingOverlay: options.signal must be an AbortSignal');
+  }
+
+  // Resolved once, and only when focus handling is actually requested — the gate
+  // is otherwise usable with no DOM at all, which is what makes its timing
+  // logic testable in Node (NFR-14 as amended in 11.2).
+  /** @type {Document | undefined} */
+  const doc = saveFocus
+    ? (focusRoot?.ownerDocument ?? requireDocument('loadingOverlay'))
+    : undefined;
+
+  /** @type {'hidden' | 'appearing' | 'shown'} */
+  let state = 'hidden';
+  let refCount = 0;
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let floorTimer;
+  let floorElapsed = false;
+  let hideRequested = false;
+  let destroyed = false;
+  /** @type {Element | undefined} */
+  let savedFocus;
+
+  const clearFloor = () => {
+    if (floorTimer !== undefined) {
+      clearTimeout(floorTimer);
+      floorTimer = undefined;
+    }
+  };
+
+  /**
+   * Run a presentation hook without letting its failure escape into unrelated
+   * code, and **call it synchronously** — `show()` must start showing now, not a
+   * microtask later. A synchronous throw and a rejection are contained the same
+   * way, so both shapes leave the gate in a state it can recover from.
+   *
+   * @param {() => void | Promise<void>} hook
+   * @returns {Promise<void>}
+   */
+  const runHook = (hook) => {
+    try {
+      return Promise.resolve(hook()).catch(() => {});
+    } catch {
+      return Promise.resolve();
+    }
+  };
+
+  const performHide = () => {
+    hideRequested = false;
+    state = 'hidden';
+    clearFloor();
+    floorElapsed = false;
+
+    // Blur first: hiding a container that still holds focus is what produces the
+    // aria-hidden warning, and the browser would otherwise move focus to <body>.
+    if (doc !== undefined) {
+      const active = doc.activeElement;
+      if (active !== null && focusRoot?.contains(active) === true) {
+        /** @type {{ blur?: () => void }} */ (active).blur?.();
+      }
+    }
+
+    return runHook(onHide).then(() => {
+      const target = savedFocus;
+      savedFocus = undefined;
+      // Only refocus something still attached: restoring focus to a node the
+      // operation removed would throw, or silently focus a detached element.
+      if (target !== undefined && doc?.contains(target) === true) {
+        /** @type {{ focus?: () => void }} */ (target).focus?.();
+      }
+    });
+  };
+
+  const onAppeared = () => {
+    if (destroyed || state !== 'appearing') return;
+    state = 'shown';
+    floorElapsed = false;
+    clearFloor();
+    // The floor is measured from here — the moment the overlay is actually up —
+    // never from the show() call, which may precede it by an animation.
+    floorTimer = setTimeout(() => {
+      floorTimer = undefined;
+      floorElapsed = true;
+      if (hideRequested) performHide();
+    }, minVisibleMs);
+  };
+
+  const beginAppear = () => {
+    state = 'appearing';
+    savedFocus = doc?.activeElement ?? undefined;
+    runHook(onShow).then(onAppeared);
+  };
+
+  const requestHide = () => {
+    hideRequested = true;
+    // Appearing: onAppeared starts the floor and the timer honours this then.
+    // Shown but inside the floor: the running timer honours it on expiry.
+    if (state === 'shown' && floorElapsed) performHide();
+  };
+
+  /** @type {LoadingOverlayInstance['show']} */
+  const show = () => {
+    if (destroyed) {
+      throw new TypeError('loadingOverlay: show() was called after destroy()');
+    }
+    refCount += 1;
+    // A new owner cancels a hide that has not happened yet, so show/release/show
+    // in the same tick does not blink.
+    hideRequested = false;
+    if (refCount === 1 && state === 'hidden') beginAppear();
+
+    let released = false;
+    return () => {
+      // Idempotent by contract: a release called twice must not let a sibling's
+      // acquisition go unnoticed, which is exactly how refcounts drift.
+      if (released) return;
+      released = true;
+      refCount -= 1;
+      if (refCount === 0) requestHide();
+    };
+  };
+
+  /** @type {LoadingOverlayInstance['wrap']} */
+  const wrap = async (operation) => {
+    const release = show();
+    try {
+      return await (typeof operation === 'function' ? operation() : operation);
+    } finally {
+      release();
+    }
+  };
+
+  const destroy = () => {
+    if (destroyed) return;
+    destroyed = true;
+    clearFloor();
+    refCount = 0;
+    hideRequested = false;
+    // Teardown is not cosmetic: it bypasses the minimum-visible floor rather
+    // than leaving an overlay up for a component that no longer exists.
+    if (state !== 'hidden') performHide();
+    savedFocus = undefined;
+  };
+
+  signal?.addEventListener('abort', destroy, { once: true });
+  if (signal?.aborted === true) destroy();
+
+  return { show, wrap, isShown: () => state !== 'hidden', destroy };
 }

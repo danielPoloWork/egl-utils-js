@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-07 — the component contract, set by inlineAlert`](docs/journal/2026/08/2026-08-07-inline-alert.md).
+  [`2026-08-07 — the overlay gate, and M12 complete`](docs/journal/2026/08/2026-08-07-loading-overlay.md).
 
 ## Model & effort routing
 
@@ -180,7 +180,7 @@ Instance-based, framework-agnostic components: no design system in a default (sp
 F49–F50).
 
 - [x] 12.1 `inlineAlert`: per-instance timers and bindings, injectable class/icon maps, `textContent` by default with an opt-in `{html, sanitize}` pair (spec 03 F49) _(route: frontier-reasoning/high — sets-pattern: the component contract 12.2 and spec 04 copy)_
-- [ ] 12.2 `loadingOverlay`: reference counting, a minimum-visible clock started when the presentation settles, and focus save/blur/restore over injected `onShow`/`onHide` hooks (spec 03 F50) _(route: standard/high — the refcount and anti-flicker interplay is classically bug-prone)_
+- [x] 12.2 `loadingOverlay`: reference counting, a minimum-visible clock started when the presentation settles, and focus save/blur/restore over injected `onShow`/`onHide` hooks (spec 03 F50) _(route: standard/high — the refcount and anti-flicker interplay is classically bug-prone)_
 
 
 ---

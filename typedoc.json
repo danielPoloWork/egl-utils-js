@@ -35,6 +35,8 @@
     "InjectFragmentOptions",
     "InlineAlertInstance",
     "InlineAlertOptions",
+    "LoadingOverlayInstance",
+    "LoadingOverlayOptions",
     "MeasureResult",
     "Resource",
     "ResourceOptions",
