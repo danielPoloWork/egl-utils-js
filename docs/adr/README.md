@@ -48,3 +48,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0030](0030-sanitize-is-a-required-parameter.md) | The sanitizer is a required parameter, not a default | Accepted |
 | [0031](0031-component-instances-and-the-alert-budget.md) | Components are instances that own their state — and what one costs | Accepted |
 | [0032](0032-overlay-gate-refcount-floor-and-focus.md) | The overlay gate — a reference count, a floor measured from the appearance, and contained presentation failures | Accepted |
+| [0033](0033-js-yaml-overrides-stay-inside-their-major-line.md) | A patched js-yaml on both major lines — and why the replacement range is pinned, not open | Accepted |
