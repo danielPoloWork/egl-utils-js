@@ -23,6 +23,4 @@ One report per measured scenario, from [`template.md`](template.md). Keep the in
 
 | Date | Scenario | Version | Headline result | Report |
 |------|----------|---------|-----------------|--------|
-| —    | —        | —       | —               | —      |
-
-_No benchmarks recorded yet._
+| 2026-08-07 | `tablePipeline.view()` — 10k rows, 3 filters, 2-key sort (NFR-13) | v0.5.0 + 13.1 | 21.1 ms mean against a 50 ms budget (p99 30.3 ms) | [report](2026-08-07-table-pipeline-derivation.md) |

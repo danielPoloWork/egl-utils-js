@@ -141,3 +141,28 @@ export const QUERY_PARAMS = Object.freeze({
 export function immediateTasks(count) {
   return Array.from({ length: count }, (_unused, index) => async () => index);
 }
+
+/** Statuses and regions for {@link TABLE_ROWS}, kept small so filters actually match. */
+const STATUSES = ['active', 'pending', 'archived', 'blocked'];
+const REGIONS = ['north', 'south', 'east', 'west'];
+
+/**
+ * The pinned 10,000-row table fixture for the NFR-13 derivation budget
+ * (spec 03; roadmap 13.1).
+ *
+ * Shaped like a real table rather than like a benchmark: mixed types, a text
+ * column worth collating, a numeric column worth comparing, and ~8% missing
+ * values so the empties-last branch is exercised on every sort. The row count
+ * is the number the budget names, so the bench measures the requirement rather
+ * than a convenient approximation of it.
+ */
+export const TABLE_ROWS = Object.freeze(
+  Array.from({ length: 10_000 }, (_unused, index) => ({
+    id: index + 1,
+    name: `host-${int(9000).toString().padStart(4, '0')}-${index}`,
+    status: STATUSES[int(STATUSES.length)],
+    region: REGIONS[int(REGIONS.length)],
+    score: int(100) < 8 ? null : int(1000),
+    seen: `2026-${String(1 + int(12)).padStart(2, '0')}-${String(1 + int(28)).padStart(2, '0')}`,
+  })),
+);

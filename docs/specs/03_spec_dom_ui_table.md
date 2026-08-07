@@ -65,9 +65,12 @@ UI components — `egl-utils-js/dom` (stateful; instance-based, framework-agnost
      check (§6). -->
 
 - NFR-12 Bundle budgets (min+gzip, size-limit gate in CI): **`/dom` ≤ 4 kB** and the
-  `/table` entry **≤ 3 kB** with F42 included (its query-primitive-only budget, 1.8 kB
-  measured at 1722 B, stays a permanent scenario row so pipeline consumers pay for the
-  pipeline and primitive consumers do not). Each entry's whole-entry budget is set to its
+  `/table` entry **≤ 3.5 kB** with F42 included — **amended in 13.1 from an
+  indicative 3 kB on measuring 3273 B, by
+  [ADR-0034](../adr/0034-one-owner-one-derivation-and-the-pipeline-budget.md)** (its
+  query-primitive-only budget, 1.8 kB measured at 1714 B, stays a permanent scenario row so
+  pipeline consumers pay for the pipeline and primitive consumers do not). Each entry's
+  whole-entry budget is set to its
   measured size plus ≈7% headroom when it lands, with the measured figure recorded in the
   row name; the pre-implementation numbers above are ceilings on that measurement, not
   predictions to be met exactly. Every **plain function** added by this wave keeps its own
@@ -75,7 +78,11 @@ UI components — `egl-utils-js/dom` (stateful; instance-based, framework-agnost
   composing facades (F42, F51) are exempt from the 1 kB per-function clause by this spec**
   — they compose subsystems by design, so the clause would measure the wrong thing; each
   instead takes a **named, measured row** in the ADR-0015 style (indicative ceilings, to be
-  pinned on landing: `tablePipeline` ≤ 2.75 kB, `bindTableControls` ≤ 1.75 kB,
+  pinned on landing: `tablePipeline` ≤ 2.75 kB — **pinned at 3.4 kB on measuring 3250 B in
+  13.1, raised by [ADR-0034](../adr/0034-one-owner-one-derivation-and-the-pipeline-budget.md);
+  a facade that composes all three primitives plus the emitter is necessarily the size of
+  what it composes, so this row and the entry's own row are within 23 B of each other** —
+  `bindTableControls` ≤ 1.75 kB,
   `inlineAlert` ≤ 1.5 kB — **pinned at 1.48 kB on measuring 1382 B in 12.1, raised from an
   indicative 1.25 kB by [ADR-0031](../adr/0031-component-instances-and-the-alert-budget.md)**
   — `loadingOverlay` ≤ 1.25 kB, **pinned at 1.03 kB on measuring 958 B in 12.2, within the

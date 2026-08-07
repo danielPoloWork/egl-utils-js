@@ -12,6 +12,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `tablePipeline` on `egl-utils-js/table` (roadmap 13.1, spec 03 F42, ADR-0034): one owner
+  of a row set deriving one memoized view through a fixed
+  `filters → search → sort → paginate` order, so filtering and sorting compose instead of
+  discarding each other. Commands are transactions that emit exactly one `'change'`
+  (`batch()` coalesces several), and `on`/`once`/`off` delegate to an internal
+  `EventEmitter` whose `emit` stays private. Pure and DOM-free: it derives unchanged on a
+  server.
+
 ### Changed
 
 ### Deprecated

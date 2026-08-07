@@ -27,6 +27,8 @@
  * @module egl-utils-js/table
  */
 
+import { EventEmitter } from './events.js';
+
 /**
  * Expressions longer than this stop being parsed as a grammar and are matched
  * literally (NFR-09). No realistic filter is this long; a pathological one
@@ -602,4 +604,511 @@ export function paginate(items, options) {
   const current = page < 1 ? 1 : page > pageCount ? pageCount : page;
   const start = (current - 1) * pageSize;
   return { items: items.slice(start, start + pageSize), page: current, pageCount, total };
+}
+
+/**
+ * @template [Row=any]
+ * @typedef {object} TableColumn
+ * @property {string} key - The row property this column reads, and the name
+ *   commands address it by.
+ * @property {'auto' | 'string' | 'number' | 'date' | 'boolean'} [type='auto'] - How
+ *   values compare when this column is sorted; ignored when `compare` is given.
+ * @property {(a: unknown, b: unknown, rowA: Row, rowB: Row) => number} [compare] - A
+ *   custom ordering for this column. It receives both the extracted values and
+ *   the whole rows, so an ordering may depend on a second field. Direction is
+ *   applied by the pipeline (a `desc` sort negates the result), so a custom
+ *   comparator only ever describes ascending order.
+ * @property {(row: Row) => unknown} [getValue] - Extracts the value to filter,
+ *   search, and sort by. Defaults to `row[key]`, so a derived or formatted
+ *   column filters on what the user sees rather than on what is stored.
+ * @property {boolean} [searchable] - Whether {@link TablePipeline.setSearch}
+ *   looks at this column. When no column is marked, every declared column is
+ *   searched.
+ * @property {boolean} [filterable=true] - When `false`, addressing this column
+ *   with {@link TablePipeline.setFilter} is a `TypeError` — a column that
+ *   declares itself unfilterable should fail loudly, not silently.
+ */
+
+/**
+ * @typedef {object} SortEntry
+ * @property {string} key - The column to order by.
+ * @property {'asc' | 'desc'} direction - Ascending or descending.
+ */
+
+/**
+ * @template [Row=any]
+ * @typedef {object} TablePipelineOptions
+ * @property {readonly Row[]} [source=[]] - The rows to derive from. Copied on
+ *   entry and never mutated, so later mutation of the caller's array cannot
+ *   change the pipeline's state behind its back.
+ * @property {readonly TableColumn<Row>[]} [columns] - Column declarations. When
+ *   given, they close the key space: addressing an undeclared key is a
+ *   `TypeError`. When omitted, any key is accepted and search reads every own
+ *   key of each row.
+ * @property {number} [pageSize] - Rows per page. Omitted means no pagination:
+ *   one page holding everything, which is what a server-side render usually
+ *   wants.
+ * @property {string | string[]} [locale] - Passed to {@link compileFilter} and
+ *   {@link comparator}, so filtering and ordering read numbers and collate text
+ *   the same way.
+ */
+
+/**
+ * @template [Row=any]
+ * @typedef {object} TableView
+ * @property {Row[]} rows - The current page's rows, in derived order. A
+ *   snapshot: treat it as read-only.
+ * @property {number} total - Rows in the source, before any filtering.
+ * @property {number} totalFiltered - Rows surviving filters and search, across
+ *   all pages — the number a "showing X of Y" label wants.
+ * @property {number} page - The current page, always within `[1, pageCount]`.
+ * @property {number} pageCount - Total pages; at least 1.
+ * @property {SortEntry[]} sort - The active sort keys, most significant first.
+ * @property {Record<string, string | ((value: unknown) => boolean)>} filters - The
+ *   active per-column filters, as given.
+ * @property {string} search - The active global search text.
+ */
+
+/**
+ * @template [Row=any]
+ * @typedef {object} TablePipeline
+ * @property {() => TableView<Row>} view - The derived read model, memoized: two
+ *   reads with no command between them return the *identical* object.
+ * @property {(rows: readonly Row[]) => void} setSource - Replace the row set.
+ * @property {(key: string, filter: string | ((value: unknown) => boolean) | null) => void} setFilter - Set,
+ *   replace, or (with `null` or `''`) clear one column's filter.
+ * @property {(text: string) => void} setSearch - Set or (with `''`) clear the
+ *   global search.
+ * @property {(key: string) => void} toggleSort - Advance one column through
+ *   ascending, descending, unsorted.
+ * @property {(entries: readonly SortEntry[]) => void} setSort - Replace the sort
+ *   outright, for multi-key ordering.
+ * @property {(page: number) => void} setPage - Move to a page; out-of-range
+ *   values clamp when the view derives.
+ * @property {(pageSize: number | null) => void} setPageSize - Change the page
+ *   size, or pass `null` to stop paginating.
+ * @property {(fn: () => void) => void} batch - Run several commands as one
+ *   transaction that emits a single `'change'`.
+ * @property {(event: 'change', listener: (view: TableView<Row>) => void) => () => void} on - Subscribe;
+ *   returns an unsubscribe function.
+ * @property {(event: 'change', listener: (view: TableView<Row>) => void) => () => void} once - Subscribe
+ *   for one emission.
+ * @property {(event: 'change', listener: (view: TableView<Row>) => void) => void} off - Unsubscribe.
+ */
+
+/**
+ * Validate the column declarations and index them by key.
+ *
+ * @template Row
+ * @param {readonly TableColumn<Row>[] | undefined} columns
+ * @returns {Map<string, TableColumn<Row>> | null} `null` when no columns were
+ *   declared, which is the "any key goes" mode.
+ */
+function indexColumns(columns) {
+  if (columns === undefined) return null;
+  assertArray(columns, 'options.columns');
+  /** @type {Map<string, TableColumn<Row>>} */
+  const byKey = new Map();
+  for (const column of columns) {
+    if (column === null || typeof column !== 'object') {
+      throw new TypeError('each column must be an object');
+    }
+    assertString(column.key, 'column.key');
+    if (column.type !== undefined) assertOneOf(column.type, COMPARE_TYPES, 'column.type');
+    if (column.compare !== undefined && typeof column.compare !== 'function') {
+      throw new TypeError('column.compare must be a function');
+    }
+    if (column.getValue !== undefined && typeof column.getValue !== 'function') {
+      throw new TypeError('column.getValue must be a function');
+    }
+    byKey.set(column.key, column);
+  }
+  return byKey;
+}
+
+/** @param {unknown} value @param {string} name @returns {asserts value is unknown[]} */
+function assertArray(value, name) {
+  if (!Array.isArray(value)) {
+    throw new TypeError(`${name} must be an array`);
+  }
+}
+
+/**
+ * @param {unknown} value
+ * @param {boolean} [nullable=false] - Whether `null` (meaning "stop paginating")
+ *   is accepted alongside a positive integer.
+ * @returns {number | undefined}
+ */
+function normalizePageSize(value, nullable = false) {
+  if (value === undefined || (nullable && value === null)) return undefined;
+  if (!Number.isInteger(value) || /** @type {number} */ (value) < 1) {
+    throw new TypeError('pageSize must be an integer >= 1, or null');
+  }
+  return /** @type {number} */ (value);
+}
+
+/**
+ * A table's state, as one owner with pure stages (spec 03 F42, ADR-0034).
+ *
+ * The problem this solves is composition. Filtering and sorting implemented as
+ * two independent widgets each end up owning a copy of the rows, and each
+ * rebuilds its copy from the original — so applying one silently discards the
+ * other, and the bug only shows when a user does both. Here there is exactly one
+ * owner of the row set and one derivation:
+ *
+ * ```text
+ * source -> per-column filters (AND) -> global search (OR) -> sort -> paginate
+ * ```
+ *
+ * Every command is a transaction: it validates, updates state, and emits exactly
+ * one `'change'` carrying the derived view — even when it changes two things at
+ * once (setting a filter also returns to page 1, because the page the user was
+ * on describes a list that no longer exists). {@link TablePipeline.batch} makes
+ * several commands one transaction.
+ *
+ * The view is memoized on an internal version counter, so reading it repeatedly
+ * between commands is free, and subscribers that receive it in the `'change'`
+ * payload and callers that ask for it get the identical object.
+ *
+ * **Pure and DOM-free by contract** (NFR-14): the pipeline derives rows and
+ * nothing else — no rendering, no listeners, no `document`. It runs unchanged on
+ * a server, and `bindTableControls` (F51) is what connects it to inputs.
+ *
+ * @example
+ * const table = tablePipeline({ source: rows, pageSize: 25, columns: [
+ *   { key: 'name', searchable: true },
+ *   { key: 'ip', compare: (a, b) => ipv4ToKey(a).localeCompare(ipv4ToKey(b)) },
+ *   { key: 'seen', type: 'date' },
+ * ]});
+ * table.on('change', (view) => render(view.rows));
+ * table.setFilter('name', '^ada');   // filter and sort compose: neither
+ * table.toggleSort('seen');          // discards the other
+ *
+ * @example
+ * // One re-render, not three.
+ * table.batch(() => {
+ *   table.setSource(freshRows);
+ *   table.setFilter('status', '!=archived');
+ *   table.setPageSize(50);
+ * });
+ *
+ * @template [Row=any]
+ * @param {TablePipelineOptions<Row>} [options]
+ * @returns {TablePipeline<Row>}
+ * @throws {TypeError} If `source` is not an array, `columns` is malformed, or
+ *   `pageSize` is neither a positive integer nor omitted.
+ */
+export function tablePipeline(options = {}) {
+  const { source = [], columns, locale, pageSize: initialPageSize } = options ?? {};
+  assertArray(source, 'options.source');
+  const declared = indexColumns(columns);
+
+  /**
+   * Columns the global search reads; `null` means "every own key of the row".
+   * When no column opts in, every declared column is searched — a search box
+   * that silently matches nothing is worse than one that searches too widely.
+   */
+  const marked = declared && [...declared.values()].filter((column) => column.searchable);
+  const searchKeys = declared
+    ? marked?.length
+      ? marked.map((c) => c.key)
+      : [...declared.keys()]
+    : null;
+
+  /** @type {Row[]} */
+  let rows = source.slice();
+  /** @type {Map<string, { filter: string | ((value: unknown) => boolean), predicate: (value: unknown) => boolean }>} */
+  const filters = new Map();
+  let search = '';
+  /** @type {(value: unknown) => boolean} */
+  let searchPredicate = matchAll;
+  /** @type {SortEntry[]} */
+  let sort = [];
+  let page = 1;
+  let pageSize = normalizePageSize(initialPageSize, true);
+
+  /** @type {EventEmitter<{ change: TableView<Row> }>} */
+  const emitter = new EventEmitter();
+
+  let version = 0;
+  let cachedVersion = -1;
+  /** @type {TableView<Row> | null} */
+  let cached = null;
+
+  let depth = 0;
+  let pending = false;
+
+  /**
+   * Resolve a key against the declared columns.
+   *
+   * @param {unknown} key
+   * @param {boolean} [forFiltering=false]
+   * @returns {string}
+   */
+  function assertKey(key, forFiltering = false) {
+    assertString(key, 'key');
+    const column = declared?.get(key);
+    if (declared && !column) {
+      throw new TypeError(`unknown column: ${key}`);
+    }
+    if (forFiltering && column?.filterable === false) {
+      throw new TypeError(`column is not filterable: ${key}`);
+    }
+    return key;
+  }
+
+  /**
+   * @param {Row} row
+   * @param {string} key
+   * @returns {unknown}
+   */
+  function readValue(row, key) {
+    const getValue = declared?.get(key)?.getValue;
+    return getValue ? getValue(row) : /** @type {any} */ (row)?.[key];
+  }
+
+  /** @param {Row} row @returns {boolean} */
+  function passesFilters(row) {
+    for (const [key, { predicate }] of filters) {
+      if (!predicate(readValue(row, key))) return false;
+    }
+    return true;
+  }
+
+  /** @param {Row} row @returns {boolean} */
+  function matchesSearch(row) {
+    const keys = searchKeys ?? Object.keys(/** @type {any} */ (row) ?? {});
+    for (const key of keys) {
+      if (searchPredicate(readValue(row, key))) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Build one comparison per sort key, most significant first.
+   *
+   * Each compares two already-extracted values, and receives the rows only so a
+   * custom comparator can look at a second field.
+   *
+   * @returns {{ key: string, compare: (a: unknown, b: unknown, rowA: Row, rowB: Row) => number }[]}
+   */
+  function prepareComparisons() {
+    return sort.map(({ key, direction }) => {
+      const column = declared?.get(key);
+      if (column?.compare) {
+        const custom = column.compare;
+        const sign = direction === 'desc' ? -1 : 1;
+        return { key, compare: (a, b, rowA, rowB) => sign * custom(a, b, rowA, rowB) };
+      }
+      return { key, compare: comparator({ type: column?.type, direction, locale }) };
+    });
+  }
+
+  /** @returns {TableView<Row>} */
+  function derive() {
+    let derived = rows;
+    /** Whether `derived` is already a private array we may sort in place. */
+    let owned = false;
+
+    if (filters.size > 0) {
+      derived = derived.filter(passesFilters);
+      owned = true;
+    }
+    if (search !== '') {
+      derived = derived.filter(matchesSearch);
+      owned = true;
+    }
+
+    const totalFiltered = derived.length;
+
+    if (sort.length > 0) {
+      const comparisons = prepareComparisons();
+      const unsorted = owned ? derived : derived.slice();
+
+      // Decorate, sort, undecorate. Reading each sort key once per row rather
+      // than once per comparison matters most for a `getValue` column: the
+      // caller's function would otherwise run O(n log n) times — on 10k rows
+      // that is ~86,000 calls instead of 10,000 (NFR-13).
+      const keyed = comparisons.map(({ key }) => unsorted.map((row) => readValue(row, key)));
+
+      const order = [...unsorted.keys()];
+      // Sorting positions keeps the sort stable through the undecorate step:
+      // equal rows keep their index order, which is their source order.
+      order.sort((left, right) => {
+        for (let rank = 0; rank < comparisons.length; rank += 1) {
+          const result = comparisons[rank].compare(
+            keyed[rank][left],
+            keyed[rank][right],
+            unsorted[left],
+            unsorted[right],
+          );
+          if (result !== 0) return result;
+        }
+        return 0;
+      });
+
+      derived = order.map((index) => unsorted[index]);
+      owned = true;
+    }
+
+    const paged =
+      pageSize === undefined
+        ? { items: owned ? derived : derived.slice(), page: 1, pageCount: 1 }
+        : paginate(derived, { page, pageSize });
+
+    /** @type {Record<string, string | ((value: unknown) => boolean)>} */
+    const activeFilters = {};
+    for (const [key, { filter }] of filters) activeFilters[key] = filter;
+
+    return {
+      rows: paged.items,
+      total: rows.length,
+      totalFiltered,
+      page: paged.page,
+      pageCount: paged.pageCount,
+      sort: sort.map((entry) => ({ ...entry })),
+      filters: activeFilters,
+      search,
+    };
+  }
+
+  /** @returns {TableView<Row>} */
+  function view() {
+    if (cached !== null && cachedVersion === version) return cached;
+    cached = derive();
+    cachedVersion = version;
+    return cached;
+  }
+
+  /**
+   * Run one state change as a transaction: mutate, invalidate, announce.
+   *
+   * Inside a {@link batch} the announcement is deferred to the outermost close,
+   * which is what makes a batch exactly one `'change'`.
+   *
+   * @param {() => void} mutate
+   * @returns {void}
+   */
+  function commit(mutate) {
+    mutate();
+    version += 1;
+    if (depth > 0) {
+      pending = true;
+      return;
+    }
+    emitter.emit('change', view());
+  }
+
+  return {
+    view,
+
+    setSource(next) {
+      assertArray(next, 'rows');
+      commit(() => {
+        rows = next.slice();
+        page = 1;
+      });
+    },
+
+    setFilter(key, filter) {
+      const resolved = assertKey(key, true);
+      if (filter !== null && filter !== undefined && typeof filter !== 'string') {
+        if (typeof filter !== 'function') {
+          throw new TypeError('setFilter(key, filter) requires a string, a function, or null');
+        }
+      }
+      commit(() => {
+        if (filter === null || filter === undefined || filter === '') {
+          filters.delete(resolved);
+        } else {
+          filters.set(resolved, {
+            filter,
+            predicate: typeof filter === 'function' ? filter : compileFilter(filter, { locale }),
+          });
+        }
+        page = 1;
+      });
+    },
+
+    setSearch(text) {
+      assertString(text, 'text');
+      commit(() => {
+        search = text;
+        searchPredicate = text === '' ? matchAll : compileFilter(text, { locale });
+        page = 1;
+      });
+    },
+
+    toggleSort(key) {
+      const resolved = assertKey(key);
+      commit(() => {
+        const [primary] = sort;
+        sort =
+          primary?.key === resolved
+            ? primary.direction === 'asc'
+              ? [{ key: resolved, direction: 'desc' }]
+              : []
+            : [{ key: resolved, direction: 'asc' }];
+        page = 1;
+      });
+    },
+
+    setSort(entries) {
+      assertArray(entries, 'entries');
+      const next = entries.map((entry) => {
+        if (entry === null || typeof entry !== 'object') {
+          throw new TypeError('each sort entry must be an object');
+        }
+        const key = assertKey(entry.key);
+        assertOneOf(entry.direction, DIRECTIONS, 'entry.direction');
+        return { key, direction: entry.direction };
+      });
+      commit(() => {
+        sort = next;
+        page = 1;
+      });
+    },
+
+    setPage(next) {
+      if (!Number.isInteger(next)) {
+        throw new TypeError('setPage(page) requires an integer');
+      }
+      commit(() => {
+        page = next;
+      });
+    },
+
+    setPageSize(next) {
+      const size = normalizePageSize(next, true);
+      commit(() => {
+        pageSize = size;
+        page = 1;
+      });
+    },
+
+    batch(fn) {
+      if (typeof fn !== 'function') {
+        throw new TypeError('batch(fn) requires a function');
+      }
+      depth += 1;
+      try {
+        fn();
+      } finally {
+        depth -= 1;
+        // Announce even when `fn` threw: commands that ran before the throw did
+        // change the state, and a subscriber left showing the old one is worse
+        // than one that sees a partial update it can re-derive from.
+        if (depth === 0 && pending) {
+          pending = false;
+          emitter.emit('change', view());
+        }
+      }
+    },
+
+    // Delegation, not inheritance: `emit` stays inside the closure, so a
+    // subscriber cannot announce a state change the pipeline did not make.
+    on: emitter.on.bind(emitter),
+    once: emitter.once.bind(emitter),
+    off: emitter.off.bind(emitter),
+  };
 }

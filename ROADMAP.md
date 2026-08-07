@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-07 — the overlay gate, and M12 complete`](docs/journal/2026/08/2026-08-07-loading-overlay.md).
+  [`2026-08-07 — the table pipeline`](docs/journal/2026/08/2026-08-07-table-pipeline.md).
 
 ## Model & effort routing
 
@@ -190,8 +190,9 @@ F49–F50).
 One owner of state, pure stages, one derived view — so filtering and sorting compose
 instead of discarding each other (spec 03 §2, F42 and F51).
 
-- [ ] 13.1 `tablePipeline` on `/table`: commands, a memoized `view()`, one `'change'` event composing EventEmitter, over the spec-02 query primitives; pure and SSR-safe (spec 03 F42, NFR-13) _(route: frontier-reasoning/high — decision-heavy: the wave's flagship contract)_
+- [x] 13.1 `tablePipeline` on `/table`: commands, a memoized `view()`, one `'change'` event composing EventEmitter, over the spec-02 query primitives; pure and SSR-safe (spec 03 F42, NFR-13) _(route: frontier-reasoning/high — decision-heavy: the wave's flagship contract)_
 - [ ] 13.2 `bindTableControls` in `/dom`: debounced filter/search inputs, one delegated sort-header listener with `aria-sort`, pagination reflection, structural teardown, plus the Playwright end-to-end scenario (spec 03 F51, NFR-15) _(route: standard/high)_
+- [ ] 13.3 Make the absolute benchmarks visible to the regression gate — `tools/bench-regression.mjs` only collects a group when a benchmark name starts with `egl `, so every absolute suite (`no-baseline.bench.js` and the 13.1 NFR-13 case) runs on every CI benchmark job and is then **discarded**, despite `no-baseline.bench.js` documenting itself as feeding that gate. A regression in `validateEmail`'s linear cost or in the pipeline's derivation would not be caught. Fix the collector (or the naming convention) and re-record `baseline.json` on comparable hardware, not on a workstation _(route: standard/medium — a verification blind spot, not a coding task; found by 13.1)_
 
 
 ---

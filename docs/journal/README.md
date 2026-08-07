@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-07 — The table pipeline (roadmap 13.1)](2026/08/2026-08-07-table-pipeline.md)
 - [2026-08-07 — The overlay gate, and M12 complete (roadmap 12.2)](2026/08/2026-08-07-loading-overlay.md)
 - [2026-08-07 — The component contract, set by inlineAlert (roadmap 12.1)](2026/08/2026-08-07-inline-alert.md)
 - [2026-08-06 — The sanitize decision, and M11 complete (roadmap 11.3)](2026/08/2026-08-06-dom-inject-fragment.md)
