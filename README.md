@@ -681,7 +681,7 @@ deliberately does not cover.
 | 10 | Structured logging | ✅ done |
 | 11 | DOM foundation | ✅ done |
 | 12 | UI components | ✅ done |
-| 13 | Composable table pipeline | ⏳ planned |
+| 13 | Composable table pipeline | ✅ done |
 
 
 ## License

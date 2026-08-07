@@ -19,6 +19,11 @@ import { EMAILS, DURATIONS, QUERY_PARAMS, RECORDS } from './fixtures.js';
 // Publishing a "we are faster" number against an unlike function would be the
 // dishonest version of this file; that is why it is separate from the parity
 // suites rather than mixed in with them.
+//
+// Every benchmark name here begins with `egl ` (roadmap 13.3, ADR-0036). That
+// prefix is what tells the collector these groups are ours-only rather than
+// comparisons missing a baseline — without it, this whole file was silently
+// dropped from the gate it documents itself as feeding.
 
 describe('validateEmail (NFR-05 keeps this linear — no regex anywhere)', () => {
   // The absolute figure matters here beyond regression tracking: ADR-0005
@@ -26,7 +31,7 @@ describe('validateEmail (NFR-05 keeps this linear — no regex anywhere)', () =>
   // The adversarial worst case has its own un-instrumented gate in
   // validate-email.redos.test.js; this is the ordinary-input cost.
   bench(
-    'mixed valid and invalid inputs',
+    'egl validateEmail over mixed valid and invalid inputs',
     () => {
       for (const email of EMAILS) validateEmail(email);
     },
@@ -36,7 +41,7 @@ describe('validateEmail (NFR-05 keeps this linear — no regex anywhere)', () =>
 
 describe('parseDuration', () => {
   bench(
-    'valid duration strings',
+    'egl parseDuration over valid duration strings',
     () => {
       for (const duration of DURATIONS) parseDuration(duration);
     },
@@ -46,7 +51,7 @@ describe('parseDuration', () => {
 
 describe('urlSearchParams', () => {
   bench(
-    'object with arrays and skipped values',
+    'egl urlSearchParams over an object with arrays and skipped values',
     () => {
       urlSearchParams(QUERY_PARAMS);
     },
@@ -58,7 +63,7 @@ describe('uuid (bounded by the platform CSPRNG, not by our code)', () => {
   // Mostly measures crypto.randomUUID; tracked so a regression in the
   // fallback-assembly path (ADR-0008) would show up.
   bench(
-    'uuid()',
+    'egl uuid()',
     () => {
       uuid();
     },
@@ -68,7 +73,7 @@ describe('uuid (bounded by the platform CSPRNG, not by our code)', () => {
 
 describe('type guards', () => {
   bench(
-    'isObject over 1000 records',
+    'egl isObject over 1000 records',
     () => {
       for (const record of RECORDS) isObject(record);
     },
@@ -76,7 +81,7 @@ describe('type guards', () => {
   );
 
   bench(
-    'isEmpty over 1000 records',
+    'egl isEmpty over 1000 records',
     () => {
       for (const record of RECORDS) isEmpty(record);
     },

@@ -14,6 +14,18 @@ on:
     # every other project schedules at :00.
     - cron: '17 3 * * *'
   workflow_dispatch:
+    inputs:
+      record:
+        description: >-
+          Record the baseline on this runner instead of checking against it, and
+          upload it as an artifact (roadmap 13.3). The absolute collapse floor
+          only applies within a matching environment tag, so the figures it
+          compares against have to be taken HERE — a workstation number never
+          judges a CI run. The job never commits: the maintainer downloads the
+          artifact and lands it through a normal PR, so CI keeps read-only
+          permissions.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -43,7 +55,20 @@ jobs:
         # different version would invalidate every stored ratio.
         run: pnpm install --frozen-lockfile
       - name: Compare against the stored baseline (fails on a > 10% regression)
+        if: inputs.record != true
         run: pnpm bench:check
+
+      - name: Record the baseline on this runner (roadmap 13.3)
+        if: inputs.record == true
+        run: pnpm bench:baseline
+
+      - name: Upload the recorded baseline for review
+        if: inputs.record == true
+        uses: actions/upload-artifact@v7
+        with:
+          name: baseline-${{ github.run_number }}
+          path: docs/benchmarks/baseline.json
+          retention-days: 30
       - name: Record the run for inspection
         if: always()
         run: pnpm bench --reporter=verbose > benchmark-run.txt 2>&1 || true

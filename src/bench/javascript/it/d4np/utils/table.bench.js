@@ -9,9 +9,14 @@ import { TABLE_ROWS } from './fixtures.js';
 // This is an **absolute budget on our own fixture, not a parity claim** — there
 // is no third-party pipeline whose filtering, collation, and empties-last
 // ordering mean the same thing as ours, so a ratio against one would compare
-// two different jobs (ADR-0013). It therefore records with `enforced: false`
-// against the nightly gate and is read as a millisecond figure instead: mean
-// time per iteration IS the budget, directly comparable to the 50 ms clause.
+// two different jobs (ADR-0013). It is read as a millisecond figure instead:
+// mean time per iteration IS the budget, directly comparable to the 50 ms
+// clause, and the gate prints it that way on every run.
+//
+// Names begin with `egl ` so the collector recognises these groups as ours-only
+// (roadmap 13.3, ADR-0036); the recorded figure is then held to the absolute
+// collapse floor, which catches a derivation regression of the O(n^2) kind
+// without pretending a shared runner's milliseconds are reproducible.
 //
 // The memoization half of NFR-13 is deliberately NOT benchmarked. It is
 // asserted by object identity in table-pipeline.property.test.js, where it
@@ -47,7 +52,7 @@ describe('tablePipeline.view() — NFR-13 budget: 10k rows, 3 filters, 2-key sor
   let page = 1;
 
   bench(
-    'full derivation (filter -> search -> sort -> paginate)',
+    'egl view() full derivation (filter -> search -> sort -> paginate)',
     () => {
       // Any command invalidates the memo, so this times a real derivation and
       // not a cache hit. Paging is the cheapest possible invalidation: it moves
@@ -81,7 +86,7 @@ describe('tablePipeline.view() — the stages, so a regression can be located', 
   let flip = 1;
 
   bench(
-    'one filter over 10k rows',
+    'egl view() with one filter over 10k rows',
     () => {
       flip = flip === 1 ? 2 : 1;
       filterOnly.setPage(flip);
@@ -91,7 +96,7 @@ describe('tablePipeline.view() — the stages, so a regression can be located', 
   );
 
   bench(
-    'two-key sort over 10k rows',
+    'egl view() with a two-key sort over 10k rows',
     () => {
       flip = flip === 1 ? 2 : 1;
       sortOnly.setPage(flip);
@@ -101,7 +106,7 @@ describe('tablePipeline.view() — the stages, so a regression can be located', 
   );
 
   bench(
-    'global search over 10k rows',
+    'egl view() with a global search over 10k rows',
     () => {
       flip = flip === 1 ? 2 : 1;
       searchOnly.setPage(flip);
