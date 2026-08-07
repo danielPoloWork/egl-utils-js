@@ -56,7 +56,18 @@ NFR-20):
   literal `false`); every builder accepts `{class: string|string[]}` to append custom
   classes after the Bootstrap ones; multi-node population goes through one
   `DocumentFragment` per call; instance-returning managers expose `.element` and
-  `destroy()`, and `destroy()` plus an aborted `{signal}` satisfy NFR-15
+  `destroy()`, and `destroy()` plus an aborted `{signal}` satisfy NFR-15.
+  **Amended in 14.1** ([ADR-0037](../adr/0037-builder-contract-nodes-escape-and-the-atom-budget.md))
+  on two points this clause left open. Every builder additionally accepts
+  `{document}`: "the target's own document" has no meaning for a builder with no target
+  (an atom like `bsBadge('New')`), so the document is resolved from the option, then from
+  the ambient global, and its absence is the NFR-20 `DomContractError` — without the
+  option NFR-20 would be satisfiable only in its diagnostic direction and the builders
+  would be unusable in an iframe, a popup, or a server-side DOM. And a **class token that
+  cannot be a class is a `TypeError` naming the option**, never the platform's
+  `InvalidCharacterError` `DOMException`; a caller's `class` string is split on whitespace
+  rather than rejected, while `variant`/`size` values are *not* checked against a fixed
+  vocabulary, since a project's custom `$theme-colors` entry is a legitimate variant
 - F53 bsIcon(name, {set?, label?}) — icon adapter returning an element from an injected
   **icon set** (`{render}` or class-template pure-data map). Ships two data presets:
   `bootstrapIconsSet` (`<i class="bi bi-<name>">`) as the default and
@@ -77,11 +88,21 @@ NFR-20):
 - F58 bsSpinner({kind='border', size?, variant?, label='Loading…'}) — border/grow
   spinner with `role="status"` and a visually-hidden label
 - F59 bsProgress({value, min=0, max=100, variant?, striped?, animated?, label?,
-  height?}) — progress bar with `role="progressbar"` and the aria-value* triple always
-  set; returns an instance with `update(value)` beside `.element`
+  height?, format?}) — progress bar with `role="progressbar"` and the aria-value* triple
+  always set (on the track, per Bootstrap 5.3, the bar itself being presentational);
+  `label` is the accessible name; returns an instance with `update(value)` beside
+  `.element`, `update` moving the width, the `aria-valuenow` and the visible text together
+  so the three cannot drift apart. **`format` added in 14.1**
+  ([ADR-0037](../adr/0037-builder-contract-nodes-escape-and-the-atom-budget.md)): the
+  visible text inside the bar comes from an injected `(value, {min, max}) => string`
+  defaulting to `false` — no text, which is Bootstrap's own default — because `'25%'` is a
+  human-readable string and NFR-21 requires those to be injected rather than shipped (the
+  F51 `formatStatus` precedent). Out-of-range values clamp into `[min, max]`
 - F60 bsPlaceholder({lines=1, size?, animation?, widths?}) — placeholder/skeleton block;
   `animation: 'glow'|'wave'`; each line's width drawn from `widths` or a stable default
-  cycle
+  cycle. The block is `aria-hidden`: a skeleton depicts content that does not exist yet, so
+  announcing it announces nothing, repeatedly — the loading *state* belongs to a live region
+  or F58
 - F61 bsCard({header?, body?, footer?, title?, subtitle?, text?, image?, listGroup?,
   actions?}) — card composer; every slot accepts a string (escaped), a node, or an array
   of either; `image` renders `card-img-top` with **required `alt`** (empty string allowed
@@ -217,7 +238,18 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   a prediction** — on landing, every row is pinned to measured + ≈7% with the measured
   figure recorded in the row name, and a ceiling that proves wrong is amended **by ADR
   in the same PR, never silently and never by deleting the row**. Pure atom builders
-  (F53–F60) keep the 1 kB single-import clause. Instance managers and composing facades
+  (F53–F60) keep a **1.2 kB** single-import clause — **amended in 14.1 from 1 kB by
+  [ADR-0037](../adr/0037-builder-contract-nodes-escape-and-the-atom-budget.md)** on
+  measuring the F52 contract every builder shares: `bsCloseButton`, the simplest builder
+  that still resolves a document, validates class tokens and sets an ARIA surface, is
+  **813 B**, so about four fifths of the old clause is obligation that
+  NFR-19/NFR-20/NFR-21 impose rather than fat, leaving ~200 B for a builder's own markup.
+  Five of the eight atoms measure inside 1 kB regardless (813–895 B) and are pinned there;
+  three land just past it (`bsPlaceholder` 1005 B, `bsBadge` 1014 B, `bsProgress` 1101 B).
+  **`bsButton` is additionally a named composing row at 1.85 kB** (measured 1688 B): it
+  composes `bsIcon`, because F55 accepts an icon *name*, which is the ergonomic point of
+  the option — the same exemption this clause already grants `bsTable`, extended
+  explicitly rather than by inference. Instance managers and composing facades
   take named rows (indicative): `bsCard`/`bsListGroup` ≤ 1.25 kB; `bsBreadcrumb` ≤
   0.75 kB; `bsAlert` ≤ 2 kB (composes F49); `bsPagination` ≤ 1.5 kB; **`bsTable` ≤
   6.5 kB** (a facade over F42 + F51 + F65 measures roughly as the sum of what it
