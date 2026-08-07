@@ -38,8 +38,10 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   away; the recorded baseline held 13 entries instead of 23. Classification is now a total,
   unit-tested pure function, a benchmark it cannot classify **fails** the run instead of
   dropping out of it, and absolute figures are held to an environment-tagged collapse floor
-  (4x slower than recorded fails) with their millisecond figures printed on every run. No
-  library code changed.
+  (4x slower than recorded fails) with their millisecond figures printed on every run. The
+  baseline is recorded on the CI runner, so NFR-13's budget now has the measurement its
+  clause always asked for: **10.24 ms mean, 11.96 ms p99 against 50 ms**. No library code
+  changed.
 
 ### Deprecated
 

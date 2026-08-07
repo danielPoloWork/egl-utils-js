@@ -65,23 +65,82 @@ consistent with 13.1's report (21.1 ms / 30.3 ms). An earlier single-file probe 
 40.2 ms, so that was ambient load, not a regression — itself a small lesson about
 trusting a single measurement.
 
+## The baseline was then recorded on CI — and the assumption was wrong
+
+Dispatched `benchmark-nightly.yml -f record=true` on the branch; the conditional steps
+behaved (compare `skipped`, record ran), and the artifact came back with 23 entries tagged
+`linux-x64-node20-ci`. Installed and committed, so **the collapse floor is live in CI**.
+
+The surprise: **the runner is ~2x faster than this workstation and an order of magnitude
+more stable.** The 13.1 report predicted hosted runners would be slower; this ADR first
+assumed they would be noisier. Both wrong.
+
+| | Workstation | CI runner |
+|---|---|---|
+| NFR-13 full derivation | 19.1 ms mean, p99 30.5 | **10.24 ms, p99 11.96** |
+| Two-key sort, 10k rows | 40.2 ms | 15.15 ms |
+| Three-run spread, all 11 absolute entries | 1.05x..**1.68x** | 1.01x..**1.10x** |
+
+So **NFR-13 finally has the measurement its clause always asked for** — "≤ 50 ms on the CI
+runner" — at 10.24 ms mean / 11.96 ms p99: 4.9x headroom.
+
+Across environments the gap is a consistent factor: the workstation runs at **47–57% of the
+runner** on every absolute benchmark. That is the concrete case for the environment tag — a
+**2x floor would have failed 4 of 11 benchmarks on a machine change alone** (47%, 49%, 49%,
+50%). At 0.25 the cross-environment comparison happens to pass, but "it happened to pass" is
+not a safety property, so the tag refuses the comparison anyway. Verified by running the
+gate locally against the CI-recorded file: every absolute entry prints *not comparable* with
+both tags named, parity still enforces, exit 0.
+
+**Deliberately not tightened.** One job's internal consistency is not evidence of cross-job
+stability on a fleet that varies by host and CPU model, and 13.1's lesson (a budget met by
+8% is not met) argues for earning a tighter floor with several recordings rather than one
+sample. Recorded in ADR-0036 as the condition for revisiting.
+
+Note the failure mode to remember: a Node-major bump or a runner-image platform change
+retires the tag and silently stops absolute enforcement. The gate says so per entry — a
+visible non-enforcement rather than a fabricated verdict — and re-recording is one dispatch.
+
+## Found on the way: the browser gate is red on `main`
+
+Running this branch's CI surfaced a failure that is **not** from this work. `browser` has
+been red since 13.2 merged (PR #86): one Playwright case fails on **WebKit only** — *"one
+delegated listener survives every re-render of the rows"* — and the same failure is on #86's
+own pre-merge run and on `main` after it. Recorded as
+[BUG-0001](../../../bugs/2026/08/BUG-0001-webkit-row-click-intercepted.md) — the first entry
+in the bug ledger.
+
+Root cause, from Playwright's own call log: `locator resolved to <tr data-name="ada">` …
+`<table>…</table> intercepts pointer events`. Playwright hit-tests the row's centre point;
+WebKit returns the ancestor `<table>` there, while Chromium and Firefox return the `<td>`. So
+it is a **test-aiming defect**, not a library one — the same test's *first* click proves
+`delegate` works, and the fix is to click `#rows tr:first-child td`, which is also what a
+real user does.
+
+Two lessons. First, the local blind spot is now costly and confirmed twice: Firefox and
+WebKit cannot launch on this workstation, so "Chromium green locally" is not evidence, and
+13.2 shipped on it. Second, a red gate is worse than an absent one — a genuine browser
+regression would now arrive in an already-red job. Filed rather than fixed here because this
+PR delivers 13.3 and the repo's rule is one roadmap item per PR; it wants its own one-line
+`fix(tests)` PR.
+
 ## Where the project stands
 
 **M13 is complete and spec 03 is fully delivered** — coverage rows §1–§6 all ✅. Milestones
 1–13 done, v0.5.0 shipped. The next step is cutting **v0.6.0**, then planning PR #0c
 (spec 04, M14–M16: the Bootstrap 5 toolkit and its 24-component catalog).
 
-Absolute enforcement is deliberately inert until the baseline is re-recorded on CI
-hardware via the new dispatch input — visible in the gate output as *not comparable*,
-never a false pass. Whether to record now or with v0.6.0 is the maintainer's call.
+Absolute enforcement is **live**: the committed baseline is CI-recorded, so the floor
+applies on the runner and reports *not comparable* on a workstation.
 
 ## How the next session resumes
 
-1. Merge this PR (one PR at a time).
-2. Cut **v0.6.0**: `release-version.yml` pushes `changeset-release/main` — branch off it,
+1. Merge this PR (one PR at a time). Note its `browser` check is red for BUG-0001, which
+   `main` already carries — nothing in this PR touches library or browser code.
+2. Fix **BUG-0001** in a one-line `fix(tests)` PR (`#rows tr:first-child td`), so v0.6.0 does
+   not ship behind a red gate.
+3. Cut **v0.6.0**: `release-version.yml` pushes `changeset-release/main` — branch off it,
    restore the Keep-a-Changelog skeleton `changeset version` destroys, write
    `docs/changelog/v0/v0.6.0.md` **and** `docs/releases/v0.6.0.md` with both index rows in
    the same commit.
-3. Optionally dispatch `benchmark-nightly.yml -f record=true` and land the CI-recorded
-   baseline so the collapse floor starts enforcing.
-4. Then PR #0c: spec 04 + ROADMAP M14–M16.
+4. Then PR #0c: spec 04 + ROADMAP M14–M16 (the Bootstrap toolkit, 24-component catalog).
