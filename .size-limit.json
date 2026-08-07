@@ -60,9 +60,21 @@
     "limit": "0.8 kB"
   },
   {
-    "name": "/table (NFR-08: measured 1722 B)",
+    "name": "/table - full import (NFR-12: measured 3273 B with the pipeline, clause 3.5 kB per ADR-0034)",
     "path": "dist/esm/table.js",
+    "limit": "3.5 kB"
+  },
+  {
+    "name": "/table - query primitives only (NFR-08/NFR-12: measured 1714 B, pipeline shaken out)",
+    "path": "dist/esm/table.js",
+    "import": "{ compileFilter, comparator, paginate }",
     "limit": "1.8 kB"
+  },
+  {
+    "name": "single: tablePipeline (3.4 kB - documented NFR-12 composing-facade row, ADR-0034; measured 3250 B)",
+    "path": "dist/esm/table.js",
+    "import": "{ tablePipeline }",
+    "limit": "3.4 kB"
   },
   {
     "name": "single: compileFilter (NFR-08 <= 1 kB / NFR-02)",

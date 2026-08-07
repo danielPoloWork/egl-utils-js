@@ -233,7 +233,8 @@ fixedWidth('com.example.Service', 12, { truncate: 'start' }); // 'mple.Service'
 ### Tabular query primitives (`egl-utils-js/table`)
 
 The three operations every data table needs before it needs a table. Pure and Node-safe,
-so they run server-side too; the spec-03 table pipeline will compose them on this entry.
+so they run server-side too; [`tablePipeline`](#table-pipeline-egl-utils-jstable) composes
+them on this same entry.
 
 ```js
 import { compileFilter, comparator, paginate } from 'egl-utils-js/table';
@@ -263,6 +264,52 @@ rows.sort(comparator({ type: 'number', direction: 'desc' }));
 
 paginate(rows, { page: 99, pageSize: 25 });
 // { items, page: 4, pageCount: 4, total: 100 } — the page is clamped, not rejected
+```
+
+### Table pipeline (`egl-utils-js/table`)
+
+Filtering and sorting *compose*, because one object owns the rows and derives one view —
+`source → filters (AND) → search (OR) → sort → paginate` (ADR-0034). Stateful, but still
+DOM-free: it runs unchanged on a server, and `bindTableControls` wires it to inputs.
+
+```js
+import { tablePipeline } from 'egl-utils-js/table';
+
+const table = tablePipeline({
+  source: rows,
+  pageSize: 25,
+  columns: [
+    { key: 'name', searchable: true },
+    { key: 'seen', type: 'date' },
+    { key: 'score', type: 'number' },
+    // Any ordering you can express, including one that reads a second field:
+    { key: 'ip', compare: (a, b) => ipv4ToKey(a).localeCompare(ipv4ToKey(b)) },
+  ],
+});
+
+// One event carries the derived view — the identical object `view()` returns.
+const off = table.on('change', (view) => render(view.rows, view.page, view.pageCount));
+
+table.setFilter('name', '^ada'); // the F33 grammar, or your own predicate
+table.setSearch('gateway'); //     OR across the searchable columns
+table.toggleSort('seen'); //       asc -> desc -> unsorted
+// Neither command discarded the other: both are still in effect.
+
+table.view();
+// { rows, total, totalFiltered, page, pageCount, sort, filters, search }
+table.view() === table.view(); // true — memoized until the next command
+
+// One re-render instead of three:
+table.batch(() => {
+  table.setSource(freshRows);
+  table.setSort([
+    { key: 'seen', direction: 'desc' },
+    { key: 'name', direction: 'asc' },
+  ]);
+  table.setPageSize(50);
+});
+
+off(); // and `emit` was never yours to call — subscribers observe, they don't announce
 ```
 
 ### IPv4 & CIDR (`egl-utils-js/net`)
