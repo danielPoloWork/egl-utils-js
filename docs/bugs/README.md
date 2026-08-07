@@ -16,8 +16,6 @@ a `fixed` record names its `fixed-in`) is enforced by the consistency lint's `bu
 
 ## Index
 
-_No defects recorded yet._
-
 | Bug | Title | Severity | Status | Fixed in |
 |-----|-------|----------|--------|----------|
-| —   | —     | —        | —      | —        |
+| [BUG-0001](2026/08/BUG-0001-webkit-row-click-intercepted.md) | WebKit browser smoke fails — a `<tr>` click target is intercepted by `<table>` | low | open | — |
