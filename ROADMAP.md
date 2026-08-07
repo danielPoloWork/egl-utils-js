@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-07 — every benchmark counted, and M13 closed`](docs/journal/2026/08/2026-08-07-bench-collector.md).
+  [`2026-08-07 — the Bootstrap wave planned`](docs/journal/2026/08/2026-08-07-bootstrap-wave-planning.md).
 
 ## Model & effort routing
 
@@ -197,6 +197,42 @@ instead of discarding each other (spec 03 §2, F42 and F51).
 
 ---
 
+## Milestone 14 — Bootstrap element builders
+
+The opt-in `/bootstrap` entry and the no-peer half of the catalog: real-DOM builders with
+escape-by-default population (spec 04 §2, F52–F65).
+Spec: [`docs/specs/04_spec_bootstrap_toolkit.md`](docs/specs/04_spec_bootstrap_toolkit.md).
+
+- [ ] 14.1 `/bootstrap` subpath foundation: entry wiring, the F52 builder contract (escape-by-default, the `{html, sanitize}` pair, fragment batching, owned teardown) and the atom builders — bsIcon with the two icon-set data presets, bsBadge, bsButton, bsButtonGroup, bsCloseButton, bsSpinner, bsProgress, bsPlaceholder (spec 04 F52–F60, NFR-19/NFR-20) _(route: frontier-reasoning/high — sets-pattern + security: the escape contract every manager copies)_
+- [ ] 14.2 Composite builders: bsCard, bsListGroup, bsBreadcrumb, bsAlert over the F49 engine, bsPagination (spec 04 F61–F65, NFR-21) _(route: standard/medium)_
+
+
+---
+
+## Milestone 15 — Bootstrap table manager
+
+The toolkit's flagship: a full Bootstrap table facade that composes the spec-03 pipeline
+and hides nothing (spec 04 §2, F66–F67).
+
+- [ ] 15.1 bsTable core: column descriptors → thead/tbody rendered through one fragment, style flags, escaped cells with `format` hooks, delegated row events, and the owned `tablePipeline` exposed as `.pipeline` (spec 04 F66; NFR-17's pre-declared composing exception) _(route: frontier-reasoning/high — decision-heavy: the toolkit's flagship composition)_
+- [ ] 15.2 bsTable controls: per-column filter row speaking the F33 grammar with custom `{operators}`, global search, page-size select, F65 pagination and `aria-sort` headers wired through F51; toolbar slot; one-pass structural teardown (spec 04 F67, NFR-15/NFR-21) _(route: standard/high)_
+
+
+---
+
+## Milestone 16 — Bootstrap interactive wrappers
+
+The peer-backed half: lifecycle wrappers over Bootstrap's behaviors, resolved lazily and
+failing typed when the peer is absent (spec 04 §2, F68–F81) — closes the catalog at 24/24.
+
+- [ ] 16.1 The F68 resolution contract (lazy, injected-first, stable `EGL_PEER_MISSING` on `egl-utils-js/errors`) + bsToast, bsModal, and bsLoadingOverlay over the F50 gate (spec 04 F68–F71, NFR-18) _(route: frontier-reasoning/high — sets-pattern: the optional-peer contract every wrapper copies)_
+- [ ] 16.2 Navigation set: bsCollapse, bsAccordion, bsDropdown, bsTabs, bsNavbar (spec 04 F72–F76, NFR-21) _(route: standard/medium)_
+- [ ] 16.3 Overlay & observation set: bsOffcanvas, bsCarousel, bsScrollspy (spec 04 F77–F79) _(route: standard/medium)_
+- [ ] 16.4 Popper-backed set: bsTooltip and bsPopover with the one-sanitizer contract, naming `@popperjs/core` in the typed failure (spec 04 F80–F81, NFR-18/NFR-19) — closes the Bootstrap 5 catalog at 24/24 _(route: standard/high — security: content handed to a third-party renderer)_
+
+
+---
+
 ## Spec Coverage Map
 
 Tracks which spec section is fulfilled by which roadmap item(s). Every spec section has a
@@ -237,3 +273,16 @@ _Spec 02 is complete as of M10 (v0.3.0): F26–F41 all delivered._
 | §4 (03) | Logical architecture | 11.1, 13.1, 13.2 | ✅ |
 | §5 (03) | Public interface | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ✅ |
 | §6 (03) | Verification & test strategy | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ✅ |
+
+_Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
+
+### Spec 04 — Bootstrap 5 toolkit (F52–F81)
+
+| Spec § | Requirement | Roadmap items | Status |
+|--------|-------------|---------------|--------|
+| §1 (04) | Objective & business context | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | ⏳ |
+| §2 (04) | Functional requirements F52–F81 | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | ⏳ |
+| §3 (04) | Non-functional requirements | 14.1, 14.2, 15.1, 15.2, 16.1, 16.4 | ⏳ |
+| §4 (04) | Logical architecture | 14.1, 15.1, 16.1 | ⏳ |
+| §5 (04) | Public interface | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | ⏳ |
+| §6 (04) | Verification & test strategy | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | ⏳ |

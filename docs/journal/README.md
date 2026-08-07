@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-07 — The Bootstrap wave planned (spec 04, M14–M16)](2026/08/2026-08-07-bootstrap-wave-planning.md)
 - [2026-08-07 — Every benchmark counted, and M13 closed (roadmap 13.3)](2026/08/2026-08-07-bench-collector.md)
 - [2026-08-07 — The controls bridge, and spec 03 delivered (roadmap 13.2)](2026/08/2026-08-07-table-dom-bindings.md)
 - [2026-08-07 — The table pipeline (roadmap 13.1)](2026/08/2026-08-07-table-pipeline.md)
