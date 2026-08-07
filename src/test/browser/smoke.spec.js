@@ -598,3 +598,184 @@ test.describe('sanitize bypass corpus — real engines, where mXSS actually live
     ]);
   });
 });
+
+test.describe('/table + /dom — controls driving a pipeline (roadmap 13.2, F51)', () => {
+  // What a fake DOM cannot establish, and this can: real events from real user
+  // input reach the debounced handlers, `aria-sort` lands on real elements as
+  // the accessibility tree sees it, and one delegated listener really does
+  // survive the caller replacing the rows underneath it.
+
+  test.beforeEach(async ({ page }) => {
+    await page.evaluate(() => {
+      const { tablePipeline } = window.egl.table;
+      const { bindTableControls, delegate } = window.egl.dom;
+
+      document.getElementById('host').innerHTML = `
+        <input id="q" aria-label="Search" />
+        <input id="f-status" aria-label="Status filter" />
+        <table>
+          <thead><tr>
+            <th data-sort-key="name">Name</th>
+            <th data-sort-key="score">Score</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <button id="prev">Prev</button>
+        <button id="next">Next</button>
+        <span id="page"></span>
+        <span id="opened"></span>
+      `;
+
+      const table = tablePipeline({
+        source: [
+          { name: 'Charlie', score: 30, status: 'active' },
+          { name: 'ada', score: 10, status: 'archived' },
+          { name: 'Dora', score: 20, status: 'active' },
+          { name: 'Bob', score: 40, status: 'active' },
+        ],
+        pageSize: 2,
+        columns: [
+          { key: 'name', searchable: true },
+          { key: 'score', type: 'number' },
+          { key: 'status', searchable: true },
+        ],
+      });
+
+      const body = document.getElementById('rows');
+      // Row rendering stays the caller's — the binding wires controls only.
+      table.on('change', (view) => {
+        body.innerHTML = view.rows
+          .map(
+            (row) => `<tr data-name="${row.name}"><td>${row.name}</td><td>${row.score}</td></tr>`,
+          )
+          .join('');
+      });
+      // One delegated listener, attached once, across every re-render.
+      delegate(body, 'click', 'tr[data-name]', (_event, row) => {
+        document.getElementById('opened').textContent = row.dataset.name;
+      });
+
+      bindTableControls(
+        table,
+        {
+          filters: { status: '#f-status' },
+          search: '#q',
+          sortHeaders: { root: 'thead', selector: 'th[data-sort-key]' },
+          pagination: { prev: '#prev', next: '#next', status: '#page' },
+        },
+        { debounceMs: 50 },
+      );
+
+      body.innerHTML = table
+        .view()
+        .rows.map(
+          (row) => `<tr data-name="${row.name}"><td>${row.name}</td><td>${row.score}</td></tr>`,
+        )
+        .join('');
+    });
+  });
+
+  test('typing really filters, and search composes with a column filter', async ({ page }) => {
+    await page.fill('#q', 'active');
+    await expect(page.locator('#page')).toHaveText('1 / 2'); // 3 matches, 2 per page
+    await expect(page.locator('#rows tr')).toHaveCount(2);
+
+    // Search AND filter, not search THEN filter: 'active' and status 'archived'
+    // have no row in common, and the empty result is the correct answer.
+    await page.fill('#f-status', 'archived');
+    await expect(page.locator('#rows tr')).toHaveCount(0);
+
+    await page.fill('#q', '');
+    await expect(page.locator('#rows tr')).toHaveCount(1);
+    await expect(page.locator('#rows tr')).toHaveText(/ada/);
+  });
+
+  test('clicking a header cycles the sort and publishes aria-sort', async ({ page }) => {
+    const name = page.locator('th[data-sort-key="name"]');
+    await expect(name).toHaveAttribute('aria-sort', 'none');
+
+    await name.click();
+    await expect(name).toHaveAttribute('aria-sort', 'ascending');
+    await expect(page.locator('#rows tr').first()).toHaveText(/ada/);
+
+    await name.click();
+    await expect(name).toHaveAttribute('aria-sort', 'descending');
+    await expect(page.locator('#rows tr').first()).toHaveText(/Dora/);
+
+    await name.click();
+    await expect(name).toHaveAttribute('aria-sort', 'none');
+  });
+
+  test('pagination controls disable at the ends, and filtering returns to page 1', async ({
+    page,
+  }) => {
+    await expect(page.locator('#prev')).toBeDisabled();
+    await expect(page.locator('#next')).toBeEnabled();
+
+    await page.click('#next');
+    await expect(page.locator('#page')).toHaveText('2 / 2');
+    await expect(page.locator('#next')).toBeDisabled();
+
+    await page.fill('#q', 'a');
+    await expect(page.locator('#page')).toHaveText('1 / 2');
+    await expect(page.locator('#prev')).toBeDisabled();
+  });
+
+  test('one delegated listener survives every re-render of the rows', async ({ page }) => {
+    await page.click('#rows tr:first-child');
+    await expect(page.locator('#opened')).toHaveText('Charlie');
+
+    // Sort, which replaces every row node the listener could have been on.
+    await page.click('th[data-sort-key="name"]');
+    await page.click('#rows tr:first-child');
+    await expect(page.locator('#opened')).toHaveText('ada');
+  });
+});
+
+test.describe('/dom — loadingOverlay focus restoration (roadmap 12.2, F50)', () => {
+  // Owed by 12.2, which shipped with jsdom coverage only: focus save/blur/
+  // restore is precisely what a fake DOM cannot prove, since jsdom's
+  // activeElement does not follow real focus traversal.
+
+  test('focus returns to the element that was active before the overlay showed', async ({
+    page,
+  }) => {
+    const result = await page.evaluate(async () => {
+      const { loadingOverlay } = window.egl.dom;
+      document.getElementById('host').innerHTML = `
+        <button id="trigger">Load</button>
+        <div id="overlay" hidden><button id="inside">Cancel</button></div>
+      `;
+      const overlay = document.getElementById('overlay');
+      const gate = loadingOverlay({
+        onShow: () => {
+          overlay.hidden = false;
+          document.getElementById('inside').focus();
+        },
+        onHide: () => {
+          overlay.hidden = true;
+        },
+        minVisibleMs: 0,
+        focus: { save: true },
+      });
+
+      const trigger = document.getElementById('trigger');
+      trigger.focus();
+      const before = document.activeElement.id;
+
+      const release = gate.show();
+      const during = document.activeElement.id;
+
+      release();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return { before, during, after: document.activeElement.id };
+    });
+
+    expect(result.before).toBe('trigger');
+    expect(result.during, 'the overlay took focus in a real engine').toBe('inside');
+    // The point of the whole dance: focus never lands on <body> and never stays
+    // trapped inside a hidden subtree, which is the aria-hidden warning F50
+    // exists to avoid.
+    expect(result.after).toBe('trigger');
+  });
+});

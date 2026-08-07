@@ -26,3 +26,6 @@ export { autoGrow, injectFragment, withUrlParams } from './dom-fragment.js';
 
 // Instance-based UI components (spec 03 §2 items F49-F50, ADR-0031/0032).
 export { inlineAlert, loadingOverlay } from './dom-components.js';
+
+// The bridge to the /table pipeline (spec 03 §2 item F51, ADR-0035).
+export { bindTableControls } from './dom-table.js';
