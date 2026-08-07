@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-06 — the sanitize decision, and M11 complete`](docs/journal/2026/08/2026-08-06-dom-inject-fragment.md).
+  [`2026-08-07 — the component contract, set by inlineAlert`](docs/journal/2026/08/2026-08-07-inline-alert.md).
 
 ## Model & effort routing
 
@@ -179,7 +179,7 @@ F43–F48). Spec: [`docs/specs/03_spec_dom_ui_table.md`](docs/specs/03_spec_dom_
 Instance-based, framework-agnostic components: no design system in a default (spec 03 §2,
 F49–F50).
 
-- [ ] 12.1 `inlineAlert`: per-instance timers and bindings, injectable class/icon maps, `textContent` by default with an opt-in `{html, sanitize}` pair (spec 03 F49) _(route: frontier-reasoning/high — sets-pattern: the component contract 12.2 and spec 04 copy)_
+- [x] 12.1 `inlineAlert`: per-instance timers and bindings, injectable class/icon maps, `textContent` by default with an opt-in `{html, sanitize}` pair (spec 03 F49) _(route: frontier-reasoning/high — sets-pattern: the component contract 12.2 and spec 04 copy)_
 - [ ] 12.2 `loadingOverlay`: reference counting, a minimum-visible clock started when the presentation settles, and focus save/blur/restore over injected `onShow`/`onHide` hooks (spec 03 F50) _(route: standard/high — the refcount and anti-flicker interplay is classically bug-prone)_
 
 

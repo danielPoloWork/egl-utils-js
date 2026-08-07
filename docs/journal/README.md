@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-07 — The component contract, set by inlineAlert (roadmap 12.1)](2026/08/2026-08-07-inline-alert.md)
 - [2026-08-06 — The sanitize decision, and M11 complete (roadmap 11.3)](2026/08/2026-08-06-dom-inject-fragment.md)
 - [2026-08-06 — Delegation, setters, and an amended NFR-14 (roadmap 11.2)](2026/08/2026-08-06-dom-events-setters.md)
 - [2026-08-06 — The /dom foundation, and the floor gate learns to see the DOM (roadmap 11.1)](2026/08/2026-08-06-dom-foundation.md)

@@ -83,9 +83,9 @@
     "limit": "1 kB"
   },
   {
-    "name": "/dom - full import (NFR-12: measured 2100 B after 11.3, clause 4 kB)",
+    "name": "/dom - full import (NFR-12: measured 2958 B after 12.1, clause 4 kB)",
     "path": "dist/esm/dom.js",
-    "limit": "2.25 kB"
+    "limit": "3.17 kB"
   },
   {
     "name": "single: bindElements (NFR-12 <= 1 kB / NFR-02)",
@@ -146,6 +146,12 @@
     "path": "dist/esm/dom.js",
     "import": "{ withUrlParams }",
     "limit": "1 kB"
+  },
+  {
+    "name": "single: inlineAlert (NFR-12 component row: measured 1382 B, clause 1.5 kB per ADR-0031)",
+    "path": "dist/esm/dom.js",
+    "import": "{ inlineAlert }",
+    "limit": "1.48 kB"
   },
   {
     "name": "/logging - full import (NFR-08: measured 1390 B, clause 1.6 kB)",

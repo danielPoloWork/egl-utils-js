@@ -70,6 +70,25 @@ export function isElement(value) {
 }
 
 /**
+ * Structural `AbortSignal` check — cross-realm safe, like every other type test
+ * on this entry (ADR-0003's reasoning applied to a platform type).
+ *
+ * Internal to the entry: shared by every export that takes a `signal`, rather
+ * than copied into each source file.
+ *
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+export function isAbortSignal(value) {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (/** @type {{ aborted?: unknown }} */ (value).aborted) === 'boolean' &&
+    typeof (/** @type {{ addEventListener?: unknown }} */ (value).addEventListener) === 'function'
+  );
+}
+
+/**
  * @typedef {object} BindElementsOptions
  * @property {ParentNode} [root] - Where to search; defaults to the document.
  *   Pass a subtree root to scope a component's lookups.

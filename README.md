@@ -393,6 +393,38 @@ withUrlParams('/api/items?page=1', { page: 2, tag: ['x', 'y'] });
 withUrlParams('/docs#section', { v: buildId }); // '/docs?v=abc#section' — fragment kept last
 ```
 
+### UI components (`egl-utils-js/dom`)
+
+Instance-based and framework-agnostic. Each alert owns its nodes, its timer, and its close
+binding, so a page-level alert and a dialog-level one cannot cancel each other's auto-hide
+or write into each other's container — the defect a static singleton guarantees
+(ADR-0031). No design system is assumed: the defaults are inert BEM class names and no icon
+set, and adopting a framework is one `classes` map.
+
+```js
+import { inlineAlert } from 'egl-utils-js/dom';
+
+const alerts = inlineAlert(document.querySelector('#form-alert'));
+alerts.show('success', 'Saved.', { autoHideMs: 3_000 });
+alerts.show('danger', savedError.message); // textContent — markup in the message is SHOWN,
+//                                            never parsed, so a stray `<` is never an XSS
+
+// Adopt any design system by passing its names; the library never learns it exists:
+const bs = inlineAlert(host, {
+  classes: { base: 'alert', success: 'alert-success', close: 'btn-close' },
+  icons: { success: '✓', danger: '⚠' }, // string, Node (cloned per render), or a factory
+  closeLabel: 'Chiudi', // the accessible name — a glyph is not a label
+});
+
+// Rich content takes the same explicit decision as injectFragment (ADR-0030/0031):
+import { sanitizeHtml } from 'egl-utils-js/sanitize';
+alerts.show('info', '<b>3</b> items imported', { html: true, sanitize: sanitizeHtml });
+
+alerts.destroy(); // removes its node, its listener, and any pending timer — an aborted
+//                   `signal` does the same, and show() after destroy() throws rather
+//                   than quietly doing nothing
+```
+
 ### Structured logging (`egl-utils-js/logging`)
 
 One threshold instead of a flag per severity, and every seam injected: destination

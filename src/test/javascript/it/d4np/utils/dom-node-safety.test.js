@@ -13,6 +13,7 @@ import {
   bindElements,
   delegate,
   injectFragment,
+  inlineAlert,
   isElement,
   requireDocument,
   setEnabled,
@@ -155,5 +156,64 @@ describe('the /dom entry with no DOM present', () => {
     await expect(injectFragment(/** @type {never} */ (target), '/f.html')).rejects.toThrow(
       /sanitize is required/,
     );
+  });
+
+  // inlineAlert creates nodes, so it needs *a* document — but the container's
+  // own one will do. Same amended NFR-14 rule as the setters: only an export
+  // reaching for the ambient document may demand one.
+  it('inlineAlert builds through the container’s ownerDocument, with no global one', () => {
+    /** @param {string} tag */
+    const makeNode = (tag) => ({
+      nodeType: 1,
+      tagName: tag.toUpperCase(),
+      className: '',
+      hidden: false,
+      /** @type {object[]} */ children: [],
+      /** @type {Record<string, string>} */ attributes: {},
+      textContent: '',
+      querySelector: () => null,
+      /** @param {...object} nodes */ append(...nodes) {
+        this.children.push(...nodes);
+      },
+      replaceChildren() {
+        this.children = [];
+      },
+      /** @param {string} name @param {string} value */ setAttribute(name, value) {
+        this.attributes[name] = value;
+      },
+      addEventListener() {},
+      remove() {},
+    });
+    const container = {
+      ...makeNode('div'),
+      ownerDocument: { createElement: makeNode },
+    };
+
+    const alerts = inlineAlert(/** @type {never} */ (container), { dismissible: false });
+    alerts.show('success', 'server-rendered');
+
+    expect(container.children).toHaveLength(1);
+    const root = /** @type {ReturnType<typeof makeNode>} */ (container.children[0]);
+    expect(root.className).toBe('egl-alert egl-alert--success');
+    expect(root.attributes.role).toBe('status');
+    expect(() => alerts.destroy()).not.toThrow();
+  });
+
+  it('inlineAlert throws DomContractError when there is no document anywhere', () => {
+    // A container with no owner document and no global one: there is nowhere to
+    // create the alert, and saying so beats a ReferenceError.
+    const container = { nodeType: 1, querySelector: () => null, append: () => {} };
+    let thrown;
+    try {
+      inlineAlert(/** @type {never} */ (container));
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toBeInstanceOf(DomContractError);
+    expect(thrown.code).toBe('EGL_DOM_CONTRACT');
+  });
+
+  it('inlineAlert validates its arguments before reaching for the document', () => {
+    expect(() => inlineAlert(/** @type {never} */ ('#host'))).toThrow(TypeError);
   });
 });

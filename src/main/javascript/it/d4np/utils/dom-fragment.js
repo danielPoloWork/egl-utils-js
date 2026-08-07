@@ -11,7 +11,7 @@
  */
 
 import { HttpError } from './errors.js';
-import { isElement } from './dom-helpers.js';
+import { isAbortSignal, isElement } from './dom-helpers.js';
 
 /**
  * @param {unknown} value
@@ -279,21 +279,6 @@ function defaultMeasure(textarea) {
         ? fontSize * 1.2
         : 0,
   };
-}
-
-/**
- * Structural `AbortSignal` check — cross-realm safe (ADR-0028).
- *
- * @param {unknown} value
- * @returns {boolean}
- */
-function isAbortSignal(value) {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (/** @type {{ aborted?: unknown }} */ (value).aborted) === 'boolean' &&
-    typeof (/** @type {{ addEventListener?: unknown }} */ (value).addEventListener) === 'function'
-  );
 }
 
 /**

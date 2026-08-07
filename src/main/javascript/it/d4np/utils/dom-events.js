@@ -15,7 +15,7 @@
  * @module egl-utils-js/dom
  */
 
-import { isElement } from './dom-helpers.js';
+import { isAbortSignal, isElement } from './dom-helpers.js';
 
 /**
  * True for anything that can host a delegated listener and answer
@@ -149,22 +149,6 @@ function assertNonEmptyString(value, name) {
   if (typeof value !== 'string' || value === '') {
     throw new TypeError(`${name} must be a non-empty string`);
   }
-}
-
-/**
- * Structural `AbortSignal` check — cross-realm safe, like every other type test
- * on this entry.
- *
- * @param {unknown} value
- * @returns {boolean}
- */
-function isAbortSignal(value) {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (/** @type {{ aborted?: unknown }} */ (value).aborted) === 'boolean' &&
-    typeof (/** @type {{ addEventListener?: unknown }} */ (value).addEventListener) === 'function'
-  );
 }
 
 /**
