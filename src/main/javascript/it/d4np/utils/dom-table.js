@@ -25,7 +25,7 @@
 
 import { debounce } from './events.js';
 import { delegate, setEnabled } from './dom-events.js';
-import { isElement, requireDocument } from './dom-helpers.js';
+import { controllerFor, isElement, requireDocument } from './dom-helpers.js';
 import { DomContractError } from './errors.js';
 
 /** Commands each binding needs, so a wrong object fails at bind time. */
@@ -219,7 +219,7 @@ export function bindTableControls(pipeline, bindings, options = {}) {
     );
   }
 
-  const controller = new AbortController();
+  const controller = controllerFor(root);
   const { signal: internal } = controller;
   /** @type {{ cancel: () => void }[]} */
   const pending = [];

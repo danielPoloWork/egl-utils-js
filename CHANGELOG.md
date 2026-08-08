@@ -97,6 +97,17 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- Builders that own a listener now work against a document from another realm — an iframe,
+  a popup, or a `new JSDOM()` document under Node (ROADMAP 16.5,
+  [BUG-0003](docs/bugs/2026/08/BUG-0003-cross-realm-abort-signal-in-composites.md),
+  ADR-0045). Each created its `AbortController` in *this* realm and handed the signal to
+  `addEventListener` on a node from another, which the DOM refuses — so the `{document}`
+  option worked for every builder that rendered and failed for every builder that also
+  listened. The controller is now taken from the target's own view. Affects `inlineAlert`,
+  `delegate`, `autoGrow` and `bindTableControls` on `egl-utils-js/dom`, and `bsAlert`,
+  `bsPagination`, `bsListGroup({ onSelect })` and `bsTable`'s row activation on
+  `egl-utils-js/bootstrap` — seven call sites, where the original report named three.
+
 ### Security
 
 ---

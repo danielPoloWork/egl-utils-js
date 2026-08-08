@@ -34,7 +34,7 @@
  * @module egl-utils-js/bootstrap
  */
 
-import { isAbortSignal, isElement } from './dom-helpers.js';
+import { controllerFor, isAbortSignal, isElement } from './dom-helpers.js';
 import { bindTableControls } from './dom-table.js';
 import { tablePipeline } from './table.js';
 import { bsPagination } from './bootstrap-composites.js';
@@ -403,7 +403,7 @@ export function bsTable(container, options) {
   }
   thead.append(headRow);
 
-  const controller = new AbortController();
+  const controller = controllerFor(container);
   const interactive = onRowClick !== undefined;
   /** @type {readonly Row[]} */
   let rendered = [];

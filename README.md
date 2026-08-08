@@ -1037,8 +1037,8 @@ try {
 | 12 | UI components | ✅ done |
 | 13 | Composable table pipeline | ✅ done |
 | 14 | Bootstrap element builders | ✅ done |
-| 15 | Bootstrap table manager | ⏳ planned |
-| 16 | Bootstrap interactive wrappers | ⏳ planned |
+| 15 | Bootstrap table manager | ✅ done |
+| 16 | Bootstrap interactive wrappers | ✅ done |
 
 
 ## License

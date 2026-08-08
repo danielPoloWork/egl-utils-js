@@ -70,6 +70,37 @@ export function isElement(value) {
 }
 
 /**
+ * An `AbortController` from the realm `node` belongs to (BUG-0003, ADR-0045).
+ *
+ * Every export here that owns its teardown builds a controller and hands its
+ * `signal` to `addEventListener`. That is where the trap is: `addEventListener`
+ * brand-checks the `signal` member of its options dictionary **against its own
+ * realm**, so a controller made from *this* realm is refused by a node from
+ * another one — a `new JSDOM()` document under Node, an `<iframe>`, a popup.
+ * The failure is a `TypeError` from the platform naming an internal detail, on
+ * exactly the server-render path the `{document}` option exists to serve.
+ *
+ * So the controller is taken from the node's own view where there is one. A
+ * document with no browsing context — `document.implementation.createHTMLDocument()`
+ * — has no `defaultView`, and correctly falls back: its nodes live in this realm
+ * already.
+ *
+ * A seam rather than seven copies, because every future listener-owning builder
+ * inherits the same trap and would inherit it silently.
+ *
+ * @param {Node | null | undefined} node - The node the listener will be attached to.
+ * @returns {AbortController}
+ */
+export function controllerFor(node) {
+  const view = /** @type {{ defaultView?: { AbortController?: unknown } | null }} */ (
+    /** @type {{ ownerDocument?: unknown }} */ (node)?.ownerDocument ?? node
+  )?.defaultView;
+  const Ctor = view?.AbortController;
+  if (typeof Ctor !== 'function') return new AbortController();
+  return new /** @type {new () => AbortController} */ (Ctor)();
+}
+
+/**
  * Structural `AbortSignal` check — cross-realm safe, like every other type test
  * on this entry (ADR-0003's reasoning applied to a platform type).
  *

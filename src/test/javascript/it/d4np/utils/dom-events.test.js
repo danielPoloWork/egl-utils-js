@@ -8,6 +8,7 @@ import {
   setValue,
   setVisible,
 } from '../../../../../main/javascript/it/d4np/utils/dom.js';
+import { controllerFor } from '../../../../../main/javascript/it/d4np/utils/dom-helpers.js';
 
 /** @type {HTMLElement} */
 let root;
@@ -369,5 +370,44 @@ describe('setValue', () => {
 
   it('throws TypeError for a non-element', () => {
     expect(() => setValue(/** @type {never} */ (42), 'x')).toThrow(/must be an Element/);
+  });
+});
+
+// Roadmap 16.5 (BUG-0003, ADR-0045). The seam every listener-owning export now
+// builds its controller through, tested directly rather than only through the
+// seven callers that use it.
+describe('controllerFor — a controller from the node’s own realm', () => {
+  it('takes the constructor from the node’s view when there is one', () => {
+    // The whole defect in one assertion: `addEventListener` brand-checks the
+    // `signal` member against its own realm, so a controller from this one is
+    // refused by a node from another.
+    const frameWindow = { AbortController: class Foreign {} };
+    const node = /** @type {never} */ ({ ownerDocument: { defaultView: frameWindow } });
+
+    expect(controllerFor(node)).toBeInstanceOf(frameWindow.AbortController);
+  });
+
+  it('falls back to this realm for a document with no browsing context', () => {
+    // `document.implementation.createHTMLDocument()` has no defaultView, and its
+    // nodes belong to this realm already — so the fallback is correct, not a
+    // last resort.
+    const detached = document.implementation.createHTMLDocument('other');
+    const node = detached.createElement('div');
+
+    expect(detached.defaultView).toBeNull();
+    expect(controllerFor(node)).toBeInstanceOf(AbortController);
+  });
+
+  it('accepts a document itself, and survives a node with no owner', () => {
+    expect(controllerFor(document)).toBeInstanceOf(AbortController);
+    expect(controllerFor(null)).toBeInstanceOf(AbortController);
+    expect(controllerFor(/** @type {never} */ ({}))).toBeInstanceOf(AbortController);
+  });
+
+  it('ignores a view whose AbortController is not a constructor', () => {
+    const node = /** @type {never} */ ({
+      ownerDocument: { defaultView: { AbortController: 'not a class' } },
+    });
+    expect(controllerFor(node)).toBeInstanceOf(AbortController);
   });
 });

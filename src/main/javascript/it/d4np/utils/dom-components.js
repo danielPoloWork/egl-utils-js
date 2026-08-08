@@ -15,7 +15,7 @@
  * @module egl-utils-js/dom
  */
 
-import { isAbortSignal, isElement, requireDocument } from './dom-helpers.js';
+import { controllerFor, isAbortSignal, isElement, requireDocument } from './dom-helpers.js';
 
 /** The four semantic kinds. Severity is the caller's vocabulary, not ours. */
 const KINDS = /** @type {const} */ (['success', 'info', 'warning', 'danger']);
@@ -178,7 +178,7 @@ export function inlineAlert(container, options = {}) {
     /** @type {{ ownerDocument?: Document }} */ (container).ownerDocument ??
     requireDocument('inlineAlert');
 
-  const controller = new AbortController();
+  const controller = controllerFor(container);
   /** @type {ReturnType<typeof setTimeout> | undefined} */
   let timer;
   /** @type {{ root: HideableElement, icon: HideableElement, message: Element } | undefined} */

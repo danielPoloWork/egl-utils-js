@@ -21,7 +21,7 @@
  * @module egl-utils-js/bootstrap
  */
 
-import { isAbortSignal, isElement } from './dom-helpers.js';
+import { controllerFor, isAbortSignal, isElement } from './dom-helpers.js';
 import { inlineAlert } from './dom-components.js';
 import {
   appendContent,
@@ -306,7 +306,7 @@ export function bsListGroup(items, options = {}) {
     api,
   );
 
-  const controller = new AbortController();
+  const controller = controllerFor(el);
   /** @type {BsListGroupItem[]} */
   let normalized = [];
 
@@ -762,7 +762,7 @@ export function bsPagination(container, options) {
   );
   navEl.append(list);
 
-  const controller = new AbortController();
+  const controller = controllerFor(navEl);
   let current = 1;
   let total = 1;
 
