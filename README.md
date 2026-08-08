@@ -655,10 +655,18 @@ deliberately does not cover.
 
 ### Bootstrap 5 toolkit (`egl-utils-js/bootstrap`)
 
+**Every component in the Bootstrap 5 catalogue — all 24** (Accordion, Alerts, Badge,
+Breadcrumb, Buttons, Button group, Card, Carousel, Close button, Collapse, Dropdowns, List
+group, Modal, Navbar, Navs & tabs, Offcanvas, Pagination, Placeholders, Popovers, Progress,
+Scrollspy, Spinners, Toasts, Tooltips) — plus `bsTable`, `bsIcon` and `bsLoadingOverlay`.
+One entry, 29 named exports, each individually tree-shakeable: adopting one costs you
+nothing of the rest.
+
 Opt-in, and layered **on top of** the framework-agnostic entries — the core never imports
 it, so a project on a different design system pays nothing. Bootstrap's classes are plain
-strings, so the element builders keep the zero-runtime-dependency promise; the behaviour
-wrappers (M16) will reach an optional `bootstrap` peer. **You** supply Bootstrap's CSS and
+strings, so the element builders keep the zero-runtime-dependency promise and work with no
+peer installed at all; only the behaviour wrappers reach the optional `bootstrap` peer, and
+they resolve it at the first call rather than at import. **You** supply Bootstrap's CSS and
 any icon font; this toolkit emits markup and class names only.
 
 Builders return **real DOM nodes**, never HTML strings, so caller data cannot become
@@ -941,6 +949,43 @@ gallery.next();
 // invisible to it until told.
 const spy = bsScrollspy(document.body, { nav: '#toc', smoothScroll: true });
 spy.on('activate', (event) => console.log(event.relatedTarget.hash));
+```
+
+Tooltips and popovers close the catalogue, and they are the only pair that hands content
+to Bootstrap to render — so exactly **one sanitizer runs, and it is yours**:
+
+```js
+import { bsTooltip, bsPopover } from 'egl-utils-js/bootstrap';
+import { sanitizeHtml } from 'egl-utils-js/sanitize';
+
+// A plain string is text: no sanitizer runs on either side, and markup in it is
+// displayed rather than parsed.
+bsTooltip(button, { title: 'Save the current draft' }).show();
+
+// Markup needs the explicit pair. Your sanitizer runs here, and Bootstrap's own
+// is switched off for this content — so the profile that applies is the one you
+// chose, not a second invisible one narrowing it.
+const help = bsPopover(button, {
+  title: '<b>Draft saved</b>',
+  content: '<em>Kept locally until you publish.</em>',
+  html: true,
+  sanitize: sanitizeHtml,
+  trigger: 'focus',
+});
+help.setContent({ content: 'Replaced — and the tip stays open.' });
+```
+
+These two also need **Popper**, which Bootstrap uses to position them. It is bundled in
+`bootstrap.bundle.js`; with the plain build, install `@popperjs/core` too. When it is
+missing you are told which package it is, not just that something is:
+
+```js
+try {
+  help.show();
+} catch (error) {
+  error.code; // 'EGL_PEER_MISSING'
+  error.peer; // '@popperjs/core' — bootstrap itself is fine
+}
 ```
 
 If you bundle rather than load Bootstrap from a `<script>`, there is no

@@ -66,12 +66,14 @@ describe('NFR-20 — the entry imports safely with no DOM', () => {
       'bsOffcanvas',
       'bsPagination',
       'bsPlaceholder',
+      'bsPopover',
       'bsProgress',
       'bsScrollspy',
       'bsSpinner',
       'bsTable',
       'bsTabs',
       'bsToast',
+      'bsTooltip',
       'materialIconsSet',
     ]);
   });
