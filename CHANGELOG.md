@@ -29,16 +29,6 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Builder content slots now accept an **array** of strings and nodes, rendered in order
   through one `DocumentFragment` (F52, extended in 14.2).
 
-### Fixed
-
-- `inlineAlert` (`egl-utils-js/dom`): an empty close icon no longer hides the close
-  control. A design system that draws its close glyph in CSS — Bootstrap's `.btn-close`,
-  for one — supplies an empty icon, which previously left a dismissible alert nobody could
-  dismiss. `dismissible: false` remains the way to ask for no close button (ADR-0038).
-- Frozen constant maps on `egl-utils-js/bootstrap` are annotated `/* @__PURE__ */`, so a
-  bundler can drop the ones an importer does not use. Importing a single icon preset fell
-  from 358 B to 43 B, and every element builder is smaller than in the previous release.
-
 ### Changed
 
 ### Deprecated
@@ -47,7 +37,26 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- **Build:** `pnpm-lock.yaml` is back in step with `package.json`, which had declared the
+  optional `bootstrap` peer without it. Every CI job failed at
+  `pnpm install --frozen-lockfile` from the 14.1 merge until this fix (BUG-0002). No
+  shipped code was affected; `bootstrap` is now a devDependency, as `dompurify` already
+  was, so the package still declares zero runtime dependencies.
+- `inlineAlert` (`egl-utils-js/dom`): an empty close icon no longer hides the close
+  control. A design system that draws its close glyph in CSS — Bootstrap's `.btn-close`,
+  for one — supplies an empty icon, which previously left a dismissible alert nobody could
+  dismiss. `dismissible: false` remains the way to ask for no close button (ADR-0038).
+- Frozen constant maps on `egl-utils-js/bootstrap` are annotated `/* @__PURE__ */`, so a
+  bundler can drop the ones an importer does not use. Importing a single icon preset fell
+  from 358 B to 43 B, and every element builder is smaller than in the previous release.
+
 ### Security
+
+- Supply chain: `nanoid` reached through `tsup > postcss` is lifted to `~3.3.17`,
+  clearing the `high` advisory GHSA-2v37-7h3g-55p8. Range-scoped and pinned to the
+  patch line per [ADR-0033](docs/adr/0033-js-yaml-overrides-stay-inside-their-major-line.md),
+  so the unrelated `nanoid@5` instance in the tree is untouched. Build tooling only —
+  no shipped code depends on it.
 
 ---
 
