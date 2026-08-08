@@ -1013,3 +1013,160 @@ test.describe('/bootstrap — bsTable end to end (roadmap 15.2, F66-F67)', () =>
     expect(final.left).toBe(0);
   });
 });
+
+// Roadmap 16.1 (spec 04 §2 items F68-F71, NFR-18). These four cases exist
+// because the unit suites structurally cannot reach them: jsdom has no
+// Bootstrap, so every earlier assertion about the wrappers runs against a
+// double. Here the real bundle is loaded the way a CDN consumer loads it, which
+// exercises the *ambient* half of the F68 resolution order, Bootstrap's own
+// transitions, and the focus behaviour a real engine decides.
+test.describe('the Bootstrap behaviour wrappers (roadmap 16.1)', () => {
+  // Injected per test rather than added to the fixture: the fixture serves the
+  // 14.1 assertion that the entry works with **no** `bootstrap` global, and
+  // making that one pass by loading the bundle for everybody would delete the
+  // proof rather than extend it.
+  test.beforeEach(async ({ page }) => {
+    await page.addScriptTag({ url: '/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js' });
+    await page.waitForFunction(() => typeof window.bootstrap === 'object');
+  });
+
+  test('resolves the ambient global a CDN bundle defines', async ({ page }) => {
+    const resolved = await page.evaluate(() => {
+      const { bsModal } = window.egl.bootstrap;
+      const el = document.createElement('div');
+      el.className = 'modal fade';
+      el.innerHTML = '<div class="modal-dialog"><div class="modal-content"></div></div>';
+      document.body.append(el);
+      // No { bootstrap } injection anywhere: this is `window.bootstrap`.
+      const modal = bsModal(el);
+      const instance = modal.instance();
+      // Compared while the instance is still registered — `getInstance` returns
+      // null once disposed, which would make this pass for the wrong reason.
+      const adopted = instance === window.bootstrap.Modal.getInstance(el);
+      modal.destroy();
+      const disposed = window.bootstrap.Modal.getInstance(el) === null;
+      el.remove();
+      return { adopted, disposed };
+    });
+    expect(resolved.adopted).toBe(true);
+    // destroy() really disposed it, rather than dropping our reference and
+    // leaving Bootstrap's registry holding the element (NFR-15).
+    expect(resolved.disposed).toBe(true);
+  });
+
+  test('shows a toast and removes it from the DOM once hidden', async ({ page }) => {
+    await page.evaluate(() => {
+      const { bsToast } = window.egl.bootstrap;
+      const host = document.getElementById('host');
+      host.innerHTML = '<div class="toast-container"></div>';
+      window.eglToasts = bsToast(host.querySelector('.toast-container'));
+      window.eglToasts.show('Saved.', { title: 'Done' });
+    });
+
+    // Bootstrap's own class, applied by its own transition.
+    await expect(page.locator('#host .toast.show')).toHaveCount(1);
+    await expect(page.locator('#host .toast-body')).toHaveText('Saved.');
+
+    await page.locator('#host .toast .btn-close').click();
+    // The node is gone, not merely hidden — the hidden.bs.toast contract.
+    await expect(page.locator('#host .toast')).toHaveCount(0);
+
+    await page.evaluate(() => window.eglToasts.destroy());
+  });
+
+  test('opens a modal, moves focus into it, and leaves no backdrop behind', async ({ page }) => {
+    // Focus *restoration* is deliberately not asserted here: bsModal makes no
+    // such promise — Bootstrap owns focus for a dialog it drives, and the
+    // library's own save/restore contract belongs to F50, exercised by the
+    // overlay case below. Asserting it here would test Bootstrap, not this code.
+    await page.evaluate(() => {
+      document.getElementById('host').innerHTML = `
+        <button id="opener" type="button">Open</button>
+        <div class="modal fade" id="dialog" tabindex="-1">
+          <div class="modal-dialog"><div class="modal-content">
+            <div class="modal-body"><button id="inside" type="button">Inside</button></div>
+          </div></div>
+        </div>`;
+      window.eglModal = window.egl.bootstrap.bsModal(document.getElementById('dialog'));
+      window.eglHidden = new Promise((resolve) => window.eglModal.on('hidden', resolve));
+      document.getElementById('opener').focus();
+      window.eglModal.show();
+    });
+
+    await expect(page.locator('#dialog')).toHaveClass(/show/);
+    await expect(page.locator('.modal-backdrop')).toHaveCount(1);
+    // The focus trap is live: focus is inside the dialog, not on the opener.
+    await expect(page.locator('#opener')).not.toBeFocused();
+
+    await page.evaluate(() => window.eglModal.hide());
+    // `on('hidden', …)` really fired — the subscription half of F70, proved by
+    // awaiting the promise it resolved rather than by polling the DOM.
+    await page.evaluate(() => window.eglHidden);
+    await expect(page.locator('#dialog')).not.toHaveClass(/show/);
+    // No orphaned backdrop, which is what disposing a shown dialog would leave.
+    await expect(page.locator('.modal-backdrop')).toHaveCount(0);
+
+    await page.evaluate(() => window.eglModal.destroy());
+  });
+
+  test('holds the loading overlay for its minimum-visible floor', async ({ page }) => {
+    // The anti-flicker claim measured against real transitions: the clock starts
+    // when the dialog has finished appearing, so an instant operation still
+    // leaves the overlay up for the floor rather than blinking.
+    const timing = await page.evaluate(async () => {
+      const overlay = window.egl.bootstrap.bsLoadingOverlay({
+        message: 'Loading…',
+        minVisibleMs: 600,
+        focus: { save: true },
+      });
+      const opener = document.createElement('button');
+      opener.id = 'opener';
+      document.getElementById('host').replaceChildren(opener);
+      opener.focus();
+
+      const started = performance.now();
+      // `wrap` resolves with the operation, which is the point of the gate: the
+      // caller is not made to wait for a decoration. So the visibility is
+      // measured until the overlay actually goes down, not until wrap returns.
+      const result = await overlay.wrap(() => Promise.resolve('done'));
+      const returnedAfter = performance.now() - started;
+      await new Promise((resolve) => {
+        const poll = () => (overlay.isShown() ? requestAnimationFrame(poll) : resolve());
+        poll();
+      });
+      const hiddenAfter = performance.now() - started;
+
+      window.eglOverlay = overlay;
+      return { result, returnedAfter, hiddenAfter };
+    });
+
+    expect(timing.result).toBe('done');
+    // The operation was not delayed by the decoration...
+    expect(timing.returnedAfter).toBeLessThan(600);
+    // ...but the overlay still served its floor, measured from the appearance.
+    expect(timing.hiddenAfter).toBeGreaterThanOrEqual(600);
+
+    // Everything below is an *eventual* condition owned by Bootstrap's fade, so
+    // it is polled rather than sampled: WebKit still had the backdrop in the DOM
+    // at the instant the gate reported hidden, and a snapshot there would assert
+    // the engine's transition speed rather than the library's contract.
+    await expect
+      .poll(() => page.evaluate(() => document.querySelectorAll('.modal-backdrop').length))
+      .toBe(0);
+
+    // F50's focus contract, over a real dialog and a real engine. Asserted on
+    // `document.activeElement` rather than with `toBeFocused()`, which is a
+    // `:focus` check: WebKit does not match `:focus` while the window itself is
+    // unfocused, as it is under a headless runner, so that assertion would fail
+    // in one engine for a reason unrelated to the contract. `activeElement` is
+    // what F50 actually promises to restore, and it is the same in all three.
+    await expect.poll(() => page.evaluate(() => document.activeElement?.id)).toBe('opener');
+
+    const left = await page.evaluate(() => {
+      window.eglOverlay.destroy();
+      return document.querySelectorAll('.modal').length;
+    });
+    // destroy() removed the modal it built.
+    expect(left).toBe(0);
+  });
+});

@@ -230,3 +230,45 @@ export class DomContractError extends EglError {
     this.missing = options?.missing ?? [];
   }
 }
+
+/**
+ * Raised when an **optional peer dependency** a wrapper needs is not reachable
+ * (spec 04 §2 item F68). Code: `EGL_PEER_MISSING`.
+ *
+ * The `egl-utils-js/bootstrap` element builders need nothing but a document, so
+ * the entry imports the `bootstrap` package nowhere and stays free of it; the
+ * behaviour wrappers do need it, and resolve it at **first use** — never at
+ * module load, which would make one `import` of the entry fail for everyone who
+ * only wanted a badge. What is left is a failure at the call, and this is its
+ * shape: a stable code a caller can branch on, and a message naming the package
+ * and both remedies (install the peer, or load the bundle that defines the
+ * global). `ReferenceError: bootstrap is not defined` names neither.
+ *
+ * @example
+ * try {
+ *   modal.show();
+ * } catch (error) {
+ *   if (error.code === 'EGL_PEER_MISSING') showSetupHint(error.peer);
+ * }
+ */
+export class PeerMissingError extends EglError {
+  name = 'PeerMissingError';
+  code = 'EGL_PEER_MISSING';
+
+  /**
+   * @param {string} message
+   * @param {ErrorOptions & { peer?: string }} [options]
+   *   `peer` is the npm package name that could not be resolved.
+   */
+  constructor(message, options) {
+    super(message, options);
+
+    /**
+     * The npm package name that could not be resolved — `'bootstrap'`, or
+     * `'@popperjs/core'` where a component needs Popper too.
+     *
+     * @type {string}
+     */
+    this.peer = options?.peer ?? '';
+  }
+}

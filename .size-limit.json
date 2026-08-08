@@ -27,9 +27,9 @@
     "limit": "1.55 kB"
   },
   {
-    "name": "/errors (measured 317 B; +26 B for DomContractError, F43)",
+    "name": "/errors (measured 351 B; +34 B for PeerMissingError, F68 - still far inside the 0.4 kB clause, spec 02 NFR-08)",
     "path": "dist/esm/errors.js",
-    "limit": "340 B"
+    "limit": "376 B"
   },
   {
     "name": "/text (NFR-08: measured 837 B)",
@@ -178,9 +178,9 @@
     "limit": "1.03 kB"
   },
   {
-    "name": "/bootstrap - full import (NFR-17: 14 builders + both presets, measured 12961 B once bsTable brought the F42 pipeline, the F51 bindings and the F65 pager onto the entry; entry clause 15 kB)",
+    "name": "/bootstrap - full import (NFR-17: 17 managers + both presets, measured 15083 B once the first three behaviour wrappers landed; entry clause 25 kB per ADR-0041, sized for the whole M16 catalogue rather than amended once per PR)",
     "path": "dist/esm/bootstrap.js",
-    "limit": "13.9 kB"
+    "limit": "16.2 kB"
   },
   {
     "name": "single: bsIcon (NFR-17 <= 1.2 kB per ADR-0037; measured 865 B)",
@@ -271,6 +271,24 @@
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsTable }",
     "limit": "9.5 kB"
+  },
+  {
+    "name": "single: bsToast (2.32 kB - documented NFR-17 composing row, ADR-0041: it composes bsCloseButton and builds a node, unlike a wrapper that only wraps; measured 2170 B)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsToast }",
+    "limit": "2.32 kB"
+  },
+  {
+    "name": "single: bsModal (NFR-17 <= 1.25 kB behaviour-wrapper row; measured 1060 B - the clause is right for a wrapper that builds nothing)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsModal }",
+    "limit": "1.13 kB"
+  },
+  {
+    "name": "single: bsLoadingOverlay (2.73 kB - NFR-17 composing row amended from 1.75 kB by ADR-0041; measured 2550 B, of which loadingOverlay 958 B + bsSpinner 778 B are composed parts)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsLoadingOverlay }",
+    "limit": "2.73 kB"
   },
   {
     "name": "/logging - full import (NFR-08: measured 1390 B, clause 1.6 kB)",
@@ -494,7 +512,7 @@
     "limit": "1 kB"
   },
   {
-    "name": "single: httpClient (1.35 kB — documented NFR-01 exception, ADR-0015)",
+    "name": "single: httpClient (1.35 kB \u00e2\u20ac\u201d documented NFR-01 exception, ADR-0015)",
     "path": "dist/esm/index.js",
     "import": "{ httpClient }",
     "limit": "1.35 kB"

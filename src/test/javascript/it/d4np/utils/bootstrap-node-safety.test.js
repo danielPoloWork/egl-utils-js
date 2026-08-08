@@ -44,7 +44,7 @@ describe('NFR-20 — the entry imports safely with no DOM', () => {
     expect(globalThis.document).toBeUndefined();
   });
 
-  it('exposes the whole M14 surface', () => {
+  it('exposes the whole surface built so far', () => {
     expect(Object.keys(bootstrap).sort()).toEqual([
       'bootstrapIconsSet',
       'bsAlert',
@@ -56,11 +56,14 @@ describe('NFR-20 — the entry imports safely with no DOM', () => {
       'bsCloseButton',
       'bsIcon',
       'bsListGroup',
+      'bsLoadingOverlay',
+      'bsModal',
       'bsPagination',
       'bsPlaceholder',
       'bsProgress',
       'bsSpinner',
       'bsTable',
+      'bsToast',
       'materialIconsSet',
     ]);
   });
@@ -188,10 +191,88 @@ describe('NFR-20 — an explicit document makes every builder work in Node', () 
 
 describe('NFR-18 — the builders never touch the optional peer', () => {
   it('works with no `bootstrap` global loaded', () => {
-    // The peer is for behaviours (M16). Classes are strings, so this half of the
-    // toolkit has no peer contact at all — asserted, not assumed.
+    // Classes are strings, so this half of the toolkit has no peer contact at
+    // all — asserted, not assumed.
     expect(/** @type {Record<string, unknown>} */ (globalThis).bootstrap).toBeUndefined();
     const doc = isolatedDocument();
     expect(() => bootstrap.bsSpinner({ document: doc })).not.toThrow();
+  });
+
+  it('runs every builder with no peer installed and no global', () => {
+    // The clause says "importing the entry and running every builder succeeds"
+    // (NFR-18). This file runs in plain Node against the real dependency tree,
+    // so it is the only place that can prove it.
+    //
+    // EXCLUDED, and named rather than quietly skipped: `bsAlert`,
+    // `bsPagination` and `bsListGroup({ onSelect })` throw here for a reason
+    // that has nothing to do with the peer — each owns an internal
+    // AbortController whose signal this realm's jsdom refuses on a foreign
+    // document (BUG-0003, roadmap 16.5). Their peer-independence is covered by
+    // the jsdom suites; what is unproven for them is only this realm case.
+    const doc = isolatedDocument();
+    const host = doc.createElement('div');
+    doc.body.append(host);
+
+    expect(() => {
+      bootstrap.bsIcon('check', { document: doc });
+      bootstrap.bsBadge('New', { document: doc });
+      bootstrap.bsButton({ label: 'Save', document: doc });
+      bootstrap.bsButtonGroup([bootstrap.bsButton({ label: 'A', document: doc })], {
+        label: 'Actions',
+        document: doc,
+      });
+      bootstrap.bsCloseButton({ document: doc });
+      bootstrap.bsSpinner({ document: doc });
+      bootstrap.bsProgress({ value: 40, label: 'Upload', document: doc });
+      bootstrap.bsPlaceholder({ lines: 2, document: doc });
+      bootstrap.bsCard({ title: 'Card', document: doc });
+      bootstrap.bsListGroup(['one', 'two'], { document: doc });
+      bootstrap.bsBreadcrumb([{ content: 'Home', href: '/' }, { content: 'Here' }], {
+        document: doc,
+      });
+    }).not.toThrow();
+  });
+
+  it('documents the three builders BUG-0003 still excludes', () => {
+    // A failing case pinned as a fact, so the record cannot rot unnoticed: when
+    // 16.5 lands this test flips, and a reviewer is told where to look.
+    const doc = isolatedDocument();
+    const host = doc.createElement('div');
+    doc.body.append(host);
+
+    expect(() => bootstrap.bsAlert(host, { document: doc }).show('info', 'hello')).toThrow(
+      /addEventListener/,
+    );
+  });
+});
+
+describe('NFR-18 — a missing peer is typed, at the call (spec 04 F68)', () => {
+  it('imports the behaviour wrappers without the peer present', async () => {
+    // The load-time half of the clause. A static `import 'bootstrap'` would make
+    // this line throw for everyone who only wanted a badge.
+    const module = await import('../../../../../main/javascript/it/d4np/utils/bootstrap.js');
+    expect(typeof module.bsModal).toBe('function');
+    expect(typeof module.bsToast).toBe('function');
+    expect(typeof module.bsLoadingOverlay).toBe('function');
+  });
+
+  it('constructs a wrapper without the peer, and fails on use with EGL_PEER_MISSING', () => {
+    const doc = isolatedDocument();
+    const target = doc.createElement('div');
+    const modal = bootstrap.bsModal(target);
+
+    let caught;
+    try {
+      modal.show();
+    } catch (error) {
+      caught = error;
+    }
+
+    // Never a ReferenceError: the code is what a caller branches on, and the
+    // message is what they act on.
+    expect(caught).toBeInstanceOf(Error);
+    expect(caught).not.toBeInstanceOf(ReferenceError);
+    expect(/** @type {{ code?: string }} */ (caught).code).toBe('EGL_PEER_MISSING');
+    expect(/** @type {{ peer?: string }} */ (caught).peer).toBe('bootstrap');
   });
 });

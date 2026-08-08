@@ -22,6 +22,14 @@
   </head>
   <body>
     <div id="host"></div>
+    <!--
+      Bootstrap's own bundle is deliberately NOT loaded here. The fixture must
+      stay peer-free, because one of the assertions it serves is that the entry
+      and its builders work with no `bootstrap` global at all (NFR-18, roadmap
+      14.1). The behaviour suites that need the peer inject the bundle
+      themselves, per test — which is also the honest shape of the F68 ambient
+      case: a page that loaded Bootstrap, next to pages that did not.
+    -->
     <script type="module">
       // Expose the built entries on `window` so Playwright's page.evaluate can
       // drive them. Errors are captured rather than thrown so a failed import

@@ -831,6 +831,55 @@ bsTable(container, { columns, pipeline, controls: { filterRow: true } });
 // typing `~01` in a filter box now matches gw-01 and srv-01
 ```
 
+Everything above needs a document and nothing else. The wrappers below drive Bootstrap's
+**JavaScript**, so they need the `bootstrap` package — an **optional peer**, resolved when
+you first use one and never imported, so a project that only wants a badge installs
+nothing:
+
+```js
+import { bsToast, bsModal, bsLoadingOverlay } from 'egl-utils-js/bootstrap';
+
+// Toasts stack in a container; each show builds a fresh node, so a danger toast
+// and the info toast after it share no classes. Each disposes and leaves the DOM
+// once hidden.
+const toasts = bsToast(document.querySelector('.toast-container'));
+toasts.show('Saved.');
+toasts.show('Could not save.', { variant: 'danger', title: 'Error', autohide: false });
+
+// A modal wrapper for the lifecycle, not the API: `on` returns an unsubscribe,
+// and destroy() hides first, then disposes — disposing a shown dialog is what
+// leaves a stuck backdrop and a scroll-locked <body>.
+const modal = bsModal(document.querySelector('#confirm'));
+const off = modal.on('hidden', () => form.reset());   // or 'hidden.bs.modal'
+modal.show();
+modal.instance();                                     // the Bootstrap object, if you need it
+
+// A loading overlay: reference-counted, so concurrent callers cannot tear it
+// down early, and held for a minimum visible time measured from when the dialog
+// finished appearing — so a fast response cannot produce a flash.
+const overlay = bsLoadingOverlay({ message: 'Caricamento…', focus: { save: true } });
+await overlay.wrap(() => api.get('/slow'));
+```
+
+If you bundle rather than load Bootstrap from a `<script>`, there is no
+`window.bootstrap` to find — pass it once:
+
+```js
+import * as bootstrap from 'bootstrap';
+
+const modal = bsModal(element, { bootstrap });
+```
+
+Either way the failure is typed, at the call that needed it, never at import:
+
+```js
+try {
+  modal.show();
+} catch (error) {
+  if (error.code === 'EGL_PEER_MISSING') console.error(`install ${error.peer}`);
+}
+```
+
 ## How this project is run
 
 | Document | Purpose |

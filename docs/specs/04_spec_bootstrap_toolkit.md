@@ -213,7 +213,18 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   missing package and both remedies (install the `bootstrap` peer or load the bundle);
   F80/F81 additionally name `@popperjs/core` when Popper is what's absent. The error
   class/plumbing is fixed by the M16 ADR; the code, the laziness and the resolution
-  order are frozen here
+  order are frozen here. **Fixed in 16.1 by
+  [ADR-0041](../adr/0041-a-peer-looked-up-not-imported.md)**: the carrier is a
+  `PeerMissingError` class on `egl-utils-js/errors` with a `.peer` field naming the npm
+  package, since every stable code in this library has a class (ADR-0003); the namespace
+  is reached by **value lookup, never by `import` — static or dynamic** (a static one
+  would fail at load for a consumer who only wanted a builder, a dynamic one would make
+  every wrapper method asynchronous); resolution happens at the **first operation that
+  needs Bootstrap**, not when a wrapper is constructed, and is not negatively memoized, so
+  a bundle that loads late still works; and a namespace **present but lacking the
+  component** raises the same code with a message naming the component, because the
+  caller's problem — an unreachable capability — is identical. A bundler consumer, having
+  no ambient global, passes `{ bootstrap }`
 - F69 bsToast(container, {variant?, autohide?, delay?, animation?, labels?, bootstrap?,
   signal?}) — toast manager: `show(message, {title?, variant?, autohide?, delay?})`
   builds the toast node (escaped body/title, F57 close button, `role="alert"`/`"status"`
@@ -222,14 +233,31 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   variant classes; also `hide()`, `destroy()`
 - F70 bsModal(target, {bootstrap?, backdrop?, keyboard?, focus?, signal?}) — modal
   wrapper over `bootstrap.Modal.getOrCreateInstance(target)`: `show()`, `hide()`,
-  `toggle()`, `on(event, handler)` → unsubscribe for the `*.bs.modal` lifecycle events;
-  `destroy()` hides if shown, unsubscribes everything and disposes the instance
+  `toggle()`, `on(event, handler)` → unsubscribe for the `*.bs.modal` lifecycle events
+  (a name without a dot is qualified for the caller, so `'hidden'` and
+  `'hidden.bs.modal'` are the same subscription); `destroy()` hides if shown,
+  unsubscribes everything and disposes the instance — and where the dialog **is** shown it
+  disposes on `hidden.bs.modal` rather than immediately, since disposing a shown modal
+  leaves Bootstrap's backdrop on the page and the body scroll-locked; "shown" is tracked
+  from the DOM events, because Escape and the data-API dismiss button close a dialog
+  without passing through this wrapper. **Amended in 16.1**
+  ([ADR-0041](../adr/0041-a-peer-looked-up-not-imported.md)): the wrapper also publishes
+  what it wraps — `instance()` (resolving on first call) and `element` — the door
+  ADR-0039 put on `bsTable` for the same reason, since a facade that cannot be escaped
+  becomes a ceiling
 - F71 bsLoadingOverlay({bootstrap?, target?, message?, minVisibleMs?, focus?, signal?})
   — the F50 gate (composed, not reimplemented) with its presentation pair pre-wired to a
   static-backdrop, non-dismissable Bootstrap modal holding an F58 spinner and an escaped
   `message`; builds its own modal element when `target` is absent and removes it on
   `destroy()`; the F50 API (`show` → idempotent release, `wrap`, `isShown`, `destroy`)
-  passes through unchanged
+  passes through unchanged. **Clarified in 16.1**
+  ([ADR-0041](../adr/0041-a-peer-looked-up-not-imported.md)): each hook resolves on the
+  matching Bootstrap lifecycle event, so the F50 minimum-visible clock measures a real
+  appearance rather than the call that requested one; and `show`/`wrap` resolve the peer
+  **before** engaging the gate, so a missing peer surfaces as `EGL_PEER_MISSING` at the
+  call instead of being absorbed by ADR-0032's hook containment — NFR-18's typed-failure
+  promise wins over containment here, and only here, because a silent no-overlay hides a
+  packaging mistake rather than a rendering one
 - F72 bsCollapse(target, {toggler?, bootstrap?, signal?}) — collapse wrapper: `show`,
   `hide`, `toggle`, `on(...)`; when `toggler` is given the wrapper owns the click
   binding and keeps `aria-expanded` + the `collapsed` class in sync on it — the wiring
@@ -279,8 +307,13 @@ and `destroy()` disposes it plus every listener the wrapper attached):
      check (§6). -->
 
 - NFR-17 Bundle budgets (min+gzip, size-limit gate in CI): the **`/bootstrap` entry
-  ≤ 15 kB** as a whole — an entry holding ~30 managers; consumers tree-shake, so the
-  per-import rows are the budget that matters. Following the NFR-12 rule as amended in
+  ≤ 25 kB** as a whole — **amended in 16.1 from 15 kB by
+  [ADR-0041](../adr/0041-a-peer-looked-up-not-imported.md)**, on measuring 15083 B with
+  three of the fourteen wrappers landed and eleven still to come. The clause is now sized
+  for the **finished** catalogue rather than amended once per PR, while each entry row
+  stays pinned to its own measurement (16.2 kB here) so unintended growth is still caught
+  — the two instruments do different jobs. It holds ~30 managers; consumers tree-shake, so
+  the per-import rows are the budget that matters. Following the NFR-12 rule as amended in
   practice: each budget below is an **indicative ceiling on the landing measurement, not
   a prediction** — on landing, every row is pinned to measured + ≈7% with the measured
   figure recorded in the row name, and a ceiling that proves wrong is amended **by ADR
@@ -316,10 +349,21 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   unmeetable before a single cell was rendered — the `bsBreadcrumb` error of ADR-0038
   repeated one wave later. The measurement also settles the design claim: F67's controls
   added 3518 B against 3499 B of composed parts, i.e. 19 B of glue**);
-  `bsLoadingOverlay` ≤ 1.75 kB (composes
-  F50); `bsAccordion`/`bsTabs`/`bsNavbar`/`bsCarousel` ≤ 1.5 kB; every remaining
-  behavior wrapper ≤ 1.25 kB. The **root entry is not touched by this wave** (spec 01
-  NFR-01 stays frozen), and no other entry's budget moves.
+  `bsLoadingOverlay` ≤ **2.73 kB** — **amended in 16.1 from 1.75 kB on measuring 2550 B by
+  [ADR-0041](../adr/0041-a-peer-looked-up-not-imported.md): the parts it composes,
+  `loadingOverlay` (958 B, 12.2) and `bsSpinner` (778 B, 14.1), already sum to 1736 B
+  against a 1792 B ceiling, leaving 56 B for its own code. That is the third ceiling in
+  this wave written below its own parts (ADR-0038's `bsBreadcrumb`, ADR-0040's `bsTable`),
+  so the rule is now stated rather than rediscovered: a ceiling for a composing symbol is
+  derived from the rows of what it composes, never estimated**;
+  `bsAccordion`/`bsTabs`/`bsNavbar`/`bsCarousel` ≤ 1.5 kB; every remaining
+  behavior wrapper ≤ 1.25 kB — **confirmed right for its class in 16.1: `bsModal`, which
+  wraps a behaviour and builds nothing, measures 1060 B. A wrapper that also *builds*
+  takes a composing row instead: `bsToast` ≤ 2.32 kB (measured 2170 B), reclassified by
+  ADR-0041 because it composes `bsCloseButton` and assembles a node, which is a different
+  job from wrapping**. The **root entry is not touched by this wave** (spec 01
+  NFR-01 stays frozen); `/errors` grows 34 B for `PeerMissingError` (measured 351 B, well
+  inside its 0.4 kB spec-02 clause) and no other entry's budget moves.
 - NFR-18 Optional-peer containment: `bootstrap` (and transitively `@popperjs/core`) is
   an **optional peerDependency, never a runtime dependency** — the zero-dependency gate
   (NFR-06) still passes. The builder and table files (F52–F67) never reference the peer

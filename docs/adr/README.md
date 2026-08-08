@@ -56,3 +56,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0038](0038-composites-compose-and-what-a-frozen-constant-costs.md) | Composites compose — the close control is not an icon, and what a frozen constant costs | Accepted |
 | [0039](0039-a-facade-with-a-door-and-what-the-table-costs.md) | A facade with a door — the borrowed pipeline, the cell that refuses to guess, and what the table costs | Accepted |
 | [0040](0040-one-grammar-one-pager-and-a-ceiling-below-its-own-parts.md) | One grammar, one pager — and a ceiling that sat below its own parts | Accepted |
+| [0041](0041-a-peer-looked-up-not-imported.md) | A peer looked up, not imported — and the one place containment loses | Accepted |

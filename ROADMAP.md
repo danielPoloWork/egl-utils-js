@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-08 — the controls, and M15 complete`](docs/journal/2026/08/2026-08-08-bootstrap-table-controls.md).
+  [`2026-08-08 — a peer looked up, not imported`](docs/journal/2026/08/2026-08-08-bootstrap-behaviors-core.md).
 
 ## Model & effort routing
 
@@ -225,10 +225,11 @@ and hides nothing (spec 04 §2, F66–F67).
 The peer-backed half: lifecycle wrappers over Bootstrap's behaviors, resolved lazily and
 failing typed when the peer is absent (spec 04 §2, F68–F81) — closes the catalog at 24/24.
 
-- [ ] 16.1 The F68 resolution contract (lazy, injected-first, stable `EGL_PEER_MISSING` on `egl-utils-js/errors`) + bsToast, bsModal, and bsLoadingOverlay over the F50 gate (spec 04 F68–F71, NFR-18) _(route: frontier-reasoning/high — sets-pattern: the optional-peer contract every wrapper copies)_
+- [x] 16.1 The F68 resolution contract (lazy, injected-first, stable `EGL_PEER_MISSING` on `egl-utils-js/errors`) + bsToast, bsModal, and bsLoadingOverlay over the F50 gate (spec 04 F68–F71, NFR-18) _(route: frontier-reasoning/high — sets-pattern: the optional-peer contract every wrapper copies)_ — a peer looked up rather than imported, resolution deferred to the operation that needs it, and the one bounded override of the F50 containment rule fixed by [ADR-0041](docs/adr/0041-a-peer-looked-up-not-imported.md)
 - [ ] 16.2 Navigation set: bsCollapse, bsAccordion, bsDropdown, bsTabs, bsNavbar (spec 04 F72–F76, NFR-21) _(route: standard/medium)_
 - [ ] 16.3 Overlay & observation set: bsOffcanvas, bsCarousel, bsScrollspy (spec 04 F77–F79) _(route: standard/medium)_
 - [ ] 16.4 Popper-backed set: bsTooltip and bsPopover with the one-sanitizer contract, naming `@popperjs/core` in the typed failure (spec 04 F80–F81, NFR-18/NFR-19) — closes the Bootstrap 5 catalog at 24/24 _(route: standard/high — security: content handed to a third-party renderer)_
+- [ ] 16.5 Fix the cross-realm `AbortSignal` in the listener-owning composites ([BUG-0003](docs/bugs/2026/08/BUG-0003-cross-realm-abort-signal-in-composites.md)): `bsAlert`, `bsPagination` and `bsListGroup({onSelect})` each build an internal `AbortController` and hand its signal to `addEventListener` on an element from the caller's `{document}`, which a different realm's DOM refuses — so the server-render and iframe path the option exists for is broken for exactly those three. Take the controller from the target's own view behind a shared `dom-helpers` seam, since every future listener-owning builder inherits the trap, and flip the case the 16.1 node-safety suite currently pins as a known failure _(route: standard/medium — found by 16.1's NFR-18 suite; a defect in M14.2 code, so it ships on its own)_
 
 
 ---
@@ -280,9 +281,9 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 (04) | Objective & business context | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | 🚧 |
+| §1 (04) | Objective & business context | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4, 16.5 | 🚧 |
 | §2 (04) | Functional requirements F52–F81 | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | 🚧 |
-| §3 (04) | Non-functional requirements | 14.1, 14.2, 15.1, 15.2, 16.1, 16.4 | 🚧 |
+| §3 (04) | Non-functional requirements | 14.1, 14.2, 15.1, 15.2, 16.1, 16.4, 16.5 | 🚧 |
 | §4 (04) | Logical architecture | 14.1, 15.1, 16.1 | 🚧 |
 | §5 (04) | Public interface | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | 🚧 |
-| §6 (04) | Verification & test strategy | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | 🚧 |
+| §6 (04) | Verification & test strategy | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4, 16.5 | 🚧 |
