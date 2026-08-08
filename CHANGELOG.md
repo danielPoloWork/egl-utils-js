@@ -29,6 +29,12 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Builder content slots now accept an **array** of strings and nodes, rendered in order
   through one `DocumentFragment` (F52, extended in 14.2).
 
+### Changed
+
+### Deprecated
+
+### Removed
+
 ### Fixed
 
 - **Build:** `pnpm-lock.yaml` is back in step with `package.json`, which had declared the
@@ -44,15 +50,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   bundler can drop the ones an importer does not use. Importing a single icon preset fell
   from 358 B to 43 B, and every element builder is smaller than in the previous release.
 
-### Changed
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
 ### Security
+
+- Supply chain: `nanoid` reached through `tsup > postcss` is lifted to `~3.3.17`,
+  clearing the `high` advisory GHSA-2v37-7h3g-55p8. Range-scoped and pinned to the
+  patch line per [ADR-0033](docs/adr/0033-js-yaml-overrides-stay-inside-their-major-line.md),
+  so the unrelated `nanoid@5` instance in the tree is untouched. Build tooling only —
+  no shipped code depends on it.
 
 ---
 
