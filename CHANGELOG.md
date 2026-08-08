@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- 4966d1e: `bsTable` grows its controls (ROADMAP 15.2, spec 04 F67, ADR-0040): a per-column filter
+  row, a search box, a page-size select and an F65 pagination bar, all driving the table's
+  pipeline through its public commands via F51 `bindTableControls` — debounced, `aria-sort`
+  reflected, torn down in one pass, and exposed as `table.controls`. Every human-readable
+  string is injectable, and the defaults render digits rather than a language.
+
+  `tablePipeline` gains `operators`, the F33 custom-token vocabulary, applied to every
+  filter string it compiles — a column filter and the global search alike. Until now only
+  `locale` was forwarded to `compileFilter`, so a project's own operators were unreachable
+  from any string filter, whether typed into a box or set from code.
+
+- 41c9fbd: The first Bootstrap behaviour wrappers (ROADMAP 16.1, spec 04 F68–F71, ADR-0041):
+  `bsToast`, `bsModal` and `bsLoadingOverlay` on `egl-utils-js/bootstrap`, plus
+  `PeerMissingError` (`EGL_PEER_MISSING`) on `egl-utils-js/errors`.
+
+  These are the first exports that need Bootstrap's own JavaScript, and the entry still
+  never imports it: the namespace is looked up when a wrapper is first _used_ — the
+  `{ bootstrap }` option ahead of a `window.bootstrap` — so the fourteen builders keep
+  working with no peer installed, and a missing one is a typed failure at the call rather
+  than a broken import for everybody.
+
+- 702134d: `bsTable` joins `egl-utils-js/bootstrap` (ROADMAP 15.1, spec 04 F66, ADR-0039): a complete
+  Bootstrap 5 table over the F42 pipeline, which it keeps public as `.pipeline` — so filtering
+  and sorting compose, commands re-render, and an application that already holds a pipeline
+  (a server-derived first page, one shared with another view) passes it in and keeps it. Cells
+  escape by default with the markup decision made per column, row activation is one delegated
+  listener that also answers the keyboard, and a cell value the library would have to guess at
+  throws instead.
+
 All notable changes to `egl-utils-js` are documented here, following
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning 2.0.0](https://semver.org/).
