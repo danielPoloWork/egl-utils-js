@@ -1038,3 +1038,22 @@ export function assertPlainObject(value, name, api) {
     throw new TypeError(`${api}: ${name} must be an object`);
   }
 }
+
+/**
+ * The delegation match: the nearest ancestor of the event target matching
+ * `selector`, bounded by `root`.
+ *
+ * Shared by every builder that binds **one** listener above a region it
+ * re-renders — a list group, a pager, a table body. Lives here with the other
+ * builder internals so the three keep literally one implementation.
+ *
+ * @param {Element} root
+ * @param {Event} event
+ * @param {string} selector
+ * @returns {Element | null}
+ */
+export function closestWithin(root, event, selector) {
+  const target = /** @type {{ closest?: (s: string) => Element | null } | null} */ (event.target);
+  const match = typeof target?.closest === 'function' ? target.closest(selector) : null;
+  return match !== null && root.contains(match) ? match : null;
+}

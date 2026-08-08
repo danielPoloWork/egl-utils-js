@@ -139,19 +139,41 @@ NFR-20):
 
 Table manager — `egl-utils-js/bootstrap` (composes F42/F51/F65):
 
-- F66 bsTable(container, {columns, data, rowKey?, striped?, hover?, bordered?,
-  borderless?, small?, responsive?, variant?, caption?, empty?, pageSize?, locale?,
-  onRowClick?, signal?}) — renders a complete Bootstrap table from column descriptors
-  (`{key, label, format?, align?, headerClass?, cellClass?}` extending F42's column
-  shape) and **owns a `tablePipeline` instance exposed as `.pipeline`** — nothing is
-  hidden behind the facade. `tbody` re-renders from the pipeline's `'change'` view
-  through one `DocumentFragment`; cell content goes through `format(value, row)`
-  returning a string (escaped) or a node — `{html, sanitize}` for rich cells per F52;
-  `rowKey` stamps `data-key` for delegation; `onRowClick(row, event)` binds via **one**
-  F44 delegation; `empty` (string or node) renders when the view has no rows; `caption`
+- F66 bsTable(container, {columns, data, rowKey?, striped?, stripedColumns?, hover?,
+  bordered?, borderless?, small?, responsive?, variant?, caption?, captionTop?, empty?,
+  pageSize?, locale?, pipeline?, onRowClick?, signal?}) — renders a complete Bootstrap
+  table from column descriptors (`{key, label, format?, align?, headerClass?, cellClass?,
+  sortable?, html?, sanitize?}` extending F42's column shape) over **a `tablePipeline`
+  instance exposed as `.pipeline`** — nothing is hidden behind the facade. `tbody`
+  re-renders from the pipeline's `'change'` view through one `DocumentFragment`; cell
+  content goes through `format(value, row)` returning a string (escaped) or a node —
+  `{html, sanitize}` for rich cells per F52; `rowKey` (a property name or an extractor)
+  stamps `data-key` for delegation; `onRowClick(row, event)` binds via **one** F44
+  delegation; `empty` (string or node) renders when the view has no rows; `caption`
   renders a `<caption>`; style flags map to the documented `table-*` classes with
-  `responsive` wrapping in `table-responsive[-<breakpoint>]`. Returns `{element,
-  pipeline, setData(rows), destroy}`
+  `responsive` wrapping in `table-responsive[-<breakpoint>]`. Returns `{element, table,
+  pipeline, setData(rows), destroy}`.
+  **Amended in 15.1** ([ADR-0039](../adr/0039-a-facade-with-a-door-and-what-the-table-costs.md))
+  on six points the pre-implementation clause left open or got wrong. The pipeline may be
+  **borrowed instead of built**: `pipeline` renders an existing instance and `destroy()`
+  then unsubscribes without tearing it down, because spec 03 §4's own argument for a pure
+  pipeline is that one instance can pre-derive a page server-side and be adopted in the
+  browser — combining it with `data`/`pageSize`/`locale` is a `TypeError`, never a silent
+  precedence rule. `element` and `table` are **both** returned, and differ exactly when
+  `responsive` wraps the table: `element` is what was appended and what `destroy()`
+  removes, so hiding the `<table>` would force a `querySelector` into our own structure.
+  A column's `{html, sanitize}` governs **its cells only** — the header takes the
+  table-level pair, since a column that renders rich cells must not thereby reinterpret
+  its own label, and a rich header is a `label` node needing no markup decision. A cell
+  with no `format` renders primitives and blanks for nullish, and **throws a `TypeError`
+  naming the column for anything else** — `String(value)` would ship `[object Object]`,
+  and a `Date` would render in the runtime's default format, a human-readable string
+  NFR-21 reserves for the caller. `onRowClick` makes rows **keyboard-operable**
+  (`tabindex="0"`, Enter/Space), and neither a key pressed inside a cell's control nor a
+  click on an `a`/`button`/`input`/`select`/`textarea`/`label` (or a
+  `data-egl-no-row-click` element) inside the row also fires the row. Finally `sortable`
+  stamps `data-sort-key` for F67 to wire in 15.2, and `captionTop`/`stripedColumns` cover
+  the two documented Bootstrap classes the original list omitted
 - F67 bsTable controls (same export, `controls` option): `controls: {filterRow?,
   search?, pageSize?, pagination?, toolbar?, formatStatus?, debounceMs?}` — renders a
   per-column filter row under the header (inputs speaking the **F33 grammar including
@@ -269,7 +291,10 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   `bsAlert` ≤ 2 kB (composes F49; **measured 1521 B, ceiling held**); `bsPagination` ≤
   1.5 kB (**measured 1406 B, ceiling held**); **`bsTable` ≤
   6.5 kB** (a facade over F42 + F51 + F65 measures roughly as the sum of what it
-  composes — the NFR-12 lesson, pre-declared); `bsLoadingOverlay` ≤ 1.75 kB (composes
+  composes — the NFR-12 lesson, pre-declared; **F66's half measured 5324 B in 15.1 —
+  3250 B of it the F42 pipeline it renders — so the ceiling held and pre-declaring it
+  was the right call, with F67's controls still to come inside the same row**);
+  `bsLoadingOverlay` ≤ 1.75 kB (composes
   F50); `bsAccordion`/`bsTabs`/`bsNavbar`/`bsCarousel` ≤ 1.5 kB; every remaining
   behavior wrapper ≤ 1.25 kB. The **root entry is not touched by this wave** (spec 01
   NFR-01 stays frozen), and no other entry's budget moves.

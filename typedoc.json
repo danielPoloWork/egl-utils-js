@@ -47,6 +47,8 @@
     "BsProgressInstance",
     "BsProgressOptions",
     "BsSpinnerOptions",
+    "BsTableInstance",
+    "BsTableOptions",
     "Content",
     "Debounced",
     "DelegateOptions",

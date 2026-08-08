@@ -12,6 +12,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `bsTable` on `egl-utils-js/bootstrap` (ROADMAP 15.1, spec 04 F66, ADR-0039): a complete
+  Bootstrap 5 table rendered from column descriptors over an F42 `tablePipeline` that stays
+  **public** as `.pipeline` — filter, sort and page compose, commands re-render, and an
+  existing pipeline can be passed in and is borrowed rather than adopted. Cells obey the
+  builder escape contract per column, row activation is one delegated listener and works
+  from the keyboard, and a non-primitive cell value without a `format` throws instead of
+  being stringified into the page.
+
 ### Changed
 
 ### Deprecated

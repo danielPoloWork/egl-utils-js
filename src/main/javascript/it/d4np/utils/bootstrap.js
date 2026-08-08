@@ -52,3 +52,8 @@ export {
   bsListGroup,
   bsPagination,
 } from './bootstrap-composites.js';
+
+// The table manager (spec 04 §2 item F66, ADR-0039). A facade over the F42
+// pipeline that keeps it public: `.pipeline` is the instance itself, so the
+// escape hatch out of the facade is the same object the facade uses.
+export { bsTable } from './bootstrap-table.js';

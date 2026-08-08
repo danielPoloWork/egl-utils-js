@@ -178,9 +178,9 @@
     "limit": "1.03 kB"
   },
   {
-    "name": "/bootstrap - full import (NFR-17: 13 builders + both presets, measured 6195 B; entry clause 15 kB)",
+    "name": "/bootstrap - full import (NFR-17: 14 builders + both presets, measured 10525 B once bsTable brought the F42 pipeline onto the entry; entry clause 15 kB)",
     "path": "dist/esm/bootstrap.js",
-    "limit": "6.63 kB"
+    "limit": "11.26 kB"
   },
   {
     "name": "single: bsIcon (NFR-17 <= 1.2 kB per ADR-0037; measured 865 B)",
@@ -265,6 +265,12 @@
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsPagination }",
     "limit": "1.51 kB"
+  },
+  {
+    "name": "single: bsTable (NFR-17 <= 6.5 kB pre-declared composing row: the F42 pipeline (3250 B in 13.1) plus the rendering layer over it; measured 5324 B, inside the clause, ADR-0039)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsTable }",
+    "limit": "5.7 kB"
   },
   {
     "name": "/logging - full import (NFR-08: measured 1390 B, clause 1.6 kB)",
