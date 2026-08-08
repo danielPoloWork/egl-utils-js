@@ -79,6 +79,66 @@ export const materialIconsSet = /** @type {IconSet} */ (
 );
 
 /**
+ * The document a **container-taking** manager builds in: the container's own,
+ * overridable by `options.document`, never the ambient one by default.
+ *
+ * The distinction from {@link resolveDocument} is the presence of a container. A
+ * builder with no target has only the ambient document to fall back on; a
+ * manager handed a container has a better answer, and using the ambient one
+ * instead would fill a container living in an iframe with nodes from the top
+ * document. (`append` would then adopt them back, so the bug is subtle rather
+ * than loud — which is why the rule is a helper and not a convention.)
+ *
+ * @param {Element} container
+ * @param {BuilderDocumentOption} options
+ * @param {string} api
+ * @returns {Document}
+ * @throws {TypeError} If `options.document` is present but not a document.
+ */
+export function documentOf(container, options, api) {
+  const explicit = options.document;
+  if (explicit === undefined) return /** @type {Document} */ (container.ownerDocument);
+  if (
+    typeof explicit !== 'object' ||
+    explicit === null ||
+    typeof explicit.createElement !== 'function'
+  ) {
+    throw new TypeError(`${api}: options.document must be a Document`);
+  }
+  return explicit;
+}
+
+/**
+ * Mint an id that is free **in this document** — and in the batch being built.
+ *
+ * Not a module-level counter: two copies of this library in one page (the
+ * dual-package hazard spec 01 §4 forbids sharing state over) would each count
+ * from one and collide on the same document. Asking the document is the only
+ * source of truth that is not shared state, and it is exact rather than
+ * probabilistic — which matters because these ids are not decoration, they are
+ * the `aria-controls`/`aria-labelledby` relationships themselves (ADR-0042).
+ *
+ * The `reserved` set closes the gap the document alone cannot: a manager builds
+ * its nodes in a `DocumentFragment` and appends once, so while it is building,
+ * `getElementById` cannot see anything it has already minted.
+ *
+ * @param {Document} doc
+ * @param {string} prefix
+ * @param {Set<string>} [reserved] - Ids handed out earlier in this build.
+ * @returns {string}
+ */
+export function uniqueId(doc, prefix, reserved) {
+  let n = 1;
+  let id = `${prefix}-${n}`;
+  while (doc.getElementById(id) !== null || reserved?.has(id) === true) {
+    n += 1;
+    id = `${prefix}-${n}`;
+  }
+  reserved?.add(id);
+  return id;
+}
+
+/**
  * Resolve the document to build in: the explicit one, else the ambient one.
  *
  * @param {BuilderDocumentOption} options

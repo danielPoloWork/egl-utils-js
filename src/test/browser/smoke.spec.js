@@ -1293,3 +1293,99 @@ test.describe('the Bootstrap navigation set (roadmap 16.2)', () => {
     await expect(page.locator('#host .navbar')).toHaveCount(0);
   });
 });
+
+// Roadmap 16.3 (spec 04 §2 items F77-F79, NFR-18/NFR-21). Scrollspy in
+// particular can only be checked here: it is built on IntersectionObserver
+// against real scroll geometry, and jsdom has neither.
+test.describe('the Bootstrap overlay and observation set (roadmap 16.3)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addScriptTag({ url: '/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js' });
+    await page.waitForFunction(() => typeof window.bootstrap === 'object');
+  });
+
+  test('an offcanvas opens, closes and leaves no backdrop', async ({ page }) => {
+    await page.evaluate(() => {
+      document.getElementById('host').innerHTML = `
+        <div class="offcanvas offcanvas-start" tabindex="-1" id="drawer">
+          <div class="offcanvas-body">Filters</div>
+        </div>`;
+      window.eglDrawer = window.egl.bootstrap.bsOffcanvas(document.getElementById('drawer'));
+      window.eglDrawer.show();
+    });
+
+    await expect(page.locator('#drawer')).toHaveClass(/show/);
+    await expect(page.locator('.offcanvas-backdrop')).toHaveCount(1);
+
+    await page.evaluate(() => window.eglDrawer.hide());
+    await expect(page.locator('#drawer')).not.toHaveClass(/show/);
+    await expect(page.locator('.offcanvas-backdrop')).toHaveCount(0);
+
+    await page.evaluate(() => window.eglDrawer.destroy());
+  });
+
+  test('a carousel slides, and Bootstrap drives the indicators we built', async ({ page }) => {
+    await page.evaluate(() => {
+      window.eglCarousel = window.egl.bootstrap.bsCarousel(document.getElementById('host'), {
+        items: [
+          { content: 'First slide', active: true },
+          { content: 'Second slide' },
+          { content: 'Third slide' },
+        ],
+        indicators: true,
+      });
+    });
+
+    const slides = page.locator('#host .carousel-item');
+    await expect(slides.nth(0)).toHaveClass(/active/);
+
+    // Driven through the instance…
+    await page.evaluate(() => window.eglCarousel.next());
+    await expect(slides.nth(1)).toHaveClass(/active/);
+
+    // …and clicked, which exercises Bootstrap's data-API against the
+    // data-bs-target/data-bs-slide-to attributes this library generated.
+    await page.locator('#host .carousel-indicators button').nth(2).click();
+    await expect(slides.nth(2)).toHaveClass(/active/);
+    await expect(page.locator('#host .carousel-indicators button').nth(2)).toHaveClass(/active/);
+
+    await page.evaluate(() => window.eglCarousel.destroy());
+    await expect(page.locator('#host .carousel')).toHaveCount(0);
+  });
+
+  test('a scrollspy activates the nav link for the section in view', async ({ page }) => {
+    // The one component whose behaviour is pure scroll geometry: an
+    // IntersectionObserver over a real scroll container, which no fake DOM has.
+    await page.evaluate(() => {
+      document.getElementById('host').innerHTML = `
+        <nav id="toc" class="nav">
+          <a class="nav-link" href="#alpha">Alpha</a>
+          <a class="nav-link" href="#beta">Beta</a>
+        </nav>
+        <div id="spied" style="height:150px;overflow-y:auto;position:relative">
+          <div id="alpha" style="height:400px">Alpha</div>
+          <div id="beta" style="height:400px">Beta</div>
+        </div>`;
+      window.eglSpy = window.egl.bootstrap.bsScrollspy(document.getElementById('spied'), {
+        nav: '#toc',
+      });
+      window.eglActivated = [];
+      window.eglSpy.on('activate', (event) => {
+        window.eglActivated.push(event.relatedTarget?.getAttribute('href'));
+      });
+      // Resolves the peer and starts observing.
+      window.eglSpy.refresh();
+    });
+
+    await expect(page.locator('#toc .nav-link').first()).toHaveClass(/active/);
+
+    await page.evaluate(() => {
+      document.getElementById('spied').scrollTop = 420;
+    });
+
+    await expect(page.locator('#toc .nav-link').nth(1)).toHaveClass(/active/);
+    // The event this wrapper exists to surface actually fired.
+    await expect.poll(() => page.evaluate(() => window.eglActivated)).toContain('#beta');
+
+    await page.evaluate(() => window.eglSpy.destroy());
+  });
+});

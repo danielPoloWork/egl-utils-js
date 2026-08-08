@@ -12,6 +12,17 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- The Bootstrap overlay and observation set on `egl-utils-js/bootstrap` (ROADMAP 16.3,
+  spec 04 F77–F79, ADR-0043): `bsOffcanvas`, `bsCarousel` and `bsScrollspy`. Three shapes
+  rather than one group — the offcanvas is the shared lifecycle again, the carousel builds
+  its slides, and the scrollspy has no open state at all, so it is written plainly instead
+  of inheriting `show`/`hide`/`toggle` methods that would throw. `bsCarousel` labels its
+  own indicators (a row of identical unlabelled buttons is the usual defect), treats `alt`
+  as the field that *declares* a slide an image — so an image cannot reach the page
+  unlabelled — and leaves autoplay off unless asked, because motion that starts on its own
+  is the caller's decision. `bsScrollspy` gains a `nav` option naming the links it marks,
+  without which it had no observable output.
+
 - The Bootstrap navigation set on `egl-utils-js/bootstrap` (ROADMAP 16.2, spec 04 F72–F76,
   ADR-0042): `bsCollapse`, `bsAccordion`, `bsDropdown`, `bsTabs` and `bsNavbar`. Two wrap
   markup you already have; three **build** it when given items — because a navigation
