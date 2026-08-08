@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-08 — Composites that compose, and M14 complete (roadmap 14.2)](2026/08/2026-08-08-bootstrap-composites.md)
 - [2026-08-07 — The builder contract, set by the Bootstrap atoms (roadmap 14.1)](2026/08/2026-08-07-bootstrap-foundation.md)
 - [2026-08-07 — The Bootstrap wave planned (spec 04, M14–M16)](2026/08/2026-08-07-bootstrap-wave-planning.md)
 - [2026-08-07 — Every benchmark counted, and M13 closed (roadmap 13.3)](2026/08/2026-08-07-bench-collector.md)

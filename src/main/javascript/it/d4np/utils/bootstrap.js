@@ -41,3 +41,14 @@ export {
   bsSpinner,
   materialIconsSet,
 } from './bootstrap-elements.js';
+
+// Composite builders (spec 04 §2 items F61-F65, ADR-0038). Two of them compose
+// rather than implement: bsAlert is the F49 engine in Bootstrap's costume, and
+// bsPagination speaks the read model F42 already returns.
+export {
+  bsAlert,
+  bsBreadcrumb,
+  bsCard,
+  bsListGroup,
+  bsPagination,
+} from './bootstrap-composites.js';

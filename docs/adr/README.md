@@ -53,3 +53,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0035](0035-the-controls-bridge-and-the-dom-budget.md) | The controls bridge — one-way inputs, injected wording, and what /dom costs | Accepted |
 | [0036](0036-collecting-every-benchmark-and-the-collapse-floor.md) | Collect every benchmark, and gate the absolute ones on a collapse floor | Accepted |
 | [0037](0037-builder-contract-nodes-escape-and-the-atom-budget.md) | The builder contract — nodes over strings, escaping by construction, and what an atom costs | Accepted |
+| [0038](0038-composites-compose-and-what-a-frozen-constant-costs.md) | Composites compose — the close control is not an icon, and what a frozen constant costs | Accepted |

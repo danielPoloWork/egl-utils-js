@@ -32,6 +32,9 @@ const AMBIENT_DOCUMENT_CALLS = /** @type {const} */ ([
   ['bsSpinner', () => bootstrap.bsSpinner()],
   ['bsProgress', () => bootstrap.bsProgress()],
   ['bsPlaceholder', () => bootstrap.bsPlaceholder()],
+  ['bsCard', () => bootstrap.bsCard({ title: 'T' })],
+  ['bsListGroup', () => bootstrap.bsListGroup(['A'])],
+  ['bsBreadcrumb', () => bootstrap.bsBreadcrumb(['A'])],
 ]);
 
 describe('NFR-20 — the entry imports safely with no DOM', () => {
@@ -41,14 +44,19 @@ describe('NFR-20 — the entry imports safely with no DOM', () => {
     expect(globalThis.document).toBeUndefined();
   });
 
-  it('exposes the whole 14.1 surface', () => {
+  it('exposes the whole M14 surface', () => {
     expect(Object.keys(bootstrap).sort()).toEqual([
       'bootstrapIconsSet',
+      'bsAlert',
       'bsBadge',
+      'bsBreadcrumb',
       'bsButton',
       'bsButtonGroup',
+      'bsCard',
       'bsCloseButton',
       'bsIcon',
+      'bsListGroup',
+      'bsPagination',
       'bsPlaceholder',
       'bsProgress',
       'bsSpinner',
@@ -97,10 +105,31 @@ describe('NFR-20 — an explicit document makes every builder work in Node', () 
     const spinner = bootstrap.bsSpinner({ document: doc });
     const progress = bootstrap.bsProgress({ value: 50, document: doc });
     const placeholder = bootstrap.bsPlaceholder({ lines: 2, document: doc });
+    // Non-interactive: no listener, so nothing crosses the realm boundary. The
+    // interactive components are exercised in the jsdom environment instead —
+    // jsdom's generated bindings reject an `AbortSignal` built in another realm,
+    // which a browser accepts, so combining a Node-realm controller with a
+    // foreign document here would test jsdom's strictness rather than ours.
+    const list = bootstrap.bsListGroup(['A'], { document: doc });
+    const crumbs = bootstrap.bsBreadcrumb(['Home', 'Here'], { document: doc });
+    const card = bootstrap.bsCard({ title: 'T', listGroup: list.element, document: doc });
 
-    for (const el of [badge, button, group, close, spinner, progress.element, placeholder]) {
+    for (const el of [
+      badge,
+      button,
+      group,
+      close,
+      spinner,
+      progress.element,
+      placeholder,
+      list.element,
+      crumbs,
+      card,
+    ]) {
       expect(el.ownerDocument).toBe(doc);
     }
+    expect(crumbs.querySelector('[aria-current="page"]')?.textContent).toBe('Here');
+    expect(card.querySelector('.list-group')).toBe(list.element);
     expect(globalThis.document).toBeUndefined();
 
     // Not merely constructed — correct, in a realm that never had a global.

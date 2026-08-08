@@ -21,6 +21,23 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   contact with the optional `bootstrap` peer — the builders work with none installed.
 - `bootstrap` is now declared as an **optional** peer dependency (`^5`), alongside
   `dompurify`. Nothing in this release requires it.
+- `egl-utils-js/bootstrap` gains the composite builders `bsCard`, `bsListGroup`,
+  `bsBreadcrumb`, `bsAlert` and `bsPagination` (ROADMAP 14.2, spec 04 F61–F65, ADR-0038).
+  `bsAlert` **is** the `inlineAlert` engine with Bootstrap's class map, and
+  `bsPagination.update()` accepts the shape `tablePipeline.view()` already returns, so
+  wiring a pager to a table needs no adapter.
+- Builder content slots now accept an **array** of strings and nodes, rendered in order
+  through one `DocumentFragment` (F52, extended in 14.2).
+
+### Fixed
+
+- `inlineAlert` (`egl-utils-js/dom`): an empty close icon no longer hides the close
+  control. A design system that draws its close glyph in CSS — Bootstrap's `.btn-close`,
+  for one — supplies an empty icon, which previously left a dismissible alert nobody could
+  dismiss. `dismissible: false` remains the way to ask for no close button (ADR-0038).
+- Frozen constant maps on `egl-utils-js/bootstrap` are annotated `/* @__PURE__ */`, so a
+  bundler can drop the ones an importer does not use. Importing a single icon preset fell
+  from 358 B to 43 B, and every element builder is smaller than in the previous release.
 
 ### Changed
 

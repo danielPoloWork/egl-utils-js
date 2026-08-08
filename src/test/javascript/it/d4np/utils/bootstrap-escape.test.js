@@ -12,10 +12,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { BYPASS_CORPUS } from '../../../../fixtures/sanitize-bypass-corpus.js';
 import {
   bsBadge,
+  bsBreadcrumb,
   bsButton,
   bsButtonGroup,
+  bsCard,
   bsCloseButton,
   bsIcon,
+  bsListGroup,
   bsProgress,
   bsSpinner,
 } from '../../../../../main/javascript/it/d4np/utils/bootstrap.js';
@@ -157,6 +160,51 @@ describe('NFR-19 — payloads land as text, never as markup', () => {
       }
     },
   );
+
+  it.each(BYPASS_CORPUS.map((entry) => [entry.id, entry.payload]))(
+    'bsCard renders %s inert in every content slot',
+    (_id, payload) => {
+      // A card is where record data lands at scale, so every slot is attacked,
+      // not just the obvious one.
+      const card = bsCard({
+        header: payload,
+        title: payload,
+        subtitle: payload,
+        text: payload,
+        body: payload,
+        footer: payload,
+        actions: payload,
+      });
+      assertInert(card);
+      expect(card.querySelector('.card-title')?.textContent).toBe(payload);
+      expect(card.querySelector('.card-footer')?.textContent).toBe(`${payload}${payload}`);
+    },
+  );
+
+  it.each(BYPASS_CORPUS.map((entry) => [entry.id, entry.payload]))(
+    'bsListGroup renders %s inert as item content and as a badge',
+    (_id, payload) => {
+      const list = bsListGroup([{ content: payload, badge: payload }]);
+      assertInert(list.element);
+      expect(list.element.textContent).toBe(`${payload}${payload}`);
+    },
+  );
+
+  it.each(BYPASS_CORPUS.map((entry) => [entry.id, entry.payload]))(
+    'bsBreadcrumb renders %s inert in a link and in the current page',
+    (_id, payload) => {
+      const nav = bsBreadcrumb([{ content: payload, href: '/x' }, payload]);
+      assertInert(nav);
+      expect(nav.textContent).toBe(`${payload}${payload}`);
+    },
+  );
+
+  it('an array slot escapes every member, not just the first', () => {
+    const payload = BYPASS_CORPUS[0].payload;
+    const card = bsCard({ text: ['safe', payload, 'also safe'] });
+    assertInert(card);
+    expect(card.querySelector('.card-text')?.textContent).toBe(`safe${payload}also safe`);
+  });
 
   it('keeps a hostile icon name inside the class list, where it cannot execute', () => {
     const icon = bsIcon(TOKEN_PAYLOAD);

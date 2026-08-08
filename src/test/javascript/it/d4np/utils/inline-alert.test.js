@@ -22,6 +22,34 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+describe('inlineAlert — the close control is not an icon slot', () => {
+  it('stays visible when its icon is deliberately empty', () => {
+    // Found by 14.2/F64: a design system that draws the close glyph in CSS
+    // (Bootstrap's `.btn-close` background image) supplies an empty icon, and
+    // hiding the control for that leaves a dismissible alert nobody can
+    // dismiss. `dismissible: false` is how a caller asks for no button; an
+    // empty glyph asks for no *glyph*.
+    const alerts = inlineAlert(host, { icons: { close: '' } });
+    alerts.show('info', 'Message');
+
+    const close = /** @type {HTMLElement} */ (host.querySelector('button'));
+    expect(close).not.toBeNull();
+    expect(close.hidden).toBe(false);
+    expect(close.textContent).toBe('');
+
+    close.click();
+    expect(/** @type {HTMLElement} */ (host.querySelector('div')).hidden).toBe(true);
+  });
+
+  it('still hides an empty decorative icon slot', () => {
+    // The rule is right for the icon span, which is why it stays there.
+    const alerts = inlineAlert(host, { icons: { success: '' } });
+    alerts.show('success', 'Saved');
+    const icon = /** @type {HTMLElement} */ (host.querySelector('.egl-alert__icon'));
+    expect(icon.hidden).toBe(true);
+  });
+});
+
 /** @param {Element} container */
 const alertIn = (container) => container.querySelector('.egl-alert');
 

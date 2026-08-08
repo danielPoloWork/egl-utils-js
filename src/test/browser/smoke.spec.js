@@ -846,6 +846,59 @@ test.describe('/bootstrap — builders in a real engine (roadmap 14.1, F52-F60)'
     expect(result.barText).toBe('60%');
   });
 
+  test('the composites assemble, and the two compositions delegate (roadmap 14.2)', async ({
+    page,
+  }) => {
+    const result = await page.evaluate(() => {
+      const { bsCard, bsListGroup, bsBreadcrumb, bsAlert, bsPagination } = window.egl.bootstrap;
+      const container = document.getElementById('host');
+      container.replaceChildren();
+
+      const list = bsListGroup([{ content: 'row', value: 1 }], { onSelect: () => {} });
+      container.append(
+        bsCard({ title: 'T', listGroup: list.element, actions: 'A' }),
+        bsBreadcrumb([{ content: 'Home', href: '/' }, 'Here']),
+      );
+
+      const alertHost = document.createElement('div');
+      container.append(alertHost);
+      bsAlert(alertHost).show('danger', 'Boom');
+
+      const pagerHost = document.createElement('div');
+      container.append(pagerHost);
+      let requested = 0;
+      const pager = bsPagination(pagerHost, { onPage: (n) => (requested = n) });
+      pager.update({ page: 2, pageCount: 5 });
+      /** @type {HTMLElement} */ (
+        [...pagerHost.querySelectorAll('.page-link')].find((el) => el.textContent === '3')
+      ).click();
+
+      const close = alertHost.querySelector('.btn-close');
+      return {
+        cardSlots: [...container.querySelector('.card').children].map(
+          (el) => el.className.split(' ')[0],
+        ),
+        current: container.querySelector('[aria-current="page"]')?.textContent,
+        alertClass: alertHost.querySelector('.alert')?.className,
+        alertRole: alertHost.querySelector('.alert')?.getAttribute('role'),
+        // The regression 14.2 found: an empty icon must not hide the control.
+        closeVisible: close !== null && !close.hidden && close.offsetParent !== null,
+        requested,
+        activePage: pagerHost.querySelector('.page-item.active')?.textContent,
+      };
+    });
+
+    expect(result.cardSlots).toEqual(['card-body', 'list-group', 'card-footer']);
+    expect(result.current).toBe('Here');
+    expect(result.alertClass).toBe('alert alert-dismissible fade show alert-danger');
+    expect(result.alertRole).toBe('alert');
+    // offsetParent is a real-layout check jsdom cannot make: the button is not
+    // merely un-hidden, it actually occupies the page.
+    expect(result.closeVisible).toBe(true);
+    expect(result.requested).toBe(3);
+    expect(result.activePage).toBe('2');
+  });
+
   for (const { id, payload } of BYPASS_CORPUS) {
     test(`a builder keeps ${id} inert through a real parser`, async ({ page }) => {
       const result = await page.evaluate((untrusted) => {
