@@ -31,6 +31,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Fixed
 
+- **Build:** `pnpm-lock.yaml` is back in step with `package.json`, which had declared the
+  optional `bootstrap` peer without it. Every CI job failed at
+  `pnpm install --frozen-lockfile` from the 14.1 merge until this fix (BUG-0002). No
+  shipped code was affected; `bootstrap` is now a devDependency, as `dompurify` already
+  was, so the package still declares zero runtime dependencies.
 - `inlineAlert` (`egl-utils-js/dom`): an empty close icon no longer hides the close
   control. A design system that draws its close glyph in CSS — Bootstrap's `.btn-close`,
   for one — supplies an empty icon, which previously left a dismissible alert nobody could

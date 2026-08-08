@@ -19,3 +19,4 @@ a `fixed` record names its `fixed-in`) is enforced by the consistency lint's `bu
 | Bug | Title | Severity | Status | Fixed in |
 |-----|-------|----------|--------|----------|
 | [BUG-0001](2026/08/BUG-0001-webkit-row-click-intercepted.md) | WebKit browser smoke fails — a `<tr>` click target is intercepted by `<table>` | low | fixed | v0.6.0 |
+| [BUG-0002](2026/08/BUG-0002-lockfile-out-of-date-with-the-bootstrap-peer.md) | Every CI job fails at install — the lockfile was never updated for the `bootstrap` peer | high | fixed | v0.7.0 |
