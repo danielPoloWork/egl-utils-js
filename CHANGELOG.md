@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.7.0
+
+### Minor Changes
+
+- 85e4050: Composite builders on `egl-utils-js/bootstrap` (ROADMAP 14.2, spec 04 F61–F65, ADR-0038):
+  `bsCard`, `bsListGroup`, `bsBreadcrumb`, `bsAlert` and `bsPagination`.
+
+  Two of them compose rather than reimplement. `bsAlert` **is** the `inlineAlert` engine
+  (F49) wearing Bootstrap's class map — same instance API, same per-instance timers, same
+  escaping rule — and `bsPagination.update()` accepts the shape `tablePipeline.view()`
+  already returns, so wiring a pager to a table is one subscription and no adapter. A fix to
+  either engine therefore reaches both entries at once.
+
+  Content slots now also accept an array of strings and nodes, rendered in order through one
+  `DocumentFragment`, which is what lets a card slot hold text and a badge together.
+
+  Two fixes ride along. `inlineAlert` no longer hides its close control when the icon is
+  empty: a design system that draws the glyph in CSS (`.btn-close`) supplies an empty icon,
+  and hiding the button for that left a dismissible alert nobody could dismiss. And the
+  entry's frozen constant maps are annotated `/* @__PURE__ */`, so unused ones are dropped by
+  the bundler — importing a single icon preset fell from 358 B to 43 B, and every element
+  builder from the previous release is now smaller.
+
+- 6a41d84: New opt-in `egl-utils-js/bootstrap` entry with the Bootstrap 5 element builders (ROADMAP
+  14.1, spec 04 F52–F60, ADR-0037): `bsIcon` with two injectable icon-set presets, `bsBadge`,
+  `bsButton`, `bsButtonGroup`, `bsCloseButton`, `bsSpinner`, `bsProgress` and `bsPlaceholder`.
+
+  The entry composes the framework-agnostic core and is never imported by it, so a project on
+  a different design system pays nothing for it. Builders return real DOM nodes rather than
+  HTML strings, so caller data reaches the page as data — markup requires the explicit
+  `{ html: true, sanitize }` pair, the same contract `injectFragment` and `inlineAlert` use.
+  Bootstrap's CSS and any icon font remain the application's to supply, and `bootstrap` is
+  declared only as an optional peer: no builder in this release touches it.
+
 All notable changes to `egl-utils-js` are documented here, following
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning 2.0.0](https://semver.org/).
