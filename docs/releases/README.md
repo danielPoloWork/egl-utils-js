@@ -10,6 +10,7 @@ README badge.
 
 | Version | Date | Highlights | Notes |
 |---------|------|------------|-------|
+| v0.7.0 | 2026-08-08 | The opt-in `egl-utils-js/bootstrap` entry — thirteen Bootstrap 5 builders that return real DOM nodes rather than HTML strings, so caller data cannot become markup; `bsAlert` and `bsPagination` compose the v0.5.0/v0.6.0 engines rather than reimplementing them | [v0.7.0.md](v0.7.0.md) |
 | v0.6.0 | 2026-08-07 | A composable table pipeline on `egl-utils-js/table` where filtering and sorting compose instead of discarding each other, and `bindTableControls` on `egl-utils-js/dom` to drive it from real controls with structural teardown | [v0.6.0.md](v0.6.0.md) |
 | v0.5.0 | 2026-08-07 | UI components on `egl-utils-js/dom` — `inlineAlert`, whose instances cannot steal each other's timer or container, and `loadingOverlay`, a reference-counted gate whose anti-flicker floor starts when the presentation actually appears | [v0.5.0.md](v0.5.0.md) |
 | v0.4.0 | 2026-08-06 | `egl-utils-js/dom` — element binding with a missing-element report, event delegation with signal teardown, native setters, fragment injection with a required sanitizer, auto-grow, URL parameters | [v0.4.0.md](v0.4.0.md) |
