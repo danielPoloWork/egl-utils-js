@@ -1,5 +1,5 @@
 /**
- * egl-utils-js — the Bootstrap 5 table manager (spec 04 §2 item F66).
+ * egl-utils-js — the Bootstrap 5 table manager (spec 04 §2 items F66-F67).
  *
  * The toolkit's flagship, and the place the whole arc pays off: a Bootstrap
  * table is markup plus class names, and everything underneath it — filtering,
@@ -23,15 +23,21 @@
  *    above the `tbody` (F44), so a thousand re-renders attach zero listeners —
  *    the defect this toolkit exists to retire.
  *
- * The controls — filter row, search box, page-size select, pagination bar — are
- * F67 and arrive with roadmap 15.2, wired through F51 to the same pipeline this
- * file exposes.
+ * The controls (F67) hold the same line. A filter row, a search box, a page-size
+ * select and a pagination bar are markup and accessible names here; the
+ * debouncing, the `aria-sort` reflection and the teardown are F51
+ * `bindTableControls`, the numbered pager is F65, and the filter expressions are
+ * the F33 grammar the pipeline already compiles — custom `{operators}` included,
+ * because the input hands its text to the pipeline rather than interpreting it
+ * (ADR-0040).
  *
  * @module egl-utils-js/bootstrap
  */
 
 import { isAbortSignal, isElement } from './dom-helpers.js';
+import { bindTableControls } from './dom-table.js';
 import { tablePipeline } from './table.js';
+import { bsPagination } from './bootstrap-composites.js';
 import {
   appendContent,
   applyClasses,
@@ -102,6 +108,9 @@ import {
  *   row, which is how an application finds its record from an event.
  * @property {(row: Row, event: Event) => void} [onRowClick] - Row activation,
  *   bound through **one** delegated listener and reachable from the keyboard.
+ * @property {BsTableControls<Row>} [controls] - Filter row, search box,
+ *   page-size select and pagination bar, wired to the pipeline through F51
+ *   (F67). Omitted, the table renders alone and the caller drives the pipeline.
  * @property {Content} [empty] - Rendered as a single full-width row when the
  *   derived view has none. Without it an empty table is simply empty.
  * @property {Content} [caption] - A `<caption>`; the table's accessible name.
@@ -124,13 +133,60 @@ import {
  */
 
 /**
+ * The control bands rendered around the table (F67). Every entry is `true` for
+ * the defaults, an options object to configure it, or absent for "no such
+ * control" — one rule for all of them.
+ *
+ * @template Row
+ * @typedef {object} BsTableControls
+ * @property {boolean | {label?: (column: BsTableColumn<Row>) => string, inputClass?: ClassOption, class?: ClassOption}} [filterRow] -
+ *   A row of per-column filter inputs under the header, speaking the F33
+ *   grammar — including any custom `{operators}` the pipeline was built with.
+ *   A column with `filterable: false` gets an empty cell rather than a box the
+ *   pipeline would reject. `label` names each input; the default is
+ *   `Filter <column label>`.
+ * @property {boolean | {label?: string, placeholder?: string, class?: ClassOption}} [search] -
+ *   A global search input over the columns marked `searchable`.
+ * @property {boolean | {options?: number[], allLabel?: string, label?: string, class?: ClassOption}} [pageSize] -
+ *   A page-size select. `options` defaults to 10/25/50/100 and always includes
+ *   the table's own `pageSize`; `allLabel` adds an unpaginated choice, and is
+ *   required to get one because "All" is a word this library will not choose.
+ * @property {boolean | {status?: boolean, statusClass?: ClassOption, siblingCount?: number, boundaryCount?: number, size?: string, labels?: object, class?: ClassOption}} [pagination] -
+ *   An F65 pagination bar, plus a status element unless `status: false`.
+ *   Remaining options pass through to {@link bsPagination}.
+ * @property {Node} [toolbar] - A caller-rendered node placed in the header band.
+ * @property {(view: import('./table.js').TableView<Row>) => string} [formatStatus] -
+ *   The status text. Defaults to F51's language-neutral `'1 / 4'`.
+ * @property {number} [debounceMs] - Quiet period for the filter and search
+ *   inputs; F51's default is 200.
+ * @property {ClassOption} [headerClass] - Extra classes for the header band.
+ * @property {ClassOption} [footerClass] - Extra classes for the footer band.
+ * @property {ClassOption} [class] - Extra classes for the wrapper.
+ */
+
+/**
+ * The control elements, exposed for the same reason `.pipeline` is: a facade
+ * that hides its own nodes forces callers to `querySelector` into its markup.
+ *
+ * @typedef {object} BsTableControlParts
+ * @property {Record<string, Element>} filters - Column key to its filter input.
+ * @property {Element} [search]
+ * @property {Element} [pageSize]
+ * @property {Element} [pagination] - The F65 bar's `<nav>`.
+ * @property {Element} [status]
+ */
+
+/**
  * @template Row
  * @typedef {object} BsTableInstance
  * @property {Element} element - The node this instance owns inside the
- *   container, and the one `destroy()` removes: the `<table>`, or the
- *   responsive wrapper around it when `responsive` is set.
+ *   container, and the one `destroy()` removes: the `<table>`, the responsive
+ *   wrapper around it when `responsive` is set, or the outer wrapper holding
+ *   the control bands when `controls` are rendered.
  * @property {Element} table - The `<table>` itself, which differs from
- *   `element` exactly when `responsive` is set.
+ *   `element` whenever `responsive` or `controls` add a wrapper.
+ * @property {BsTableControlParts} [controls] - The rendered control elements,
+ *   present only when `options.controls` asked for some.
  * @property {import('./table.js').TablePipeline<Row>} pipeline - The live F42
  *   instance. Commands issued on it re-render the table; nothing is hidden.
  * @property {(rows: readonly Row[]) => void} setData - Replace the row set —
@@ -168,6 +224,23 @@ const ALIGNMENTS = /* @__PURE__ */ new Set(['start', 'center', 'end']);
  * table.pipeline.on('change', (view) => status.update(view));
  *
  * @example
+ * // With controls (F67): a filter row, a search box, a page-size select and a
+ * // pagination bar, all driving the same pipeline through its public commands.
+ * const table = bsTable(container, {
+ *   columns,
+ *   data: hosts,
+ *   pageSize: 25,
+ *   controls: {
+ *     filterRow: true,        // each input speaks the F33 grammar: ^192.168, >2, =empty
+ *     search: true,
+ *     pageSize: { allLabel: 'All' },   // a word, so you supply it
+ *     pagination: true,
+ *     formatStatus: (view) => `Pagina ${view.page} di ${view.pageCount}`,
+ *   },
+ * });
+ * table.controls.search.focus();   // the nodes are yours too
+ *
+ * @example
  * // A rich cell opens *one* column, not the table (NFR-19).
  * { key: 'status', html: true, sanitize: sanitizeHtml, format: (v) => badgeMarkup(v) }
  * // …though returning a node needs no markup decision at all:
@@ -198,6 +271,7 @@ export function bsTable(container, options) {
     pipeline: injected,
     rowKey,
     onRowClick,
+    controls,
     empty,
     caption,
     captionTop = false,
@@ -466,8 +540,30 @@ export function bsTable(container, options) {
     );
   }
 
+  // Controls wrap the table rather than reaching into it: `element` stays "the
+  // node this instance owns", which is now the wrapper (F66/F67, ADR-0040).
+  const wired =
+    controls === undefined
+      ? null
+      : buildControls({
+          controls,
+          columns,
+          pipeline,
+          doc,
+          table: element,
+          thead,
+          pageSize,
+          api,
+        });
+  if (wired !== null) element = wired.element;
+
   renderBody(pipeline.view());
-  const unsubscribe = pipeline.on('change', renderBody);
+  const unsubscribe = pipeline.on('change', (view) => {
+    renderBody(view);
+    // The pager rides the subscription the body already needs: one 'change'
+    // listener for everything this instance draws, rather than one per part.
+    wired?.reflect(view);
+  });
   container.append(element);
 
   let destroyed = false;
@@ -476,6 +572,11 @@ export function bsTable(container, options) {
     destroyed = true;
     controller.abort();
     unsubscribe();
+    // One structural pass (NFR-15): the row delegation above, this instance's
+    // subscription, then everything the controls own — F51's binding cancels
+    // its own debounces and detaches its listeners, and the pager disposes its
+    // delegated click.
+    wired?.destroy();
     element.remove();
     // An injected pipeline is borrowed: unsubscribing is the whole of our
     // claim on it. One we built dies with us, having no timers to stop.
@@ -488,12 +589,250 @@ export function bsTable(container, options) {
     element,
     table,
     pipeline,
+    ...(wired === null ? {} : { controls: wired.parts }),
     setData: (rows) => {
       if (destroyed) throw new TypeError(`${api}: setData() was called after destroy()`);
       pipeline.setSource(rows);
     },
     destroy,
   };
+}
+
+/**
+ * Build the control bands around a table and wire them to its pipeline (F67).
+ *
+ * Everything here is *composition*: the filter inputs speak the F33 grammar the
+ * pipeline already compiles, the pager is F65 speaking the read model F42
+ * already returns, and every wire is F51 `bindTableControls` — so this function
+ * contributes markup and accessible names, and not one line of filtering,
+ * debouncing, sorting or teardown logic (ADR-0040).
+ *
+ * @template Row
+ * @param {{
+ *   controls: BsTableControls<Row>,
+ *   columns: readonly BsTableColumn<Row>[],
+ *   pipeline: import('./table.js').TablePipeline<Row>,
+ *   doc: Document,
+ *   table: Element,
+ *   thead: Element,
+ *   pageSize: number | undefined,
+ *   api: string,
+ * }} context
+ * @returns {{ element: Element, parts: BsTableControlParts, reflect: (view: any) => void, destroy: () => void }}
+ * @throws {TypeError} On a malformed control option.
+ */
+function buildControls(context) {
+  const { controls, columns, pipeline, doc, table, thead, pageSize, api } = context;
+  assertPlainObject(controls, 'options.controls', api);
+  const { filterRow, search, pageSize: pageSizeControl, pagination, toolbar } = controls;
+  const { formatStatus, debounceMs, headerClass, footerClass } = controls;
+
+  if (toolbar !== undefined && !isNode(toolbar)) {
+    throw new TypeError(`${api}: options.controls.toolbar must be a Node`);
+  }
+
+  const wrapper = doc.createElement('div');
+  applyClasses(wrapper, [], controls.class, api);
+
+  const header = doc.createElement('div');
+  applyClasses(
+    header,
+    ['d-flex', 'flex-wrap', 'justify-content-between', 'align-items-center', 'gap-2', 'mb-2'],
+    headerClass,
+    api,
+  );
+  const footer = doc.createElement('div');
+  applyClasses(
+    footer,
+    ['d-flex', 'flex-wrap', 'justify-content-between', 'align-items-center', 'gap-2', 'mt-2'],
+    footerClass,
+    api,
+  );
+
+  /** @type {BsTableControlParts} */
+  const parts = { filters: {} };
+  /** @type {import('./dom-table.js').TableBindings} */
+  const bindings = {};
+
+  if (toolbar !== undefined) header.append(toolbar);
+
+  if (search !== undefined && search !== false) {
+    const options = search === true ? {} : opts(search, 'options.controls.search', api);
+    const input = doc.createElement('input');
+    input.setAttribute('type', 'search');
+    // An accessible name has to be words, so — unlike a glyph — it cannot have a
+    // language-neutral default. English, and injectable (the F57/F65 precedent).
+    input.setAttribute('aria-label', options.label ?? 'Search');
+    if (options.placeholder !== undefined) {
+      input.setAttribute('placeholder', options.placeholder);
+    }
+    applyClasses(input, ['form-control', 'form-control-sm', 'w-auto'], options.class, api);
+    header.append(input);
+    bindings.search = input;
+    parts.search = input;
+  }
+
+  if (pageSizeControl !== undefined && pageSizeControl !== false) {
+    const options =
+      pageSizeControl === true ? {} : opts(pageSizeControl, 'options.controls.pageSize', api);
+    const select = doc.createElement('select');
+    select.setAttribute('aria-label', options.label ?? 'Rows per page');
+    applyClasses(select, ['form-select', 'form-select-sm', 'w-auto'], options.class, api);
+
+    const sizes = options.options ?? DEFAULT_PAGE_SIZES;
+    if (!Array.isArray(sizes) || sizes.some((n) => !Number.isInteger(n) || n <= 0)) {
+      throw new TypeError(`${api}: options.controls.pageSize.options must be positive integers`);
+    }
+    // The instance's own page size belongs in the list, or the select opens
+    // showing a value the table is not using.
+    const values = [...new Set(pageSize === undefined ? sizes : [...sizes, pageSize])].sort(
+      (a, b) => a - b,
+    );
+    for (const value of values) {
+      const option = doc.createElement('option');
+      option.setAttribute('value', String(value));
+      // Digits need no translation, so the visible text carries no language.
+      option.textContent = String(value);
+      if (value === pageSize) option.setAttribute('selected', '');
+      select.append(option);
+    }
+    if (options.allLabel !== undefined) {
+      // Only on request: "All" is a word, and shipping one would put English in
+      // every consumer's UI (NFR-21). An empty value stops paginating (F51).
+      const option = doc.createElement('option');
+      option.setAttribute('value', '');
+      option.textContent = options.allLabel;
+      if (pageSize === undefined) option.setAttribute('selected', '');
+      select.append(option);
+    }
+    header.append(select);
+    bindings.pageSize = select;
+    parts.pageSize = select;
+  }
+
+  if (filterRow !== undefined && filterRow !== false) {
+    const options = filterRow === true ? {} : opts(filterRow, 'options.controls.filterRow', api);
+    if (options.label !== undefined && typeof options.label !== 'function') {
+      throw new TypeError(`${api}: options.controls.filterRow.label must be a function`);
+    }
+    const row = doc.createElement('tr');
+    applyClasses(row, [], options.class, api);
+    /** @type {Record<string, Element>} */
+    const filters = {};
+    for (const column of columns) {
+      // A cell, not a header: these are controls, and a <th> here would attach
+      // itself to every data cell beneath as a header a screen reader announces.
+      const cell = doc.createElement('td');
+      // Only where the pipeline would accept one: a column that declared itself
+      // unfiltered gets an empty cell rather than a box that throws on use.
+      if (column.filterable !== false) {
+        const input = doc.createElement('input');
+        input.setAttribute('type', 'search');
+        input.setAttribute(
+          'aria-label',
+          options.label === undefined ? `Filter ${labelText(column)}` : options.label(column),
+        );
+        applyClasses(input, ['form-control', 'form-control-sm'], options.inputClass, api);
+        cell.append(input);
+        filters[column.key] = input;
+      }
+      row.append(cell);
+    }
+    thead.append(row);
+    bindings.filters = filters;
+    parts.filters = filters;
+  }
+
+  if (columns.some((column) => column.sortable === true)) {
+    // Scoped to our own thead, and matched on an attribute rather than a
+    // descendant combinator — a selector like `'thead th'` would also match the
+    // headers of a table nested in one of our cells.
+    bindings.sortHeaders = { root: thead, selector: 'th[data-sort-key]' };
+  }
+
+  let pager = /** @type {import('./bootstrap-composites.js').BsPaginationInstance | null} */ (null);
+  if (pagination !== undefined && pagination !== false) {
+    const options = pagination === true ? {} : opts(pagination, 'options.controls.pagination', api);
+    if (options.status !== false) {
+      const status = doc.createElement('span');
+      applyClasses(status, ['text-body-secondary', 'small'], options.statusClass, api);
+      footer.append(status);
+      bindings.pagination = { status };
+      parts.status = status;
+    }
+    // F65 owns prev/next *and* the numbered pages, so its bar is wired through
+    // its own `onPage` rather than through F51's prev/next pair — passing both
+    // would put two controls on one job.
+    pager = bsPagination(footer, {
+      ...options,
+      onPage: (page) => pipeline.setPage(page),
+    });
+    parts.pagination = pager.element;
+  }
+
+  wrapper.append(header, table, footer);
+  // A band nobody put anything in is a gap in the layout, not a container.
+  if (header.childNodes.length === 0) header.remove();
+  if (footer.childNodes.length === 0) footer.remove();
+
+  const unbind = bindTableControls(pipeline, bindings, {
+    // Explicitly scoped: `bindTableControls` resolves its root eagerly, so
+    // without this a server-side render with no ambient document would fail
+    // even though every binding here is already an element (NFR-20).
+    root: wrapper,
+    ...(debounceMs === undefined ? {} : { debounceMs }),
+    ...(formatStatus === undefined ? {} : { formatStatus }),
+  });
+
+  // The pager starts on its own defaults (one page, page one), and F51's
+  // reflection covers its own bindings and not this one — so without a first
+  // update the bar would claim a single page until the first command arrived.
+  pager?.update(pipeline.view());
+
+  return {
+    element: wrapper,
+    parts,
+    reflect: (view) => pager?.update(view),
+    destroy: () => {
+      unbind();
+      pager?.destroy();
+    },
+  };
+}
+
+/** Page sizes offered when the caller names none — digits, so no language. */
+const DEFAULT_PAGE_SIZES = /* @__PURE__ */ Object.freeze([10, 25, 50, 100]);
+
+/**
+ * Read a control's option object, rejecting anything that is not one.
+ *
+ * @template T
+ * @param {T} value
+ * @param {string} name
+ * @param {string} api
+ * @returns {T}
+ * @throws {TypeError} If the value is not a plain object.
+ */
+function opts(value, name, api) {
+  assertPlainObject(value, name, api);
+  return value;
+}
+
+/**
+ * A column's label as plain text, for an accessible name.
+ *
+ * @template Row
+ * @param {BsTableColumn<Row>} column
+ * @returns {string}
+ */
+function labelText(column) {
+  const { label } = column;
+  if (typeof label === 'string' && label !== '') return label;
+  const text = isNode(label) ? /** @type {Node} */ (label).textContent : null;
+  // An empty header is a layout choice, not a name: `aria-label="Filter "` tells
+  // a screen-reader user nothing, so the key — developer-facing, but a name —
+  // is the better answer.
+  return text === null || text === '' ? column.key : text;
 }
 
 /**

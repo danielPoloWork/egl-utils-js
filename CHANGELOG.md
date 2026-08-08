@@ -12,6 +12,18 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `bsTable` grows a `controls` option (ROADMAP 15.2, spec 04 F67, ADR-0040): a per-column
+  filter row, a global search box, a page-size select and an F65 pagination bar, wired to
+  the table's pipeline through F51 `bindTableControls` — public commands only, debounced
+  inputs, `aria-sort` on sortable headers, and one structural teardown. Every
+  human-readable string is injectable and none is rendered unasked: the status text is
+  digits, page sizes are digits, and an unpaginated option appears only if you name it.
+  The rendered nodes are exposed as `table.controls`.
+- `tablePipeline` accepts `operators` (spec 03 F42, amended): the F33 custom-token
+  vocabulary, now applied to every filter string the pipeline compiles — a column filter
+  and the global search alike. Previously only `locale` was forwarded, so a project's own
+  operators were unreachable from any string filter.
+
 - `bsTable` on `egl-utils-js/bootstrap` (ROADMAP 15.1, spec 04 F66, ADR-0039): a complete
   Bootstrap 5 table rendered from column descriptors over an F42 `tablePipeline` that stays
   **public** as `.pipeline` — filter, sort and page compose, commands re-render, and an

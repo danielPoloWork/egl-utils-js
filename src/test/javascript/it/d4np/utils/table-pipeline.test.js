@@ -467,3 +467,40 @@ describe('tablePipeline — observer surface', () => {
     expect(/** @type {any} */ (make()).emit).toBeUndefined();
   });
 });
+
+describe('tablePipeline — custom filter operators (roadmap 15.2, ADR-0040)', () => {
+  /** @returns {import('../../../../../main/javascript/it/d4np/utils/table.js').TablePipeline<any>} */
+  const make = () =>
+    tablePipeline({
+      source: [{ host: 'gw-01' }, { host: 'gw-02' }, { host: 'srv-01' }],
+      columns: [{ key: 'host', searchable: true }],
+      operators: { '~': (operand) => (value) => String(value).endsWith(operand) },
+    });
+
+  it('compiles a column filter with the caller vocabulary', () => {
+    const pipeline = make();
+    pipeline.setFilter('host', '~01');
+    expect(pipeline.view().rows.map((row) => row.host)).toEqual(['gw-01', 'srv-01']);
+  });
+
+  it('uses the same vocabulary for the global search', () => {
+    // One pipeline, one grammar: a token that works in a column box and not in
+    // the search box would be two grammars wearing one name.
+    const pipeline = make();
+    pipeline.setSearch('~02');
+    expect(pipeline.view().rows.map((row) => row.host)).toEqual(['gw-02']);
+  });
+
+  it('leaves the built-in grammar intact', () => {
+    const pipeline = make();
+    pipeline.setFilter('host', '^gw');
+    expect(pipeline.view().totalFiltered).toBe(2);
+  });
+
+  it('reads a plain substring the same as ever when no operators are declared', () => {
+    const pipeline = tablePipeline({ source: [{ host: 'gw-01' }], columns: [{ key: 'host' }] });
+    pipeline.setFilter('host', '~01');
+    // Without the vocabulary the token is just text, so nothing matches it.
+    expect(pipeline.view().totalFiltered).toBe(0);
+  });
+});

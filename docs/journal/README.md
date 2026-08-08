@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-08 — The controls, and M15 complete (roadmap 15.2)](2026/08/2026-08-08-bootstrap-table-controls.md)
 - [2026-08-08 — The table, and the door left in the facade (roadmap 15.1)](2026/08/2026-08-08-bootstrap-table-core.md)
 - [2026-08-08 — Composites that compose, and M14 complete (roadmap 14.2)](2026/08/2026-08-08-bootstrap-composites.md)
 - [2026-08-07 — The builder contract, set by the Bootstrap atoms (roadmap 14.1)](2026/08/2026-08-07-bootstrap-foundation.md)

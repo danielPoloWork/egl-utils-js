@@ -932,3 +932,84 @@ test.describe('/bootstrap — builders in a real engine (roadmap 14.1, F52-F60)'
     });
   }
 });
+
+test.describe('/bootstrap — bsTable end to end (roadmap 15.2, F66-F67)', () => {
+  // The scenario spec 04 §6 asks of this wave, in a real engine: populate, type a
+  // filter *command*, sort a header, page. jsdom can assert every one of these
+  // individually; what it cannot do is drive them through actual input events,
+  // real focus and a real debounce clock in sequence, which is where a control
+  // wired to the wrong command shows up.
+  test('populates, filters by command, sorts and pages through the controls', async ({ page }) => {
+    const built = await page.evaluate(() => {
+      const { bsTable } = window.egl.bootstrap;
+      const host = document.getElementById('host');
+      host.replaceChildren();
+
+      const rows = [
+        { host: 'gw-01', ip: '192.168.1.1' },
+        { host: 'gw-02', ip: '192.168.1.2' },
+        { host: 'srv-01', ip: '10.0.0.7' },
+        { host: 'srv-02', ip: '10.0.0.8' },
+      ];
+      const table = bsTable(host, {
+        columns: [
+          { key: 'host', label: 'Host', sortable: true, searchable: true },
+          { key: 'ip', label: 'Address', sortable: true },
+        ],
+        data: rows,
+        pageSize: 2,
+        controls: { filterRow: true, search: true, pageSize: true, pagination: true },
+      });
+      window.eglTable = table;
+
+      return {
+        rows: host.querySelectorAll('tbody tr').length,
+        status: table.controls.status.textContent,
+        // Two pages of two, so the bar carries prev, 1, 2, next.
+        pagers: table.controls.pagination.querySelectorAll('button').length,
+      };
+    });
+
+    expect(built.rows).toBe(2);
+    expect(built.status).toBe('1 / 2');
+    expect(built.pagers).toBe(4);
+
+    // A filter *command*, typed like a user types it — the box hands the text to
+    // the pipeline, which is why an operator works without the box knowing it.
+    const ipFilter = page.locator('#host thead tr:last-child td:nth-child(2) input');
+    await ipFilter.fill('^10.0');
+    await expect(page.locator('#host tbody tr')).toHaveCount(2);
+    await expect(page.locator('#host tbody tr td').first()).toHaveText('srv-01');
+    // One page now, so the pager and its status followed the derivation.
+    await expect(page.locator('#host .pagination .page-item')).toHaveCount(3);
+
+    // Sorting composes with the filter rather than discarding it.
+    await page.locator('#host th[data-sort-key="host"]').click();
+    await expect(page.locator('#host th[data-sort-key="host"]')).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    );
+    await page.locator('#host th[data-sort-key="host"]').click();
+    await expect(page.locator('#host th[data-sort-key="host"]')).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+    await expect(page.locator('#host tbody tr td').first()).toHaveText('srv-02');
+
+    // Clear the filter, then page: four rows, two pages, second page shows the tail.
+    await ipFilter.fill('');
+    await expect(page.locator('#host tbody tr')).toHaveCount(2);
+    await page.locator('#host .pagination button', { hasText: '2' }).click();
+    await expect(page.locator('#host tbody tr td').first()).toHaveText('gw-02');
+
+    const final = await page.evaluate(() => {
+      const table = window.eglTable;
+      const status = table.controls.status.textContent;
+      table.destroy();
+      return { status, left: document.getElementById('host').children.length };
+    });
+    expect(final.status).toBe('2 / 2');
+    // One structural teardown: the wrapper, its bands and every listener go together.
+    expect(final.left).toBe(0);
+  });
+});

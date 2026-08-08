@@ -779,8 +779,57 @@ bsTable(container, { columns, pipeline: existing });
 ```
 
 Filter, sort and page **compose** — applying one never discards the other — because the
-derivation belongs to the pipeline, not to the table. The filter row, search box and
-pagination controls that drive it from the page are F67, landing with roadmap 15.2.
+derivation belongs to the pipeline, not to the table.
+
+Add `controls` and the table grows the parts a user touches — a filter row, a search box,
+a page-size select and a pagination bar — wired to that same pipeline through its public
+commands only:
+
+```js
+const table = bsTable(container, {
+  columns,
+  data: hosts,
+  pageSize: 25,
+  controls: {
+    filterRow: true,   // one box per filterable column, speaking the F33 grammar
+    search: true,      // over the columns marked `searchable`
+    pageSize: true,    // digits; add `{ allLabel: 'All' }` for an unpaginated choice
+    pagination: true,  // the F65 numbered bar, plus a status element
+    toolbar: myButtons,
+  },
+});
+
+table.controls.search.focus();          // the control nodes are yours too
+table.controls.filters.ip.value = '^10.'; // …though the pipeline is the honest way in
+```
+
+Every human-readable string is injectable and nothing English is rendered unasked: the
+status text defaults to `'1 / 4'` (digits), page sizes are digits, and an "all" option
+exists only if you supply its word. Accessible names — `Search`, `Rows per page`,
+`Filter <column>` — do default to English, because a name has to be words; pass `label`
+to replace them.
+
+```js
+controls: {
+  search: { label: 'Cerca' },
+  filterRow: { label: (column) => `Filtra ${column.label}` },
+  pageSize: { options: [25, 50], allLabel: 'Tutte' },
+  formatStatus: (view) => `Pagina ${view.page} di ${view.pageCount}`,
+}
+```
+
+Custom filter operators belong to the pipeline, so a box speaks them without knowing they
+exist:
+
+```js
+const pipeline = tablePipeline({
+  source: hosts,
+  columns,
+  operators: { '~': (suffix) => (value) => String(value).endsWith(suffix) },
+});
+bsTable(container, { columns, pipeline, controls: { filterRow: true } });
+// typing `~01` in a filter box now matches gw-01 and srv-01
+```
 
 ## How this project is run
 

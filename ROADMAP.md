@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-08 — the table, and the door left in the facade`](docs/journal/2026/08/2026-08-08-bootstrap-table-core.md).
+  [`2026-08-08 — the controls, and M15 complete`](docs/journal/2026/08/2026-08-08-bootstrap-table-controls.md).
 
 ## Model & effort routing
 
@@ -215,7 +215,7 @@ The toolkit's flagship: a full Bootstrap table facade that composes the spec-03 
 and hides nothing (spec 04 §2, F66–F67).
 
 - [x] 15.1 bsTable core: column descriptors → thead/tbody rendered through one fragment, style flags, escaped cells with `format` hooks, delegated row events, and the owned `tablePipeline` exposed as `.pipeline` (spec 04 F66; NFR-17's pre-declared composing exception) _(route: frontier-reasoning/high — decision-heavy: the toolkit's flagship composition)_ — the borrowed pipeline, the per-column markup decision, the cell that refuses to guess and the measured budget fixed by [ADR-0039](docs/adr/0039-a-facade-with-a-door-and-what-the-table-costs.md)
-- [ ] 15.2 bsTable controls: per-column filter row speaking the F33 grammar with custom `{operators}`, global search, page-size select, F65 pagination and `aria-sort` headers wired through F51; toolbar slot; one-pass structural teardown (spec 04 F67, NFR-15/NFR-21) _(route: standard/high)_
+- [x] 15.2 bsTable controls: per-column filter row speaking the F33 grammar with custom `{operators}`, global search, page-size select, F65 pagination and `aria-sort` headers wired through F51; toolbar slot; one-pass structural teardown (spec 04 F67, NFR-15/NFR-21) _(route: standard/high)_ — the operator vocabulary moved onto the pipeline (spec 03 F42 amended), the pager wired through its own F65 hooks, and a ceiling that sat below its own parts corrected by [ADR-0040](docs/adr/0040-one-grammar-one-pager-and-a-ceiling-below-its-own-parts.md)
 
 
 ---
@@ -268,10 +268,10 @@ _Spec 02 is complete as of M10 (v0.3.0): F26–F41 all delivered._
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
 | §1 (03) | Objective & business context | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ✅ |
-| §2 (03) | Functional requirements F42–F51 | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ✅ |
+| §2 (03) | Functional requirements F42–F51 | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2, 15.2 | ✅ |
 | §3 (03) | Non-functional requirements | 11.1, 11.2, 12.1, 12.2, 13.1, 13.2, 13.3 | ✅ |
 | §4 (03) | Logical architecture | 11.1, 13.1, 13.2 | ✅ |
-| §5 (03) | Public interface | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ✅ |
+| §5 (03) | Public interface | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2, 15.2 | ✅ |
 | §6 (03) | Verification & test strategy | 11.1, 11.2, 11.3, 12.1, 12.2, 13.1, 13.2 | ✅ |
 
 _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
