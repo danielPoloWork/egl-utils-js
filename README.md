@@ -861,6 +861,58 @@ const overlay = bsLoadingOverlay({ message: 'Caricamento…', focus: { save: tru
 await overlay.wrap(() => api.get('/slow'));
 ```
 
+The navigation components go a step further: given items they **build** the markup,
+because a navigation component's accessibility lives in the ids joining its parts —
+`aria-controls`, `aria-labelledby`, `data-bs-target` — and ids are what hand-written
+templates get wrong. Every one is minted against the live document, so it cannot collide
+with markup that is already there:
+
+```js
+import { bsAccordion, bsTabs, bsNavbar, bsCollapse, bsDropdown } from 'egl-utils-js/bootstrap';
+
+// An accordion, with the aria-expanded / aria-controls / aria-labelledby triangle
+// written for you. Exclusivity is Bootstrap's own parent scoping.
+const faq = bsAccordion(container, {
+  items: [
+    { header: 'What is it?', body: 'A toolkit.', open: true },
+    { header: 'Why build the markup?', body: someNode },
+  ],
+});
+faq.open(1);
+faq.items[1].isShown();          // one F72 collapse wrapper per item
+
+// Tabs: role="tablist", each trigger bound to its panel both ways, panels reachable
+// from the keyboard. Arrow-key roving stays Bootstrap's Tab plugin.
+const tabs = bsTabs(container, {
+  tabs: [
+    { label: 'Overview', pane: 'Escaped by default.', active: true },
+    { label: 'Details', pane: detailsNode },
+  ],
+  kind: 'pills',
+});
+tabs.select(1);
+
+// A navbar composes the two: its toggler is a collapse, each `children` a dropdown,
+// and both are handed back rather than hidden.
+const nav = bsNavbar(document.body, {
+  brand: 'Acme',
+  items: [
+    { label: 'Home', href: '/', active: true },       // gets aria-current="page"
+    { label: 'More', children: [{ label: 'Settings', href: '/settings' }] },
+  ],
+});
+nav.collapse.hide();
+```
+
+Given no items, each manager **adopts** the markup already on the page instead — same
+wiring, same teardown, and `destroy()` removes only what it built:
+
+```js
+bsAccordion(document.querySelector('#faq'));            // adopts .accordion-item markup
+bsCollapse(panel, { toggler });                          // aria-expanded kept truthful
+bsDropdown(document.querySelector('#actions')).update(); // reposition after a reflow
+```
+
 If you bundle rather than load Bootstrap from a `<script>`, there is no
 `window.bootstrap` to find — pass it once:
 

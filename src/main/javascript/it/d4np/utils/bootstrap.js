@@ -66,3 +66,9 @@ export { bsTable } from './bootstrap-table.js';
 // builders above nothing: no import, no load-time contact, no peer required to
 // use this entry.
 export { bsLoadingOverlay, bsModal, bsToast } from './bootstrap-behaviors.js';
+
+// The navigation set (spec 04 §2 items F72-F76, ADR-0042). Two of these wrap;
+// three build their own markup, because a navigation component's accessibility
+// lives in the ids joining its parts, and ids are what hand-written templates
+// get wrong.
+export { bsAccordion, bsCollapse, bsDropdown, bsNavbar, bsTabs } from './bootstrap-nav.js';

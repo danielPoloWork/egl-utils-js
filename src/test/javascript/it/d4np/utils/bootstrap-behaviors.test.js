@@ -308,6 +308,33 @@ describe('F69 — bsToast', () => {
     expect(el.querySelector('.toast-body b')?.textContent).toBe('hi');
   });
 
+  it('builds in the container’s own document, and in an explicit one when named', () => {
+    // The convention every container-taking manager follows (bsTable,
+    // bsPagination): a container inside an iframe must not be filled with nodes
+    // from the top document.
+    const { namespace } = makeBootstrap();
+    // A second document in the same realm — the shape a server-side render or an
+    // iframe presents, without an iframe's asynchronous document swap.
+    const foreign = document.implementation.createHTMLDocument('other');
+    const inFrame = foreign.createElement('div');
+    foreign.body.append(inFrame);
+
+    const implicit = bsToast(inFrame, { bootstrap: namespace }).show('hi');
+    expect(implicit.ownerDocument).toBe(foreign);
+
+    // Naming the container's own document is the same thing, explicitly. Naming
+    // a *different* one is moot rather than useful: `append` adopts the node
+    // into the container's document, so the container always wins — which is why
+    // the implicit default is the container's and not the ambient one.
+    const explicit = bsToast(inFrame, {
+      bootstrap: namespace,
+      document: foreign,
+    }).show('hi');
+    expect(explicit.ownerDocument).toBe(foreign);
+
+    expect(() => bsToast(container(), { document: 'nope' })).toThrow(TypeError);
+  });
+
   it('rejects a non-Element container and malformed timing options', () => {
     expect(() => bsToast('#host')).toThrow(TypeError);
     expect(() => bsToast(container(), { autohide: 'yes' })).toThrow(TypeError);

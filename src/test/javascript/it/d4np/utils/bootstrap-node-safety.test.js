@@ -47,6 +47,7 @@ describe('NFR-20 — the entry imports safely with no DOM', () => {
   it('exposes the whole surface built so far', () => {
     expect(Object.keys(bootstrap).sort()).toEqual([
       'bootstrapIconsSet',
+      'bsAccordion',
       'bsAlert',
       'bsBadge',
       'bsBreadcrumb',
@@ -54,15 +55,19 @@ describe('NFR-20 — the entry imports safely with no DOM', () => {
       'bsButtonGroup',
       'bsCard',
       'bsCloseButton',
+      'bsCollapse',
+      'bsDropdown',
       'bsIcon',
       'bsListGroup',
       'bsLoadingOverlay',
       'bsModal',
+      'bsNavbar',
       'bsPagination',
       'bsPlaceholder',
       'bsProgress',
       'bsSpinner',
       'bsTable',
+      'bsTabs',
       'bsToast',
       'materialIconsSet',
     ]);

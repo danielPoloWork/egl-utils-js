@@ -1170,3 +1170,126 @@ test.describe('the Bootstrap behaviour wrappers (roadmap 16.1)', () => {
     expect(left).toBe(0);
   });
 });
+
+// Roadmap 16.2 (spec 04 §2 items F72-F76, NFR-18/NFR-21). The jsdom suites prove
+// the markup and the ARIA relationships; what only a real engine can settle is
+// that Bootstrap's own plugins accept that markup — a tab panel that Bootstrap
+// will not switch to, or a collapse whose transition never fires, looks correct
+// in a fake DOM and is broken on the page.
+test.describe('the Bootstrap navigation set (roadmap 16.2)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addScriptTag({ url: '/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js' });
+    await page.waitForFunction(() => typeof window.bootstrap === 'object');
+  });
+
+  test('a collapse toggles through its own toggler, and aria follows', async ({ page }) => {
+    await page.evaluate(() => {
+      document.getElementById('host').innerHTML = `
+        <button id="toggle" type="button">Details</button>
+        <div id="panel" class="collapse"><p>Hidden until asked for.</p></div>`;
+      window.eglCollapse = window.egl.bootstrap.bsCollapse(document.getElementById('panel'), {
+        toggler: document.getElementById('toggle'),
+      });
+    });
+
+    const toggler = page.locator('#toggle');
+    await expect(toggler).toHaveAttribute('aria-controls', 'panel');
+    await expect(toggler).toHaveAttribute('aria-expanded', 'false');
+
+    await toggler.click();
+    // Bootstrap's own transition put the class there.
+    await expect(page.locator('#panel')).toHaveClass(/show/);
+    await expect(toggler).toHaveAttribute('aria-expanded', 'true');
+
+    await toggler.click();
+    await expect(page.locator('#panel')).not.toHaveClass(/show/);
+    await expect(toggler).toHaveAttribute('aria-expanded', 'false');
+
+    await page.evaluate(() => window.eglCollapse.destroy());
+  });
+
+  test('an accordion opens one item at a time, through Bootstrap parent scoping', async ({
+    page,
+  }) => {
+    await page.evaluate(() => {
+      window.eglAccordion = window.egl.bootstrap.bsAccordion(document.getElementById('host'), {
+        items: [
+          { header: 'First', body: 'One', open: true },
+          { header: 'Second', body: 'Two' },
+        ],
+      });
+    });
+
+    const panes = page.locator('#host .accordion-collapse');
+    await expect(panes.nth(0)).toHaveClass(/show/);
+
+    // Opening the second closes the first: exclusivity is Bootstrap's `parent`,
+    // not a second implementation of it.
+    await page.locator('#host .accordion-button').nth(1).click();
+    await expect(panes.nth(1)).toHaveClass(/show/);
+    await expect(panes.nth(0)).not.toHaveClass(/show/);
+    await expect(page.locator('#host .accordion-button').nth(1)).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+
+    await page.evaluate(() => window.eglAccordion.destroy());
+    await expect(page.locator('#host .accordion')).toHaveCount(0);
+  });
+
+  test('tabs switch panels, and Bootstrap accepts the built markup', async ({ page }) => {
+    await page.evaluate(() => {
+      window.eglTabs = window.egl.bootstrap.bsTabs(document.getElementById('host'), {
+        tabs: [
+          { label: 'Overview', pane: 'The overview.', active: true },
+          { label: 'Details', pane: 'The details.' },
+        ],
+      });
+    });
+
+    const triggers = page.locator('#host [role="tab"]');
+    const panes = page.locator('#host [role="tabpanel"]');
+    await expect(panes.nth(0)).toHaveClass(/active/);
+
+    // Clicked, not driven: this exercises Bootstrap's own data-API against the
+    // ids and targets this library minted.
+    await triggers.nth(1).click();
+    await expect(panes.nth(1)).toHaveClass(/active/);
+    await expect(triggers.nth(1)).toHaveAttribute('aria-selected', 'true');
+    await expect(triggers.nth(0)).toHaveAttribute('aria-selected', 'false');
+
+    // And driven, through select().
+    await page.evaluate(() => window.eglTabs.select(0));
+    await expect(panes.nth(0)).toHaveClass(/active/);
+
+    await page.evaluate(() => window.eglTabs.destroy());
+  });
+
+  test('a navbar opens its region and its dropdown', async ({ page }) => {
+    await page.evaluate(() => {
+      window.eglNavbar = window.egl.bootstrap.bsNavbar(document.getElementById('host'), {
+        brand: 'Acme',
+        items: [
+          { label: 'Home', href: '#home', active: true },
+          { label: 'More', children: [{ label: 'Settings', href: '#settings' }] },
+        ],
+      });
+    });
+
+    const toggler = page.locator('#host .navbar-toggler');
+    const region = page.locator('#host .navbar-collapse');
+    await expect(toggler).toHaveAttribute('aria-controls', await region.getAttribute('id'));
+
+    await toggler.click();
+    await expect(region).toHaveClass(/show/);
+    await expect(toggler).toHaveAttribute('aria-expanded', 'true');
+
+    // The dropdown is managed, so Popper positions a real menu.
+    await page.locator('#host .dropdown-toggle').click();
+    await expect(page.locator('#host .dropdown-menu')).toHaveClass(/show/);
+    await expect(page.locator('#host .nav-link').first()).toHaveAttribute('aria-current', 'page');
+
+    await page.evaluate(() => window.eglNavbar.destroy());
+    await expect(page.locator('#host .navbar')).toHaveCount(0);
+  });
+});

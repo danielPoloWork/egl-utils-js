@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-08 — Ids are the accessibility (roadmap 16.2)](2026/08/2026-08-08-bootstrap-nav.md)
 - [2026-08-08 — A peer looked up, not imported (roadmap 16.1)](2026/08/2026-08-08-bootstrap-behaviors-core.md)
 - [2026-08-08 — The controls, and M15 complete (roadmap 15.2)](2026/08/2026-08-08-bootstrap-table-controls.md)
 - [2026-08-08 — The table, and the door left in the facade (roadmap 15.1)](2026/08/2026-08-08-bootstrap-table-core.md)

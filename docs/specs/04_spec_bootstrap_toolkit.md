@@ -266,7 +266,16 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   accordion manager: with `{items}` (`{header, body, open?}` — both escaped-or-node per
   F52) it **builds** the full accordion structure with unique ids and correct
   `aria-expanded`/`aria-controls`; without, it adopts existing markup; `open(i)`,
-  `close(i)`, `on(...)`, `destroy()`; `alwaysOpen` maps to the parent-scoping behavior
+  `close(i)`, `on(...)`, `destroy()`; `alwaysOpen` maps to the parent-scoping behavior.
+  **Clarified in 16.2**
+  ([ADR-0042](../adr/0042-ids-are-the-accessibility-and-a-ceiling-derived-not-guessed.md),
+  applying to F73, F75 and F76 alike): "unique" means minted against the **live document**
+  plus the ids already handed out in the same build — never a module-level counter, which
+  two copies of the library on one page would restart and collide over, and never a random
+  suffix where an exact answer exists. Each item is an F72 `bsCollapse`, so exclusivity is
+  Bootstrap's own `parent` rather than a second implementation; `destroy()` removes what
+  the manager built and leaves what it adopted; and `on(...)` subscribes on the accordion,
+  since collapse events bubble
 - F74 bsDropdown(toggler, {bootstrap?, autoClose?, signal?}) — dropdown wrapper:
   `show/hide/toggle/update`, `on(...)`; `destroy()` disposes and unbinds
 - F75 bsTabs(container, {tabs?, kind?, fade?, bootstrap?, signal?}) — navs & tabs
@@ -356,12 +365,19 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   this wave written below its own parts (ADR-0038's `bsBreadcrumb`, ADR-0040's `bsTable`),
   so the rule is now stated rather than rediscovered: a ceiling for a composing symbol is
   derived from the rows of what it composes, never estimated**;
-  `bsAccordion`/`bsTabs`/`bsNavbar`/`bsCarousel` ≤ 1.5 kB; every remaining
-  behavior wrapper ≤ 1.25 kB — **confirmed right for its class in 16.1: `bsModal`, which
-  wraps a behaviour and builds nothing, measures 1060 B. A wrapper that also *builds*
-  takes a composing row instead: `bsToast` ≤ 2.32 kB (measured 2170 B), reclassified by
-  ADR-0041 because it composes `bsCloseButton` and assembles a node, which is a different
-  job from wrapping**. The **root entry is not touched by this wave** (spec 01
+  `bsCarousel` ≤ 1.5 kB; `bsAccordion` ≤ **2.75 kB**, `bsTabs` ≤ **2.25 kB** and
+  `bsNavbar` ≤ **3 kB** — **all three amended in 16.2 from 1.5 kB by
+  [ADR-0042](../adr/0042-ids-are-the-accessibility-and-a-ceiling-derived-not-guessed.md),
+  and the first ceilings *derived* rather than re-estimated: `bsAccordion` (measured
+  2490 B) composes `bsCollapse` at 1380 B, so the old ceiling sat 120 B below one of its
+  parts; `bsNavbar` (measured 2770 B) composes `bsCollapse` and `bsDropdown` — 2540 B of
+  parts, 230 B of its own, predicted before measuring**; every remaining
+  behavior wrapper ≤ 1.25 kB — **confirmed right for its class twice: `bsModal`, which
+  wraps a behaviour and builds nothing, measures 1060 B (1180 B from 16.2, the shared
+  lifecycle helper's price), and `bsDropdown` 1160 B. A wrapper that also *builds* or
+  *wires* takes its own row instead: `bsToast` ≤ 2.32 kB (measured 2170 B, composes
+  `bsCloseButton`, ADR-0041) and `bsCollapse` ≤ 1.5 kB (measured 1380 B, the toggler's
+  aria sync and id minting, ADR-0042)**. The **root entry is not touched by this wave** (spec 01
   NFR-01 stays frozen); `/errors` grows 34 B for `PeerMissingError` (measured 351 B, well
   inside its 0.4 kB spec-02 clause) and no other entry's budget moves.
 - NFR-18 Optional-peer containment: `bootstrap` (and transitively `@popperjs/core`) is
