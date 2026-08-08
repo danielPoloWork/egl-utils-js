@@ -94,7 +94,7 @@ const REMEDY =
  * @throws {PeerMissingError} If no namespace is reachable, or the one that is
  *   does not provide `name`.
  */
-function resolveComponent(options, api, name) {
+export function resolveComponent(options, api, name) {
   const injected = options.bootstrap;
   if (injected !== undefined && (typeof injected !== 'object' || injected === null)) {
     throw new TypeError(`${api}: options.bootstrap must be the Bootstrap namespace object`);
@@ -141,7 +141,7 @@ function resolveComponent(options, api, name) {
  * @param {Record<string, unknown>} config
  * @returns {BootstrapInstanceLike}
  */
-function instantiate(component, element, config) {
+export function instantiate(component, element, config) {
   if (typeof component.getOrCreateInstance === 'function') {
     return component.getOrCreateInstance(element, config);
   }
@@ -155,7 +155,7 @@ function instantiate(component, element, config) {
  * @param {'show' | 'hide' | 'toggle' | 'dispose'} method
  * @returns {void}
  */
-function invoke(instance, method) {
+export function invoke(instance, method) {
   const fn = instance[method];
   if (typeof fn === 'function') fn.call(instance);
 }
@@ -173,7 +173,7 @@ function invoke(instance, method) {
  * @returns {string}
  * @throws {TypeError} If `event` is not a non-empty string.
  */
-function qualifyEvent(event, suffix, api) {
+export function qualifyEvent(event, suffix, api) {
   if (typeof event !== 'string' || event === '') {
     throw new TypeError(`${api}: event must be a non-empty string`);
   }
@@ -188,11 +188,137 @@ function qualifyEvent(event, suffix, api) {
  * @returns {void}
  * @throws {TypeError} If `signal` is present and is not an `AbortSignal`.
  */
-function assertSignal(options, api) {
+export function assertSignal(options, api) {
   const { signal } = options;
   if (signal !== undefined && !isAbortSignal(signal)) {
     throw new TypeError(`${api}: options.signal must be an AbortSignal`);
   }
+}
+
+/**
+ * @typedef {object} BehaviourWrapper
+ * @property {() => void} show
+ * @property {() => void} hide
+ * @property {() => void} toggle
+ * @property {(event: string, handler: (event: Event) => void) => () => void} on
+ * @property {() => BootstrapInstanceLike} instance
+ * @property {Element} element
+ * @property {() => boolean} isShown
+ * @property {() => void} destroy
+ */
+
+/**
+ * The lifecycle every one-element behaviour wrapper needs, in one place.
+ *
+ * `bsModal` wrote this shape first (ADR-0041); by the fifth component it was
+ * either one helper or five copies of a `destroy` whose ordering is easy to get
+ * subtly wrong. What it owns: lazy resolution through {@link resolveComponent},
+ * subscriptions that return an idempotent unsubscribe, open/closed state read
+ * from the DOM rather than from our own calls — Escape and the data-API dismiss
+ * both act without us — and a `destroy` that, on a component still open, hides
+ * first and disposes once the closing event arrives, because disposing an open
+ * component strands Bootstrap's backdrop and its body class.
+ *
+ * @param {Element} target
+ * @param {PeerOption & { signal?: AbortSignal }} options
+ * @param {object} spec
+ * @param {string} spec.api - Public function name, for messages.
+ * @param {string} spec.component - Name on the namespace, e.g. `'Collapse'`.
+ * @param {string} spec.ns - Event suffix, e.g. `'bs.collapse'`.
+ * @param {Record<string, unknown>} [spec.config] - Passed to the constructor.
+ * @param {boolean} [spec.hideBeforeDispose=true] - Whether an open component
+ *   must be closed before it is disposed. False for `Tab`, whose "shown" means a
+ *   panel is selected rather than an overlay is up.
+ * @returns {BehaviourWrapper}
+ */
+export function behaviourWrapper(target, options, spec) {
+  const { api, component, ns, config = {}, hideBeforeDispose = true } = spec;
+
+  /** @type {BootstrapInstanceLike | undefined} */
+  let resolved;
+  /** @type {Array<() => void>} */
+  const subscriptions = [];
+  let destroyed = false;
+  let shown = false;
+  const { signal } = options;
+
+  function instance() {
+    if (destroyed) throw new TypeError(`${api}: this wrapper has been destroyed`);
+    if (resolved === undefined) {
+      resolved = instantiate(resolveComponent(options, api, component), target, config);
+    }
+    return resolved;
+  }
+
+  const onShown = () => {
+    shown = true;
+  };
+  const onHidden = () => {
+    shown = false;
+  };
+  target.addEventListener(`shown.${ns}`, onShown);
+  target.addEventListener(`hidden.${ns}`, onHidden);
+
+  /**
+   * @param {string} event
+   * @param {(event: Event) => void} handler
+   * @returns {() => void}
+   */
+  function on(event, handler) {
+    if (destroyed) throw new TypeError(`${api}: this wrapper has been destroyed`);
+    if (typeof handler !== 'function') {
+      throw new TypeError(`${api}: handler must be a function`);
+    }
+    const name = qualifyEvent(event, ns, api);
+    target.addEventListener(name, handler);
+    let off = () => {
+      target.removeEventListener(name, handler);
+      off = () => {};
+    };
+    const unsubscribe = () => off();
+    subscriptions.push(unsubscribe);
+    return unsubscribe;
+  }
+
+  function destroy() {
+    if (destroyed) return;
+    destroyed = true;
+    for (const unsubscribe of subscriptions) unsubscribe();
+    subscriptions.length = 0;
+    target.removeEventListener(`shown.${ns}`, onShown);
+    target.removeEventListener(`hidden.${ns}`, onHidden);
+    if (signal !== undefined) signal.removeEventListener('abort', destroy);
+
+    const current = resolved;
+    resolved = undefined;
+    if (current === undefined) return;
+    if (!shown || !hideBeforeDispose) {
+      invoke(current, 'dispose');
+      return;
+    }
+    const disposeWhenClosed = () => {
+      target.removeEventListener(`hidden.${ns}`, disposeWhenClosed);
+      invoke(current, 'dispose');
+    };
+    target.addEventListener(`hidden.${ns}`, disposeWhenClosed);
+    invoke(current, 'hide');
+  }
+
+  if (signal !== undefined) {
+    if (signal.aborted) destroyed = true;
+    else signal.addEventListener('abort', destroy);
+  }
+
+  return {
+    show: () => invoke(instance(), 'show'),
+    hide: () => invoke(instance(), 'hide'),
+    toggle: () => invoke(instance(), 'toggle'),
+    on,
+    instance,
+    element: target,
+    isShown: () => shown,
+    destroy,
+  };
 }
 
 /**
@@ -279,7 +405,14 @@ export function bsToast(container, options = {}) {
     throw new TypeError(`${api}: options.delay must be a non-negative finite number`);
   }
 
-  const doc = resolveDocument(options, api);
+  // The container's own document, with `options.document` as an override —
+  // matching every other container-taking manager (`bsTable`, `bsPagination`).
+  // Resolving the ambient one instead would build a toast in the top document
+  // for a container living in an iframe.
+  const doc =
+    options.document === undefined
+      ? /** @type {Document} */ (container.ownerDocument)
+      : resolveDocument(options, api);
   /** @type {Set<{ element: Element, instance: BootstrapInstanceLike, cleanup: () => void }>} */
   const live = new Set();
   let destroyed = false;
@@ -459,98 +592,29 @@ export function bsModal(target, options = {}) {
   assertPlainObject(options, 'options', api);
   assertSignal(options, api);
 
-  const { backdrop, keyboard, focus, signal } = options;
+  const { backdrop, keyboard, focus } = options;
   /** @type {Record<string, unknown>} */
   const config = {};
   if (backdrop !== undefined) config.backdrop = backdrop;
   if (keyboard !== undefined) config.keyboard = keyboard;
   if (focus !== undefined) config.focus = focus;
 
-  /** @type {BootstrapInstanceLike | undefined} */
-  let resolved;
-  /** @type {Array<() => void>} */
-  const subscriptions = [];
-  let destroyed = false;
-  let shown = false;
-
-  function instance() {
-    if (destroyed) throw new TypeError(`${api}: this wrapper has been destroyed`);
-    if (resolved === undefined) {
-      resolved = instantiate(resolveComponent(options, api, 'Modal'), target, config);
-    }
-    return resolved;
-  }
-
-  // Tracked from the DOM rather than from our own calls: Bootstrap's data-API
-  // dismiss button and the Escape key both close a dialog without going through
-  // this wrapper, and `destroy` needs the truth, not our half of it.
-  const onShown = () => {
-    shown = true;
-  };
-  const onHidden = () => {
-    shown = false;
-  };
-  target.addEventListener('shown.bs.modal', onShown);
-  target.addEventListener('hidden.bs.modal', onHidden);
-
-  /**
-   * @param {string} event
-   * @param {(event: Event) => void} handler
-   * @returns {() => void}
-   */
-  function on(event, handler) {
-    if (destroyed) throw new TypeError(`${api}: this wrapper has been destroyed`);
-    if (typeof handler !== 'function') {
-      throw new TypeError(`${api}: handler must be a function`);
-    }
-    const name = qualifyEvent(event, 'bs.modal', api);
-    target.addEventListener(name, handler);
-    let off = () => {
-      target.removeEventListener(name, handler);
-      off = () => {};
-    };
-    const unsubscribe = () => off();
-    subscriptions.push(unsubscribe);
-    return unsubscribe;
-  }
-
-  function destroy() {
-    if (destroyed) return;
-    destroyed = true;
-    for (const unsubscribe of subscriptions) unsubscribe();
-    subscriptions.length = 0;
-    target.removeEventListener('shown.bs.modal', onShown);
-    target.removeEventListener('hidden.bs.modal', onHidden);
-    if (signal !== undefined) signal.removeEventListener('abort', destroy);
-
-    const current = resolved;
-    resolved = undefined;
-    if (current === undefined) return;
-    if (!shown) {
-      invoke(current, 'dispose');
-      return;
-    }
-    const disposeWhenClosed = () => {
-      target.removeEventListener('hidden.bs.modal', disposeWhenClosed);
-      invoke(current, 'dispose');
-    };
-    target.addEventListener('hidden.bs.modal', disposeWhenClosed);
-    invoke(current, 'hide');
-  }
-
-  if (signal !== undefined) {
-    if (signal.aborted) destroyed = true;
-    else signal.addEventListener('abort', destroy);
-  }
-
+  const wrapper = behaviourWrapper(target, options, {
+    api,
+    component: 'Modal',
+    ns: 'bs.modal',
+    config,
+  });
+  // Spelled out rather than spread: F70 froze this surface, and `isShown` — which
+  // the shared helper also offers — is not part of it.
   return {
-    show: () => invoke(instance(), 'show'),
-    hide: () => invoke(instance(), 'hide'),
-    toggle: () => invoke(instance(), 'toggle'),
-    on,
-    instance,
-    element: target,
-    destroy,
+    show: wrapper.show,
+    hide: wrapper.hide,
+    toggle: wrapper.toggle,
+    on: wrapper.on,
+    instance: wrapper.instance,
+    element: wrapper.element,
+    destroy: wrapper.destroy,
   };
 }
 

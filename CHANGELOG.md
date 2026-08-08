@@ -12,6 +12,19 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- The Bootstrap navigation set on `egl-utils-js/bootstrap` (ROADMAP 16.2, spec 04 F72–F76,
+  ADR-0042): `bsCollapse`, `bsAccordion`, `bsDropdown`, `bsTabs` and `bsNavbar`. Two wrap
+  markup you already have; three **build** it when given items — because a navigation
+  component's accessibility lives in the ids joining its parts, and those are what
+  hand-written templates get wrong. Every id is minted against the live document (and
+  against the ids already handed out in the same build), so it can collide neither with
+  the page nor with itself. `bsCollapse` keeps a toggler's `aria-expanded` truthful and,
+  unlike the data-API, can be torn down; `bsAccordion` composes one collapse per item and
+  leaves exclusivity to Bootstrap's own parent scoping; `bsTabs` writes the
+  tablist/tab/tabpanel triple both ways and leaves arrow-key roving to Bootstrap;
+  `bsNavbar` composes the other two and hands both back. Given no items, each manager
+  adopts existing markup instead, and `destroy()` removes only what it built.
+
 - `bsToast`, `bsModal` and `bsLoadingOverlay` on `egl-utils-js/bootstrap` (ROADMAP 16.1,
   spec 04 F68–F71, ADR-0041): the first wrappers over Bootstrap's own JavaScript, which is
   an **optional peer** this entry never imports. A wrapper resolves it when you first use
@@ -48,6 +61,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   being stringified into the page.
 
 ### Changed
+
+- `bsToast` now builds in the **container's own document** rather than the ambient one,
+  matching every other container-taking manager (`bsTable`, `bsPagination`). For a
+  container inside an iframe the old behaviour built nodes in the top document. Corrected
+  before the release that would have shipped it (ROADMAP 16.2, ADR-0042).
 
 ### Deprecated
 

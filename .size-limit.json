@@ -178,9 +178,9 @@
     "limit": "1.03 kB"
   },
   {
-    "name": "/bootstrap - full import (NFR-17: 17 managers + both presets, measured 15083 B once the first three behaviour wrappers landed; entry clause 25 kB per ADR-0041, sized for the whole M16 catalogue rather than amended once per PR)",
+    "name": "/bootstrap - full import (NFR-17: 22 managers + both presets, measured 17334 B with the navigation set landed; entry clause 25 kB per ADR-0041)",
     "path": "dist/esm/bootstrap.js",
-    "limit": "16.2 kB"
+    "limit": "18.6 kB"
   },
   {
     "name": "single: bsIcon (NFR-17 <= 1.2 kB per ADR-0037; measured 865 B)",
@@ -279,16 +279,46 @@
     "limit": "2.32 kB"
   },
   {
-    "name": "single: bsModal (NFR-17 <= 1.25 kB behaviour-wrapper row; measured 1060 B - the clause is right for a wrapper that builds nothing)",
+    "name": "single: bsModal (NFR-17 <= 1.25 kB behaviour-wrapper row; measured 1180 B - 52 B more than in 16.1, the price of the shared lifecycle helper that replaced five copies of it, ADR-0042; still inside the clause)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsModal }",
-    "limit": "1.13 kB"
+    "limit": "1.25 kB"
   },
   {
     "name": "single: bsLoadingOverlay (2.73 kB - NFR-17 composing row amended from 1.75 kB by ADR-0041; measured 2550 B, of which loadingOverlay 958 B + bsSpinner 778 B are composed parts)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsLoadingOverlay }",
     "limit": "2.73 kB"
+  },
+  {
+    "name": "single: bsCollapse (1.48 kB - NFR-17 wiring row amended from 1.25 kB by ADR-0042; measured 1380 B, the toggler's aria sync and id minting being what a bare wrapper does not carry)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsCollapse }",
+    "limit": "1.48 kB"
+  },
+  {
+    "name": "single: bsAccordion (2.66 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2490 B, of which bsCollapse 1380 B is a composed part)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsAccordion }",
+    "limit": "2.66 kB"
+  },
+  {
+    "name": "single: bsDropdown (NFR-17 <= 1.25 kB behaviour-wrapper row; measured 1160 B - the clause holds for a wrapper that only wraps)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsDropdown }",
+    "limit": "1.24 kB"
+  },
+  {
+    "name": "single: bsTabs (2.19 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2050 B, the tablist/panel ARIA wiring being the bulk)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsTabs }",
+    "limit": "2.19 kB"
+  },
+  {
+    "name": "single: bsNavbar (2.96 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2770 B against 2540 B of composed parts (bsCollapse 1380 + bsDropdown 1160) - 230 B of its own)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsNavbar }",
+    "limit": "2.96 kB"
   },
   {
     "name": "/logging - full import (NFR-08: measured 1390 B, clause 1.6 kB)",
