@@ -600,3 +600,345 @@ describe('bsTable — argument contracts', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Controls (roadmap 15.2, spec 04 F67, ADR-0040).
+//
+// The claim under test is that these are *wires*, not a second implementation:
+// the inputs speak the F33 grammar because they hand their text to the pipeline
+// untouched, sorting and debouncing are F51's, the pager is F65's, and teardown
+// is one pass over all of it.
+// ---------------------------------------------------------------------------
+
+/** @param {Element} root @param {number} column @returns {HTMLInputElement} */
+function filterInput(root, column) {
+  return /** @type {HTMLInputElement} */ (
+    root.querySelector(`thead tr:last-child td:nth-child(${column}) input`)
+  );
+}
+
+describe('bsTable — controls (F67)', () => {
+  it('renders nothing extra when no controls were asked for', () => {
+    const table = bsTable(host(), { columns: [...COLUMNS], data: HOSTS });
+    expect(table.element).toBe(table.table);
+    expect(table.controls).toBeUndefined();
+    expect(table.table.querySelectorAll('thead tr')).toHaveLength(1);
+  });
+
+  it('wraps the table and exposes the control nodes', () => {
+    const container = host();
+    const table = bsTable(container, {
+      columns: [...COLUMNS],
+      data: HOSTS,
+      pageSize: 2,
+      controls: { filterRow: true, search: true, pageSize: true, pagination: true },
+    });
+
+    expect(table.element).not.toBe(table.table);
+    expect(table.element.parentElement).toBe(container);
+    expect(table.element.contains(table.table)).toBe(true);
+    expect(table.controls?.search?.getAttribute('aria-label')).toBe('Search');
+    expect(table.controls?.pageSize?.getAttribute('aria-label')).toBe('Rows per page');
+    expect(table.controls?.pagination?.tagName).toBe('NAV');
+    expect(Object.keys(table.controls?.filters ?? {})).toEqual(['host', 'ip']);
+  });
+
+  it('filters through the pipeline in the F33 grammar, debounced', () => {
+    vi.useFakeTimers();
+    const table = bsTable(host(), {
+      columns: [...COLUMNS],
+      data: HOSTS,
+      controls: { filterRow: true },
+    });
+
+    const input = filterInput(table.element, 2); // the ip column
+    input.value = '^192.168';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Debounced: nothing has happened yet.
+    expect(bodyText(table.table)).toHaveLength(3);
+    vi.advanceTimersByTime(200);
+    expect(bodyText(table.table).map((row) => row[0])).toEqual(['gw-01', 'gw-02']);
+
+    // And the grammar is the pipeline's, not a reimplementation: an operator the
+    // input never parses still works.
+    input.value = '=empty';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    vi.advanceTimersByTime(200);
+    expect(bodyText(table.table)).toHaveLength(0);
+  });
+
+  it('passes a custom operator straight through to the pipeline', () => {
+    vi.useFakeTimers();
+    // The operator lives on the pipeline the caller built; the input only ever
+    // hands over text, which is why it needs no knowledge of the grammar.
+    const pipeline = tablePipeline({
+      source: HOSTS,
+      columns: [{ key: 'host' }, { key: 'ip' }],
+      operators: { '~': (expression) => (value) => String(value).endsWith(expression) },
+    });
+    const table = bsTable(host(), {
+      columns: [...COLUMNS],
+      pipeline,
+      controls: { filterRow: true },
+    });
+
+    const input = filterInput(table.element, 1);
+    input.value = '~01';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    vi.advanceTimersByTime(200);
+    expect(bodyText(table.table).map((row) => row[0])).toEqual(['gw-01', 'srv-01']);
+  });
+
+  it('searches, and leaves an unfilterable column without a box', () => {
+    vi.useFakeTimers();
+    const table = bsTable(host(), {
+      columns: [
+        { key: 'host', label: 'Host', searchable: true },
+        { key: 'ip', label: 'Address', filterable: false },
+      ],
+      data: HOSTS,
+      controls: { filterRow: true, search: true },
+    });
+
+    // A cell, but no control: the pipeline would reject a filter on that column.
+    const cells = [...table.element.querySelectorAll('thead tr:last-child td')];
+    expect(cells).toHaveLength(2);
+    expect(cells[1].querySelector('input')).toBeNull();
+    expect(Object.keys(table.controls?.filters ?? {})).toEqual(['host']);
+
+    const search = /** @type {HTMLInputElement} */ (table.controls?.search);
+    search.value = 'srv';
+    search.dispatchEvent(new Event('input', { bubbles: true }));
+    vi.advanceTimersByTime(200);
+    expect(bodyText(table.table)).toHaveLength(1);
+  });
+
+  it('sorts from a header click and reflects aria-sort', () => {
+    const table = bsTable(host(), {
+      columns: [...COLUMNS],
+      data: HOSTS,
+      controls: { filterRow: true },
+    });
+    const header = /** @type {Element} */ (table.table.querySelector('th[data-sort-key]'));
+
+    expect(header.getAttribute('aria-sort')).toBe('none');
+    header.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(header.getAttribute('aria-sort')).toBe('ascending');
+    expect(bodyText(table.table).map((row) => row[0])).toEqual(['gw-01', 'gw-02', 'srv-01']);
+    header.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(header.getAttribute('aria-sort')).toBe('descending');
+  });
+
+  it('does not sort when the click was on a filter input in the same thead', () => {
+    const table = bsTable(host(), {
+      columns: [...COLUMNS],
+      data: HOSTS,
+      controls: { filterRow: true },
+    });
+    filterInput(table.element, 1).dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(table.pipeline.view().sort).toEqual([]);
+  });
+
+  it('drives and reflects the pager, and shows a language-neutral status', () => {
+    const table = bsTable(host(), {
+      columns: [...COLUMNS],
+      data: HOSTS,
+      pageSize: 1,
+      controls: { pagination: true },
+    });
+
+    expect(table.controls?.status?.textContent).toBe('1 / 3');
+    const pages = [...(table.controls?.pagination?.querySelectorAll('button') ?? [])];
+    // prev, 1, 2, 3, next
+    expect(pages).toHaveLength(5);
+    pages[2].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(table.pipeline.view().page).toBe(2);
+    expect(bodyText(table.table)).toEqual([['gw-02', '192.168.1.2']]);
+    expect(table.controls?.status?.textContent).toBe('2 / 3');
+    expect(table.controls?.pagination?.querySelector('.active')?.textContent).toBe('2');
+  });
+
+  it('takes injected status wording, since digits are the only neutral default', () => {
+    const table = bsTable(host(), {
+      columns: [...COLUMNS],
+      data: HOSTS,
+      pageSize: 2,
+      controls: {
+        pagination: true,
+        formatStatus: (view) => `Pagina ${view.page} di ${view.pageCount}`,
+      },
+    });
+    expect(table.controls?.status?.textContent).toBe('Pagina 1 di 2');
+  });
+
+  it('changes the page size, and only offers "all" when a word was supplied', () => {
+    const plain = bsTable(host(), {
+      columns: [...COLUMNS],
+      data: HOSTS,
+      pageSize: 2,
+      controls: { pageSize: true },
+    });
+    const select = /** @type {HTMLSelectElement} */ (plain.controls?.pageSize);
+    // The table's own size is in the list and selected, whatever the defaults are.
+    expect([...select.options].map((option) => option.value)).toEqual([
+      '2',
+      '10',
+      '25',
+      '50',
+      '100',
+    ]);
+    expect(select.value).toBe('2');
+
+    select.value = '100';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(plain.pipeline.view().pageCount).toBe(1);
+
+    const withAll = bsTable(host(), {
+      columns: [...COLUMNS],
+      data: HOSTS,
+      controls: { pageSize: { options: [5], allLabel: 'Tutte' } },
+    });
+    const allSelect = /** @type {HTMLSelectElement} */ (withAll.controls?.pageSize);
+    expect([...allSelect.options].map((option) => option.textContent)).toEqual(['5', 'Tutte']);
+  });
+
+  it('places a toolbar node and takes injected accessible names', () => {
+    const toolbar = document.createElement('div');
+    const table = bsTable(host(), {
+      columns: [...COLUMNS],
+      data: HOSTS,
+      controls: {
+        toolbar,
+        search: { label: 'Cerca', placeholder: '…' },
+        filterRow: { label: (column) => `Filtra ${String(column.label)}` },
+      },
+    });
+    expect(table.element.contains(toolbar)).toBe(true);
+    expect(table.controls?.search?.getAttribute('aria-label')).toBe('Cerca');
+    expect(table.controls?.search?.getAttribute('placeholder')).toBe('…');
+    expect(filterInput(table.element, 1).getAttribute('aria-label')).toBe('Filtra Host');
+  });
+
+  it('omits a band nobody put anything in', () => {
+    const table = bsTable(host(), {
+      columns: [...COLUMNS],
+      data: HOSTS,
+      controls: { search: true },
+    });
+    // A header band for the search box, and no empty footer left behind.
+    expect(table.element.children).toHaveLength(2);
+    expect(table.element.lastElementChild).toBe(table.table);
+  });
+
+  it('tears controls, bindings and subscription down in one pass', () => {
+    vi.useFakeTimers();
+    const container = host();
+    const table = bsTable(container, {
+      columns: [...COLUMNS],
+      data: HOSTS,
+      pageSize: 2,
+      controls: { filterRow: true, search: true, pagination: true },
+    });
+    const input = filterInput(table.element, 2);
+    const pageButton = /** @type {Element} */ (
+      table.controls?.pagination?.querySelectorAll('button')[2]
+    );
+
+    // A debounce in flight at teardown must never land on the pipeline.
+    input.value = '^192.168';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    table.destroy();
+    vi.advanceTimersByTime(1_000);
+
+    expect(container.children).toHaveLength(0);
+    expect(table.pipeline.view().filters).toEqual({});
+    pageButton.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(table.pipeline.view().page).toBe(1);
+  });
+
+  it('validates the control options', () => {
+    const columns = [...COLUMNS];
+    expect(() => bsTable(host(), { columns, controls: /** @type {never} */ ('yes') })).toThrow(
+      /options.controls must be an object/,
+    );
+    expect(() =>
+      bsTable(host(), { columns, controls: { toolbar: /** @type {never} */ ('x') } }),
+    ).toThrow(/options.controls.toolbar must be a Node/);
+    expect(() =>
+      bsTable(host(), { columns, controls: { filterRow: { label: /** @type {never} */ ('x') } } }),
+    ).toThrow(/options.controls.filterRow.label must be a function/);
+    expect(() => bsTable(host(), { columns, controls: { pageSize: { options: [0] } } })).toThrow(
+      /options.controls.pageSize.options must be positive integers/,
+    );
+    expect(() =>
+      bsTable(host(), { columns, controls: { search: /** @type {never} */ ('x') } }),
+    ).toThrow(/options.controls.search must be an object/);
+  });
+});
+
+describe('bsTable — filter labels read whatever the header is', () => {
+  it('names a filter from a node label, and falls back to the key', () => {
+    const label = document.createElement('abbr');
+    label.textContent = 'Address';
+    const table = bsTable(host(), {
+      columns: [{ key: 'ip', label }, { key: 'host' }],
+      data: HOSTS,
+      controls: { filterRow: true },
+    });
+    // A node header still has to yield words for the accessible name (NFR-21).
+    expect(filterInput(table.element, 1).getAttribute('aria-label')).toBe('Filter Address');
+    // No label at all: the key is the only name there is.
+    expect(filterInput(table.element, 2).getAttribute('aria-label')).toBe('Filter host');
+  });
+});
+
+describe('bsTable — control options in their object form', () => {
+  it('configures the pager and can drop the status element', () => {
+    const table = bsTable(host(), {
+      columns: [...COLUMNS],
+      data: HOSTS,
+      pageSize: 1,
+      controls: { pagination: { status: false, siblingCount: 0, boundaryCount: 1, size: 'sm' } },
+    });
+    expect(table.controls?.status).toBeUndefined();
+    expect(table.element.querySelector('.pagination')?.classList.contains('pagination-sm')).toBe(
+      true,
+    );
+    // The bar still drives the pipeline; only the text beside it is gone.
+    const pages = [...(table.controls?.pagination?.querySelectorAll('button') ?? [])];
+    pages[pages.length - 1].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(table.pipeline.view().page).toBe(2);
+  });
+
+  it('passes a shorter quiet period through to the binding', () => {
+    vi.useFakeTimers();
+    const table = bsTable(host(), {
+      columns: [...COLUMNS],
+      data: HOSTS,
+      controls: { filterRow: true, debounceMs: 50 },
+    });
+    const input = filterInput(table.element, 1);
+    input.value = 'srv';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    vi.advanceTimersByTime(50);
+    expect(bodyText(table.table)).toHaveLength(1);
+  });
+
+  it('falls back to the key when the header carries no text', () => {
+    // An empty header is a layout choice — a spacer column, an icon-only one —
+    // and `aria-label="Filter "` would name the box after nothing.
+    const table = bsTable(host(), {
+      columns: [
+        { key: 'host', label: document.createElement('span') },
+        { key: 'ip', label: '' },
+      ],
+      data: HOSTS,
+      controls: { filterRow: true },
+    });
+    expect(filterInput(table.element, 1).getAttribute('aria-label')).toBe('Filter host');
+    expect(filterInput(table.element, 2).getAttribute('aria-label')).toBe('Filter ip');
+  });
+});

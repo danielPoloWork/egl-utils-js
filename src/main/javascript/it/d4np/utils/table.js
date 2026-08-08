@@ -651,6 +651,13 @@ export function paginate(items, options) {
  * @property {string | string[]} [locale] - Passed to {@link compileFilter} and
  *   {@link comparator}, so filtering and ordering read numbers and collate text
  *   the same way.
+ * @property {Record<string, FilterOperator>} [operators] - Custom leading-token
+ *   operators, passed to {@link compileFilter} for **every** string this
+ *   pipeline compiles — a column filter and the global search alike. The
+ *   vocabulary belongs here rather than at each call site: a project that
+ *   defines `~` means it wherever a filter string is typed, and a pipeline whose
+ *   `setFilter('x', '~01')` understood the token while its filter box did not
+ *   would be two grammars wearing one name (roadmap 15.2, ADR-0040).
  */
 
 /**
@@ -799,7 +806,11 @@ function normalizePageSize(value, nullable = false) {
  *   `pageSize` is neither a positive integer nor omitted.
  */
 export function tablePipeline(options = {}) {
-  const { source = [], columns, locale, pageSize: initialPageSize } = options ?? {};
+  const { source = [], columns, locale, operators, pageSize: initialPageSize } = options ?? {};
+  // One compile configuration for every string this pipeline is given, so a
+  // filter typed into a box and one set from code cannot speak different
+  // grammars (roadmap 15.2, ADR-0040).
+  const filterOptions = operators === undefined ? { locale } : { locale, operators };
   assertArray(source, 'options.source');
   const declared = indexColumns(columns);
 
@@ -1023,7 +1034,7 @@ export function tablePipeline(options = {}) {
         } else {
           filters.set(resolved, {
             filter,
-            predicate: typeof filter === 'function' ? filter : compileFilter(filter, { locale }),
+            predicate: typeof filter === 'function' ? filter : compileFilter(filter, filterOptions),
           });
         }
         page = 1;
@@ -1034,7 +1045,7 @@ export function tablePipeline(options = {}) {
       assertString(text, 'text');
       commit(() => {
         search = text;
-        searchPredicate = text === '' ? matchAll : compileFilter(text, { locale });
+        searchPredicate = text === '' ? matchAll : compileFilter(text, filterOptions);
         page = 1;
       });
     },

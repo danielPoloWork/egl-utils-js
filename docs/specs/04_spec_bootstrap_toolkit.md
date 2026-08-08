@@ -182,7 +182,24 @@ Table manager — `egl-utils-js/bootstrap` (composes F42/F51/F65):
   through **F51 `bindTableControls`** — public pipeline commands only, `aria-sort` on
   sortable headers, debounced inputs, one-way reflection. `toolbar` is a caller-rendered
   slot node placed in the header band; `destroy()` tears down controls, bindings,
-  delegation and the pipeline subscription in one structural pass (NFR-15)
+  delegation and the pipeline subscription in one structural pass (NFR-15).
+  **Amended in 15.2** ([ADR-0040](../adr/0040-one-grammar-one-pager-and-a-ceiling-below-its-own-parts.md))
+  on four points. Custom `{operators}` reach the inputs because **the pipeline** now
+  carries the vocabulary (spec 03 F42, amended in the same PR) and the input hands over
+  text — the Bootstrap layer holds no grammar knowledge at all; without that change the
+  promise was unkeepable, since `tablePipeline` forwarded only `locale` to
+  `compileFilter`. The **pager is wired through its own F65 `onPage`/`update` rather than
+  F51's prev/next pair** — F65 already contains prev and next, so routing both would put
+  two controls on one job — and it rides the table's existing `'change'` subscription;
+  only the status element goes through F51. Each control takes `true` for its defaults or
+  an options object, and **every human-readable string is injectable**: `aria-label`s
+  default to English (a name must be words — the F57/F65 precedent), the status keeps
+  F51's language-neutral `'1 / 4'`, page sizes are digits, and an unpaginated choice
+  appears **only** when the caller supplies its word. A column with `filterable: false`
+  gets an empty cell rather than a box whose first keystroke the pipeline would reject,
+  and the filter row is `<td>` cells inside `<thead>` so it is neither announced as
+  headers for the data nor able to reach the sort delegation. The instance gains
+  `controls`, the rendered nodes, for the reason `.pipeline` is public
 
 Behavior wrappers — `egl-utils-js/bootstrap` (Bootstrap JS reached per NFR-18; every
 wrapper returns `{element, instance, destroy}` plus the methods listed, forwards
@@ -290,10 +307,15 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   [ADR-0038](../adr/0038-composites-compose-and-what-a-frozen-constant-costs.md);
   `bsAlert` ≤ 2 kB (composes F49; **measured 1521 B, ceiling held**); `bsPagination` ≤
   1.5 kB (**measured 1406 B, ceiling held**); **`bsTable` ≤
-  6.5 kB** (a facade over F42 + F51 + F65 measures roughly as the sum of what it
-  composes — the NFR-12 lesson, pre-declared; **F66's half measured 5324 B in 15.1 —
-  3250 B of it the F42 pipeline it renders — so the ceiling held and pre-declaring it
-  was the right call, with F67's controls still to come inside the same row**);
+  9.5 kB** (a facade over F42 + F51 + F65 measures roughly as the sum of what it
+  composes — the NFR-12 lesson, pre-declared; **F66's half measured 5324 B in 15.1,
+  3250 B of it the pipeline, and the whole measured 8842 B in 15.2 — amended from
+  6.5 kB by [ADR-0040](../adr/0040-one-grammar-one-pager-and-a-ceiling-below-its-own-parts.md),
+  because the rows of the three parts this clause itself names already sum to 6774 B
+  (pipeline 3275 + bindTableControls 2093 + bsPagination 1406), so the ceiling was
+  unmeetable before a single cell was rendered — the `bsBreadcrumb` error of ADR-0038
+  repeated one wave later. The measurement also settles the design claim: F67's controls
+  added 3518 B against 3499 B of composed parts, i.e. 19 B of glue**);
   `bsLoadingOverlay` ≤ 1.75 kB (composes
   F50); `bsAccordion`/`bsTabs`/`bsNavbar`/`bsCarousel` ≤ 1.5 kB; every remaining
   behavior wrapper ≤ 1.25 kB. The **root entry is not touched by this wave** (spec 01
