@@ -786,3 +786,96 @@ test.describe('/dom — loadingOverlay focus restoration (roadmap 12.2, F50)', (
     expect(result.after).toBe('trigger');
   });
 });
+
+test.describe('/bootstrap — builders in a real engine (roadmap 14.1, F52-F60)', () => {
+  // jsdom proves the DOM shape perfectly well. What it cannot prove is the one
+  // claim that depends on a *parser*: NFR-19 says a payload rendered by a builder
+  // stays inert even after the subtree is serialised and re-parsed, and mXSS is
+  // exactly the class where jsdom's parser and a browser's diverge. So the escape
+  // promise gets a real-engine pass on the same corpus, in all three engines.
+
+  test('the entry loads with no `bootstrap` peer and no import-map entry (NFR-18)', async ({
+    page,
+  }) => {
+    const surface = await page.evaluate(() => ({
+      exports: Object.keys(window.egl.bootstrap).sort(),
+      peerAbsent: typeof window.bootstrap === 'undefined',
+    }));
+
+    // The builders are pure DOM construction; the peer belongs to M16's
+    // behaviours. If this entry had acquired a bare specifier, the fixture's
+    // import would have failed outright.
+    expect(surface.peerAbsent).toBe(true);
+    expect(surface.exports).toContain('bsBadge');
+    expect(surface.exports).toContain('bsProgress');
+  });
+
+  test('renders Bootstrap markup and the documented ARIA surface', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const { bsBadge, bsButton, bsSpinner, bsProgress } = window.egl.bootstrap;
+      const host = document.getElementById('host');
+      host.replaceChildren();
+
+      host.append(
+        bsBadge('99+', { variant: 'danger', pill: true }),
+        bsButton({ icon: 'trash', label: 'Delete row', labelHidden: true }),
+        bsSpinner({ label: 'Loading…' }),
+      );
+      const progress = bsProgress({ value: 25, label: 'Upload', format: (v) => `${v}%` });
+      host.append(progress.element);
+      progress.update(60);
+
+      return {
+        badge: host.querySelector('.badge').className,
+        // A real accessibility tree needs the name to come from somewhere; here
+        // it is a visually-hidden span inside an icon-only button.
+        buttonName: host.querySelector('button .visually-hidden').textContent,
+        spinnerRole: host.querySelector('.spinner-border').getAttribute('role'),
+        valueNow: host.querySelector('[role="progressbar"]').getAttribute('aria-valuenow'),
+        barWidth: host.querySelector('.progress-bar').style.width,
+        barText: host.querySelector('.progress-bar').textContent,
+      };
+    });
+
+    expect(result.badge).toBe('badge text-bg-danger rounded-pill');
+    expect(result.buttonName).toBe('Delete row');
+    expect(result.spinnerRole).toBe('status');
+    // update() moved all three together, in a real engine's CSSOM.
+    expect(result.valueNow).toBe('60');
+    expect(result.barWidth).toBe('60%');
+    expect(result.barText).toBe('60%');
+  });
+
+  for (const { id, payload } of BYPASS_CORPUS) {
+    test(`a builder keeps ${id} inert through a real parser`, async ({ page }) => {
+      const result = await page.evaluate((untrusted) => {
+        const { bsBadge } = window.egl.bootstrap;
+        const host = document.getElementById('host');
+        host.replaceChildren();
+
+        const badge = bsBadge(untrusted);
+        host.append(badge);
+
+        // The mXSS step: serialise what the builder produced and re-parse it.
+        // A value that is inert in the live DOM can still come back to life on
+        // the second pass, which is the whole reason this corpus exists.
+        const reparsed = document.createElement('div');
+        reparsed.innerHTML = badge.outerHTML;
+
+        const dangerous = 'script, img, iframe, style, svg, math, object, embed, link, base';
+        return {
+          text: badge.textContent,
+          liveNodes: host.querySelectorAll(dangerous).length,
+          reparsedNodes: reparsed.querySelectorAll(dangerous).length,
+          reparsedChildren: reparsed.children.length,
+        };
+      }, payload);
+
+      // Displayed verbatim, never parsed — on both passes.
+      expect(result.text).toBe(payload);
+      expect(result.liveNodes).toBe(0);
+      expect(result.reparsedNodes).toBe(0);
+      expect(result.reparsedChildren).toBe(1);
+    });
+  }
+});

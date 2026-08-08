@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-07 — the Bootstrap wave planned`](docs/journal/2026/08/2026-08-07-bootstrap-wave-planning.md).
+  [`2026-08-07 — the builder contract, set by the Bootstrap atoms`](docs/journal/2026/08/2026-08-07-bootstrap-foundation.md).
 
 ## Model & effort routing
 
@@ -203,7 +203,7 @@ The opt-in `/bootstrap` entry and the no-peer half of the catalog: real-DOM buil
 escape-by-default population (spec 04 §2, F52–F65).
 Spec: [`docs/specs/04_spec_bootstrap_toolkit.md`](docs/specs/04_spec_bootstrap_toolkit.md).
 
-- [ ] 14.1 `/bootstrap` subpath foundation: entry wiring, the F52 builder contract (escape-by-default, the `{html, sanitize}` pair, fragment batching, owned teardown) and the atom builders — bsIcon with the two icon-set data presets, bsBadge, bsButton, bsButtonGroup, bsCloseButton, bsSpinner, bsProgress, bsPlaceholder (spec 04 F52–F60, NFR-19/NFR-20) _(route: frontier-reasoning/high — sets-pattern + security: the escape contract every manager copies)_
+- [x] 14.1 `/bootstrap` subpath foundation: entry wiring, the F52 builder contract (escape-by-default, the `{html, sanitize}` pair, fragment batching, owned teardown) and the atom builders — bsIcon with the two icon-set data presets, bsBadge, bsButton, bsButtonGroup, bsCloseButton, bsSpinner, bsProgress, bsPlaceholder (spec 04 F52–F60, NFR-19/NFR-20) _(route: frontier-reasoning/high — sets-pattern + security: the escape contract every manager copies)_ — nodes over strings, the injectable document, the class-token rule and the measured atom budget fixed by [ADR-0037](docs/adr/0037-builder-contract-nodes-escape-and-the-atom-budget.md)
 - [ ] 14.2 Composite builders: bsCard, bsListGroup, bsBreadcrumb, bsAlert over the F49 engine, bsPagination (spec 04 F61–F65, NFR-21) _(route: standard/medium)_
 
 
@@ -280,9 +280,9 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 (04) | Objective & business context | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | ⏳ |
-| §2 (04) | Functional requirements F52–F81 | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | ⏳ |
-| §3 (04) | Non-functional requirements | 14.1, 14.2, 15.1, 15.2, 16.1, 16.4 | ⏳ |
-| §4 (04) | Logical architecture | 14.1, 15.1, 16.1 | ⏳ |
-| §5 (04) | Public interface | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | ⏳ |
-| §6 (04) | Verification & test strategy | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | ⏳ |
+| §1 (04) | Objective & business context | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | 🚧 |
+| §2 (04) | Functional requirements F52–F81 | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | 🚧 |
+| §3 (04) | Non-functional requirements | 14.1, 14.2, 15.1, 15.2, 16.1, 16.4 | 🚧 |
+| §4 (04) | Logical architecture | 14.1, 15.1, 16.1 | 🚧 |
+| §5 (04) | Public interface | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | 🚧 |
+| §6 (04) | Verification & test strategy | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | 🚧 |

@@ -12,6 +12,16 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- New opt-in `egl-utils-js/bootstrap` entry: the Bootstrap 5 element builders `bsIcon`,
+  `bsBadge`, `bsButton`, `bsButtonGroup`, `bsCloseButton`, `bsSpinner`, `bsProgress` and
+  `bsPlaceholder`, plus the `bootstrapIconsSet` and `materialIconsSet` data presets
+  (ROADMAP 14.1, spec 04 F52–F60, ADR-0037). Builders return real DOM nodes and escape
+  caller data by construction; markup needs the explicit `{ html: true, sanitize }` pair.
+  Bootstrap's CSS and any icon font stay the application's to supply, and the entry has no
+  contact with the optional `bootstrap` peer — the builders work with none installed.
+- `bootstrap` is now declared as an **optional** peer dependency (`^5`), alongside
+  `dompurify`. Nothing in this release requires it.
+
 ### Changed
 
 ### Deprecated

@@ -653,6 +653,58 @@ sanitizeHtml(userSuppliedHtml, { window: new JSDOM('').window });
 See [`SECURITY.md`](SECURITY.md#sanitizehtml-non-goals) for what `sanitizeHtml`
 deliberately does not cover.
 
+### Bootstrap 5 toolkit (`egl-utils-js/bootstrap`)
+
+Opt-in, and layered **on top of** the framework-agnostic entries — the core never imports
+it, so a project on a different design system pays nothing. Bootstrap's classes are plain
+strings, so the element builders keep the zero-runtime-dependency promise; the behaviour
+wrappers (M16) will reach an optional `bootstrap` peer. **You** supply Bootstrap's CSS and
+any icon font; this toolkit emits markup and class names only.
+
+Builders return **real DOM nodes**, never HTML strings, so caller data cannot become
+markup by accident (ADR-0037):
+
+```js
+import {
+  bsBadge, bsButton, bsButtonGroup, bsCloseButton,
+  bsIcon, bsPlaceholder, bsProgress, bsSpinner,
+  materialIconsSet,
+} from 'egl-utils-js/bootstrap';
+
+// Text is escaped on the way in — a record field containing markup is displayed, not parsed.
+container.append(bsBadge(record.status, { variant: 'danger', pill: true }));
+
+bsButton({ label: 'Save', icon: 'check-lg', onClick: save, signal: controller.signal });
+
+// An icon-only control MUST be named — asking for one without a name is a TypeError,
+// not a warning, because an unnamed button is announced as just "button" (NFR-21).
+bsButton({ icon: 'trash', label: 'Delete row', labelHidden: true, variant: 'danger' });
+
+bsIcon('gear');                                  // <i class="bi bi-gear" aria-hidden="true">
+bsIcon('delete', { set: materialIconsSet });     // any icon convention, injected as data
+
+// A progress bar is an instance, so width, aria-valuenow and text cannot drift apart:
+const progress = bsProgress({ max: total, label: 'Upload', format: (v) => `${v} / ${total}` });
+onChunk((sent) => progress.update(sent));
+
+bsSpinner({ label: 'Caricamento…' });    // role="status" + a visually-hidden name
+bsPlaceholder({ lines: 3 });             // skeleton block, aria-hidden by design
+```
+
+Markup requires the explicit `{ html: true, sanitize }` pair — the same contract as
+`injectFragment` and `inlineAlert`, and there is deliberately no default:
+
+```js
+import { sanitizeHtml } from 'egl-utils-js/sanitize';
+
+bsBadge('<b>3</b> new', { html: true, sanitize: sanitizeHtml });
+bsBadge(trustedMarkup, { html: true, sanitize: false }); // a signed decision, not a silence
+```
+
+Every builder also takes `{ document }`, so it works inside an iframe or a server-side DOM
+with no ambient global; without one, a builder that needs the ambient document throws
+`DomContractError` rather than a bare `ReferenceError`.
+
 ## How this project is run
 
 | Document | Purpose |
@@ -682,7 +734,7 @@ deliberately does not cover.
 | 11 | DOM foundation | ✅ done |
 | 12 | UI components | ✅ done |
 | 13 | Composable table pipeline | ✅ done |
-| 14 | Bootstrap element builders | ⏳ planned |
+| 14 | Bootstrap element builders | 🚧 in progress |
 | 15 | Bootstrap table manager | ⏳ planned |
 | 16 | Bootstrap interactive wrappers | ⏳ planned |
 
