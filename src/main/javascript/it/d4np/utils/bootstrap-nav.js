@@ -30,7 +30,9 @@ import {
   applyClasses,
   assertPlainObject,
   assertToken,
+  documentOf,
   renderContent,
+  uniqueId,
 } from './bootstrap-elements.js';
 import {
   assertSignal,
@@ -47,64 +49,6 @@ import {
  * @typedef {import('./bootstrap-behaviors.js').BootstrapInstanceLike} BootstrapInstanceLike
  * @typedef {import('./bootstrap-behaviors.js').BehaviourWrapper} BehaviourWrapper
  */
-
-/**
- * Mint an id that is free **in this document** — and in the batch being built.
- *
- * Not a module-level counter: two copies of this library in one page (the
- * dual-package hazard spec 01 §4 forbids sharing state over) would each count
- * from one and collide on the same document. Asking the document is the only
- * source of truth that is not shared state, and it is exact rather than
- * probabilistic — which matters because these ids are not decoration, they are
- * the `aria-controls`/`aria-labelledby` relationships themselves.
- *
- * The `reserved` set closes the gap the document alone cannot: a manager builds
- * its nodes in a `DocumentFragment` and appends once, so while it is building,
- * `getElementById` cannot see anything it has already minted. Without the set
- * every pane in one accordion takes the same id and every `aria-controls`
- * resolves to the first one — which is worse than a missing relationship,
- * because it looks correct.
- *
- * @param {Document} doc
- * @param {string} prefix
- * @param {Set<string>} [reserved] - Ids handed out earlier in this build.
- * @returns {string}
- */
-function uniqueId(doc, prefix, reserved) {
-  let n = 1;
-  let id = `${prefix}-${n}`;
-  while (doc.getElementById(id) !== null || reserved?.has(id) === true) {
-    n += 1;
-    id = `${prefix}-${n}`;
-  }
-  reserved?.add(id);
-  return id;
-}
-
-/**
- * The document a container-taking manager builds in: the container's own,
- * overridable, never the ambient one by default (the `bsTable` convention — a
- * container inside an iframe must not be filled with nodes from the top
- * document).
- *
- * @param {Element} container
- * @param {{ document?: Document }} options
- * @param {string} api
- * @returns {Document}
- * @throws {TypeError} If `options.document` is present but not a document.
- */
-function documentOf(container, options, api) {
-  const explicit = options.document;
-  if (explicit === undefined) return /** @type {Document} */ (container.ownerDocument);
-  if (
-    typeof explicit !== 'object' ||
-    explicit === null ||
-    typeof explicit.createElement !== 'function'
-  ) {
-    throw new TypeError(`${api}: options.document must be a Document`);
-  }
-  return explicit;
-}
 
 /**
  * @typedef {object} BsCollapseOptions

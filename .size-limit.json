@@ -178,9 +178,9 @@
     "limit": "1.03 kB"
   },
   {
-    "name": "/bootstrap - full import (NFR-17: 22 managers + both presets, measured 17334 B with the navigation set landed; entry clause 25 kB per ADR-0041)",
+    "name": "/bootstrap - full import (NFR-17: 25 managers + both presets, measured 18390 B with the overlay set landed; entry clause 25 kB per ADR-0041, unmoved for the third milestone running)",
     "path": "dist/esm/bootstrap.js",
-    "limit": "18.6 kB"
+    "limit": "19.7 kB"
   },
   {
     "name": "single: bsIcon (NFR-17 <= 1.2 kB per ADR-0037; measured 865 B)",
@@ -319,6 +319,24 @@
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsNavbar }",
     "limit": "2.96 kB"
+  },
+  {
+    "name": "single: bsOffcanvas (NFR-17 <= 1.25 kB behaviour-wrapper row; measured 1150 B - the third wrapper that only wraps to fit the clause, after bsModal and bsDropdown)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsOffcanvas }",
+    "limit": "1.24 kB"
+  },
+  {
+    "name": "single: bsCarousel (2.5 kB - NFR-17 building row amended from 1.5 kB by ADR-0043; measured 2310 B, slides + controls + labelled indicators on top of the shared F52 contract floor)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsCarousel }",
+    "limit": "2.5 kB"
+  },
+  {
+    "name": "single: bsScrollspy (NFR-17 <= 1.25 kB row; measured 1040 B - the smallest of the peer-backed set, having no open state to model)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsScrollspy }",
+    "limit": "1.12 kB"
   },
   {
     "name": "/logging - full import (NFR-08: measured 1390 B, clause 1.6 kB)",

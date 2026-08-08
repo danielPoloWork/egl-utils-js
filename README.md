@@ -913,6 +913,36 @@ bsCollapse(panel, { toggler });                          // aria-expanded kept t
 bsDropdown(document.querySelector('#actions')).update(); // reposition after a reflow
 ```
 
+Overlays and observation follow the same split — an offcanvas is a wrapper, a carousel
+builds, and a scrollspy does neither:
+
+```js
+import { bsOffcanvas, bsCarousel, bsScrollspy } from 'egl-utils-js/bootstrap';
+
+bsOffcanvas(document.querySelector('#filters')).show();
+
+// A carousel that labels its own indicators — otherwise a row of identical,
+// unlabelled buttons. `alt` is what declares a slide an image, and '' is a
+// legitimate declaration, so an image cannot reach the page unlabelled.
+const gallery = bsCarousel(container, {
+  items: [
+    { content: '/harbour.jpg', alt: 'A harbour at dawn', caption: 'Genova', active: true },
+    { content: '/pattern.jpg', alt: '' },        // decorative, declared
+    { content: someNode },                       // not an image at all
+  ],
+  indicators: true,
+  labels: { previous: 'Precedente', next: 'Successiva' },
+});
+gallery.next();
+// Autoplay is off unless you ask: pass { ride: 'carousel', interval: 5000 }.
+
+// Scrollspy marks the nav for whatever is in view. `refresh()` is the method
+// worth having — it computes its targets once, so content added later is
+// invisible to it until told.
+const spy = bsScrollspy(document.body, { nav: '#toc', smoothScroll: true });
+spy.on('activate', (event) => console.log(event.relatedTarget.hash));
+```
+
 If you bundle rather than load Bootstrap from a `<script>`, there is no
 `window.bootstrap` to find — pass it once:
 

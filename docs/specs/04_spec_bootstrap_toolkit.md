@@ -296,10 +296,27 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   labels?, signal?}) — carousel manager: with `{items}` (`{content, caption?, alt?,
   active?}`) it builds slides, optional prev/next controls and indicators with injected
   `labels` (language-neutral defaults per F51's rule); `to(i)`, `prev()`, `next()`,
-  `cycle()`, `pause()`, `on(...)`; without items it adopts existing markup
-- F79 bsScrollspy(target, {bootstrap?, rootMargin?, smoothScroll?, signal?}) — scrollspy
-  wrapper: `refresh()`, `on('activate', handler)` mapping `activate.bs.scrollspy`,
-  `destroy()`
+  `cycle()`, `pause()`, `on(...)`; without items it adopts existing markup.
+  **Clarified in 16.3** ([ADR-0043](../adr/0043-three-shapes-that-are-not-a-group.md)):
+  `alt` is what **declares a slide an image** — with it, `content` is the image source and
+  the slide renders an `<img>`; without it, `content` is ordinary content under F52. `''`
+  is legitimate and means decorative, so an image can never reach the page unlabelled,
+  because the field that makes it an image is the field that labels it (ADR-0038's F61 rule
+  through the field names this clause already froze). Indicators default to the slide's
+  **number** — digits carry the same information in every language — while `previous`/`next`
+  default to English words, since an accessible name has to be words, and all three are
+  injectable. **Autoplay is off unless asked for**: `ride`/`interval` are forwarded only
+  when given, because motion that starts without a request is the caller's decision
+- F79 bsScrollspy(target, {nav?, bootstrap?, rootMargin?, smoothScroll?, signal?}) —
+  scrollspy wrapper: `refresh()`, `on('activate', handler)` mapping
+  `activate.bs.scrollspy`, `destroy()`. **`nav` added in 16.3**
+  ([ADR-0043](../adr/0043-three-shapes-that-are-not-a-group.md)): the nav whose links are
+  marked, an element or a selector, mapped to Bootstrap's `target` config — without it the
+  component observes and marks nothing, so the original clause described something that
+  could not do its job. This is also the one component in the wave that is **not** built on
+  the shared lifecycle: it has no open state, so `show`/`hide`/`toggle` and the
+  `shown`/`hidden` events would be dead API, and `destroy()` disposes immediately rather
+  than closing first
 - F80 bsTooltip(target, {title?, placement?, trigger?, html?, sanitize?, bootstrap?,
   signal?}) — tooltip wrapper: `show/hide/toggle/enable/disable/setContent`; string
   content is passed with Bootstrap's `html: false` (escaped); `{html: true}` requires
@@ -365,7 +382,10 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   this wave written below its own parts (ADR-0038's `bsBreadcrumb`, ADR-0040's `bsTable`),
   so the rule is now stated rather than rediscovered: a ceiling for a composing symbol is
   derived from the rows of what it composes, never estimated**;
-  `bsCarousel` ≤ 1.5 kB; `bsAccordion` ≤ **2.75 kB**, `bsTabs` ≤ **2.25 kB** and
+  `bsCarousel` ≤ **2.5 kB** — **amended in 16.3 from 1.5 kB on measuring 2310 B by
+  [ADR-0043](../adr/0043-three-shapes-that-are-not-a-group.md): a builder's cost (slides,
+  controls, labelled indicators over the shared F52 floor) rather than a sum of composed
+  parts**; `bsAccordion` ≤ **2.75 kB**, `bsTabs` ≤ **2.25 kB** and
   `bsNavbar` ≤ **3 kB** — **all three amended in 16.2 from 1.5 kB by
   [ADR-0042](../adr/0042-ids-are-the-accessibility-and-a-ceiling-derived-not-guessed.md),
   and the first ceilings *derived* rather than re-estimated: `bsAccordion` (measured
@@ -374,7 +394,10 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   parts, 230 B of its own, predicted before measuring**; every remaining
   behavior wrapper ≤ 1.25 kB — **confirmed right for its class twice: `bsModal`, which
   wraps a behaviour and builds nothing, measures 1060 B (1180 B from 16.2, the shared
-  lifecycle helper's price), and `bsDropdown` 1160 B. A wrapper that also *builds* or
+  lifecycle helper's price), and `bsDropdown` 1160 B — **and twice more in 16.3:
+  `bsOffcanvas` 1150 B and `bsScrollspy` 1040 B. Four wrappers, four fits: the clause is
+  evidenced rather than assumed, and every symbol that exceeds it is one that also builds
+  or wires**. A wrapper that also *builds* or
   *wires* takes its own row instead: `bsToast` ≤ 2.32 kB (measured 2170 B, composes
   `bsCloseButton`, ADR-0041) and `bsCollapse` ≤ 1.5 kB (measured 1380 B, the toggler's
   aria sync and id minting, ADR-0042)**. The **root entry is not touched by this wave** (spec 01

@@ -72,3 +72,8 @@ export { bsLoadingOverlay, bsModal, bsToast } from './bootstrap-behaviors.js';
 // lives in the ids joining its parts, and ids are what hand-written templates
 // get wrong.
 export { bsAccordion, bsCollapse, bsDropdown, bsNavbar, bsTabs } from './bootstrap-nav.js';
+
+// Overlays and observation (spec 04 §2 items F77-F79, ADR-0043). Three shapes,
+// not one group: an offcanvas is the shared lifecycle again, a carousel builds
+// and labels its own slides, and a scrollspy has no open state at all.
+export { bsCarousel, bsOffcanvas, bsScrollspy } from './bootstrap-overlays.js';
