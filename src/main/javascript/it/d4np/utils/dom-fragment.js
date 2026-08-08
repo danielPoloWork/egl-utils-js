@@ -11,7 +11,7 @@
  */
 
 import { HttpError } from './errors.js';
-import { isAbortSignal, isElement } from './dom-helpers.js';
+import { controllerFor, isAbortSignal, isElement } from './dom-helpers.js';
 
 /**
  * @param {unknown} value
@@ -224,7 +224,7 @@ export function autoGrow(textarea, options = {}) {
   const originalHeight = element.style.height;
   const originalOverflow = element.style.overflowY;
 
-  const controller = new AbortController();
+  const controller = controllerFor(element);
   let detached = false;
   const detach = () => {
     if (detached) return;

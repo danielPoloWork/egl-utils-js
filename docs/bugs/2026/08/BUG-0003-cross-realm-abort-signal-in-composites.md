@@ -1,11 +1,12 @@
 ---
 id: BUG-0003
 title: Composites that own a listener fail against a foreign document — a cross-realm AbortSignal
-status: confirmed
+status: fixed
 severity: medium
 reporter: internal
 discovered: 2026-08-08
 affected-versions: v0.7.0
+fixed-in: v0.8.0
 ---
 
 # BUG-0003: Composites that own a listener fail against a foreign document — a cross-realm `AbortSignal`
@@ -71,3 +72,21 @@ runs with a genuinely foreign document.
 
 Filed as ROADMAP item 16.5 rather than fixed in 16.1: it is a defect in M14.2 code, and one
 roadmap item ships per PR (AGENTS.md §6.1, §10).
+
+## Resolution (roadmap 16.5, [ADR-0045](../../../adr/0045-a-controller-from-the-node-s-own-realm.md))
+
+**The scope above was wrong, and undercounted by more than half.** This record named three
+components because those were the three the discovering test happened to exercise; grepping
+for the construct found **seven** — the three above plus `bsTable`'s row delegation,
+`inlineAlert`, `delegate` and `autoGrow`. A defect found through one test is scoped by that
+test, not by the code, and the fix was scoped by the code.
+
+Fixed by a single seam, `controllerFor(node)` on `dom-helpers.js`, which takes the
+constructor from `node.ownerDocument.defaultView` where there is one and falls back to this
+realm otherwise — the correct answer for a `createHTMLDocument()` document, which has no
+browsing context and whose nodes are local already. All seven call sites now build through
+it, and every future listener-owning export inherits the fix rather than the trap.
+
+Proved by a listener that **fires**: the regression test dispatches a real event in the
+foreign realm and asserts the handler ran, then destroys and asserts it stopped. A
+does-not-throw assertion would have passed on a controller nobody rejected and nobody used.

@@ -119,12 +119,11 @@ describe('NFR-20 — an explicit document makes every builder work in Node', () 
     const spinner = bootstrap.bsSpinner({ document: doc });
     const progress = bootstrap.bsProgress({ value: 50, document: doc });
     const placeholder = bootstrap.bsPlaceholder({ lines: 2, document: doc });
-    // Non-interactive: no listener, so nothing crosses the realm boundary. The
-    // interactive components are exercised in the jsdom environment instead —
-    // jsdom's generated bindings reject an `AbortSignal` built in another realm,
-    // which a browser accepts, so combining a Node-realm controller with a
-    // foreign document here would test jsdom's strictness rather than ours.
-    const list = bootstrap.bsListGroup(['A'], { document: doc });
+    // Interactive too, since roadmap 16.5: a listener-owning builder takes its
+    // AbortController from the target's own realm, so jsdom's binding accepts
+    // the signal (BUG-0003, ADR-0045). Before that this had to be the
+    // non-interactive form, and the comment here said so.
+    const list = bootstrap.bsListGroup(['A'], { document: doc, onSelect: () => {} });
     const crumbs = bootstrap.bsBreadcrumb(['Home', 'Here'], { document: doc });
     const card = bootstrap.bsCard({ title: 'T', listGroup: list.element, document: doc });
 
@@ -213,12 +212,10 @@ describe('NFR-18 — the builders never touch the optional peer', () => {
     // (NFR-18). This file runs in plain Node against the real dependency tree,
     // so it is the only place that can prove it.
     //
-    // EXCLUDED, and named rather than quietly skipped: `bsAlert`,
-    // `bsPagination` and `bsListGroup({ onSelect })` throw here for a reason
-    // that has nothing to do with the peer — each owns an internal
-    // AbortController whose signal this realm's jsdom refuses on a foreign
-    // document (BUG-0003, roadmap 16.5). Their peer-independence is covered by
-    // the jsdom suites; what is unproven for them is only this realm case.
+    // The three exclusions this test carried until roadmap 16.5 are gone:
+    // `bsAlert`, `bsPagination` and `bsListGroup({ onSelect })` are exercised
+    // below like everything else, now that a listener-owning builder takes its
+    // AbortController from the target's own realm (BUG-0003, ADR-0045).
     const doc = isolatedDocument();
     const host = doc.createElement('div');
     doc.body.append(host);
@@ -240,19 +237,40 @@ describe('NFR-18 — the builders never touch the optional peer', () => {
       bootstrap.bsBreadcrumb([{ content: 'Home', href: '/' }, { content: 'Here' }], {
         document: doc,
       });
+      // The three that used to be excluded, each attaching a listener.
+      bootstrap.bsListGroup(['one', 'two'], { document: doc, onSelect: () => {} });
+      bootstrap.bsAlert(host, { document: doc }).show('info', 'hello');
+      bootstrap
+        .bsPagination(host, { onPage: () => {}, document: doc })
+        .update({ page: 1, pageCount: 3 });
     }).not.toThrow();
   });
 
-  it('documents the three builders BUG-0003 still excludes', () => {
-    // A failing case pinned as a fact, so the record cannot rot unnoticed: when
-    // 16.5 lands this test flips, and a reviewer is told where to look.
+  it('attaches a working listener in the foreign realm, not merely a silent one', () => {
+    // The regression BUG-0003 left behind. Building without throwing is only
+    // half the claim: the listener has to actually fire, or the fix would be a
+    // controller nobody rejected and nobody used either.
     const doc = isolatedDocument();
     const host = doc.createElement('div');
     doc.body.append(host);
+    /** @type {number[]} */
+    const chosen = [];
 
-    expect(() => bootstrap.bsAlert(host, { document: doc }).show('info', 'hello')).toThrow(
-      /addEventListener/,
-    );
+    const group = bootstrap.bsListGroup(['one', 'two'], {
+      document: doc,
+      onSelect: (_item, index) => chosen.push(index),
+    });
+    host.append(group.element);
+
+    const first = /** @type {Element} */ (group.element.querySelector('.list-group-item'));
+    first.dispatchEvent(new /** @type {any} */ (doc.defaultView).Event('click', { bubbles: true }));
+    expect(chosen).toEqual([0]);
+
+    // And teardown still reaches it, which is the other half of what the
+    // controller is for (NFR-15).
+    group.destroy();
+    first.dispatchEvent(new /** @type {any} */ (doc.defaultView).Event('click', { bubbles: true }));
+    expect(chosen).toEqual([0]);
   });
 });
 

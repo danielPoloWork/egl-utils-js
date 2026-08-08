@@ -60,3 +60,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0042](0042-ids-are-the-accessibility-and-a-ceiling-derived-not-guessed.md) | Ids are the accessibility — and the first ceiling derived rather than guessed | Accepted |
 | [0043](0043-three-shapes-that-are-not-a-group.md) | Three shapes that are not a group — and the clause that did not move | Accepted |
 | [0044](0044-a-second-peer-one-sanitizer-and-a-catalogue-closed.md) | A second peer, one sanitizer — and a catalogue closed | Accepted |
+| [0045](0045-a-controller-from-the-node-s-own-realm.md) | A controller from the node's own realm — and a bug report that undercounted | Accepted |

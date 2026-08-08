@@ -15,7 +15,7 @@
  * @module egl-utils-js/dom
  */
 
-import { isAbortSignal, isElement } from './dom-helpers.js';
+import { controllerFor, isAbortSignal, isElement } from './dom-helpers.js';
 
 /**
  * True for anything that can host a delegated listener and answer
@@ -111,7 +111,7 @@ export function delegate(root, type, selector, handler, options = {}) {
     throw new TypeError('options.signal must be an AbortSignal');
   }
 
-  const controller = new AbortController();
+  const controller = controllerFor(root);
   const detach = () => controller.abort();
 
   // An already-aborted caller signal means the subscription is over before it

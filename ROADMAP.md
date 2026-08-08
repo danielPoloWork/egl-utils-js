@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-08 — a second peer, one sanitizer, and a catalogue closed`](docs/journal/2026/08/2026-08-08-bootstrap-popper.md).
+  [`2026-08-09 — a controller from the node's own realm, and M16 closes`](docs/journal/2026/08/2026-08-09-cross-realm-abort-signal.md).
 
 ## Model & effort routing
 
@@ -229,7 +229,7 @@ failing typed when the peer is absent (spec 04 §2, F68–F81) — closes the ca
 - [x] 16.2 Navigation set: bsCollapse, bsAccordion, bsDropdown, bsTabs, bsNavbar (spec 04 F72–F76, NFR-21) _(route: standard/medium)_ — ids minted against the live document (a counter would collide in the dual-package case), the 16.1 lifecycle extracted rather than copied five times, and the first budget ceiling derived from its parts instead of estimated, per [ADR-0042](docs/adr/0042-ids-are-the-accessibility-and-a-ceiling-derived-not-guessed.md)
 - [x] 16.3 Overlay & observation set: bsOffcanvas, bsCarousel, bsScrollspy (spec 04 F77–F79) _(route: standard/medium)_ — three shapes rather than one group (the scrollspy has no open state, so it is written plainly instead of inheriting three methods that would throw), an image that cannot reach the page unlabelled, and the entry ceiling unmoved for a third milestone, per [ADR-0043](docs/adr/0043-three-shapes-that-are-not-a-group.md)
 - [x] 16.4 Popper-backed set: bsTooltip and bsPopover with the one-sanitizer contract, naming `@popperjs/core` in the typed failure (spec 04 F80–F81, NFR-18/NFR-19) — **closes the Bootstrap 5 catalogue at 24/24** _(route: standard/high — security: content handed to a third-party renderer)_ — the second peer detected by translating Bootstrap's own diagnostic (nothing else is probeable), exactly one sanitizer over content handed to a third-party renderer, and a `setContent` that sequences instead of fighting the transition, per [ADR-0044](docs/adr/0044-a-second-peer-one-sanitizer-and-a-catalogue-closed.md)
-- [ ] 16.5 Fix the cross-realm `AbortSignal` in the listener-owning composites ([BUG-0003](docs/bugs/2026/08/BUG-0003-cross-realm-abort-signal-in-composites.md)): `bsAlert`, `bsPagination` and `bsListGroup({onSelect})` each build an internal `AbortController` and hand its signal to `addEventListener` on an element from the caller's `{document}`, which a different realm's DOM refuses — so the server-render and iframe path the option exists for is broken for exactly those three. Take the controller from the target's own view behind a shared `dom-helpers` seam, since every future listener-owning builder inherits the trap, and flip the case the 16.1 node-safety suite currently pins as a known failure _(route: standard/medium — found by 16.1's NFR-18 suite; a defect in M14.2 code, so it ships on its own)_
+- [x] 16.5 Fix the cross-realm `AbortSignal` in the listener-owning composites ([BUG-0003](docs/bugs/2026/08/BUG-0003-cross-realm-abort-signal-in-composites.md)): `bsAlert`, `bsPagination` and `bsListGroup({onSelect})` each build an internal `AbortController` and hand its signal to `addEventListener` on an element from the caller's `{document}`, which a different realm's DOM refuses — so the server-render and iframe path the option exists for is broken for exactly those three. Take the controller from the target's own view behind a shared `dom-helpers` seam, since every future listener-owning builder inherits the trap, and flip the case the 16.1 node-safety suite currently pins as a known failure _(route: standard/medium — found by 16.1's NFR-18 suite; a defect in M14.2 code, so it ships on its own)_ — one seam for what turned out to be **seven** call sites rather than the three the report named, fixed by [ADR-0045](docs/adr/0045-a-controller-from-the-node-s-own-realm.md)
 
 
 ---
@@ -281,9 +281,9 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 (04) | Objective & business context | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4, 16.5 | 🚧 |
-| §2 (04) | Functional requirements F52–F81 | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | 🚧 |
-| §3 (04) | Non-functional requirements | 14.1, 14.2, 15.1, 15.2, 16.1, 16.4, 16.5 | 🚧 |
-| §4 (04) | Logical architecture | 14.1, 15.1, 16.1 | 🚧 |
-| §5 (04) | Public interface | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | 🚧 |
-| §6 (04) | Verification & test strategy | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4, 16.5 | 🚧 |
+| §1 (04) | Objective & business context | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4, 16.5 | ✅ |
+| §2 (04) | Functional requirements F52–F81 | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | ✅ |
+| §3 (04) | Non-functional requirements | 14.1, 14.2, 15.1, 15.2, 16.1, 16.4, 16.5 | ✅ |
+| §4 (04) | Logical architecture | 14.1, 15.1, 16.1 | ✅ |
+| §5 (04) | Public interface | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | ✅ |
+| §6 (04) | Verification & test strategy | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4, 16.5 | ✅ |
