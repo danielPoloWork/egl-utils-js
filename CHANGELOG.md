@@ -12,6 +12,19 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `bsTooltip` and `bsPopover` on `egl-utils-js/bootstrap` (ROADMAP 16.4, spec 04 F80–F81,
+  ADR-0044) — **which complete the Bootstrap 5 catalogue: all 24 components**, plus
+  `bsTable`, `bsIcon` and `bsLoadingOverlay`, as 29 individually tree-shakeable exports on
+  one entry. These two are the only pair that hands content to Bootstrap to render, so
+  exactly **one sanitizer runs and it is yours**: a plain string is written as text with no
+  sanitizer on either side, and markup goes through the `{html: true, sanitize}` pair
+  before Bootstrap sees it, with Bootstrap's own filter switched off so the profile you
+  chose is not narrowed by a second, invisible one. They also need **Popper**, and when it
+  is missing you are told *which* package: `EGL_PEER_MISSING` with
+  `.peer === '@popperjs/core'`, so nobody re-checks the `bootstrap` install that was
+  already fine. `setContent` on a tip that is on screen replaces its text and leaves it
+  open — Bootstrap's own closes it and does not come back.
+
 - The Bootstrap overlay and observation set on `egl-utils-js/bootstrap` (ROADMAP 16.3,
   spec 04 F77–F79, ADR-0043): `bsOffcanvas`, `bsCarousel` and `bsScrollspy`. Three shapes
   rather than one group — the offcanvas is the shared lifecycle again, the carousel builds

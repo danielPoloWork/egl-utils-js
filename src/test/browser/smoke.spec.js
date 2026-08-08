@@ -1389,3 +1389,103 @@ test.describe('the Bootstrap overlay and observation set (roadmap 16.3)', () => 
     await page.evaluate(() => window.eglSpy.destroy());
   });
 });
+
+// Roadmap 16.4 (spec 04 §2 items F80-F81, NFR-18/NFR-19). The last two
+// components, and the only pair whose positioning is done by a *second* library:
+// jsdom has no Popper and no layout, so a tip that never appears — or appears in
+// the wrong place — is invisible to every unit test.
+test.describe('the Popper-backed overlays (roadmap 16.4)', () => {
+  test.beforeEach(async ({ page }) => {
+    // The `bundle` build, which is the one that carries Popper.
+    await page.addScriptTag({ url: '/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js' });
+    await page.waitForFunction(() => typeof window.bootstrap === 'object');
+  });
+
+  test('a tooltip appears with real Popper positioning, and text stays text', async ({ page }) => {
+    await page.evaluate(() => {
+      document.getElementById('host').innerHTML =
+        '<button id="anchor" type="button">Anchor</button>';
+      window.eglTip = window.egl.bootstrap.bsTooltip(document.getElementById('anchor'), {
+        title: '<not markup> & kept as text',
+      });
+      window.eglTip.show();
+    });
+
+    const tip = page.locator('.tooltip');
+    await expect(tip).toHaveCount(1);
+    // Popper positioned it: a real box with real coordinates.
+    const box = await tip.boundingBox();
+    expect(box?.width).toBeGreaterThan(0);
+    // Without { html: true } the string is text, so the angle brackets survive
+    // as characters and no element is created from them.
+    await expect(page.locator('.tooltip-inner')).toHaveText('<not markup> & kept as text');
+    expect(await page.locator('.tooltip-inner *').count()).toBe(0);
+
+    await page.evaluate(() => window.eglTip.hide());
+    await expect(page.locator('.tooltip')).toHaveCount(0);
+    await page.evaluate(() => window.eglTip.destroy());
+  });
+
+  test('markup goes through the caller’s sanitizer and nothing else', async ({ page }) => {
+    // The one-sanitizer rule, end to end: our pass removes the script, Bootstrap
+    // is told not to filter again, and the surviving markup renders inert.
+    const result = await page.evaluate(async () => {
+      const { bsPopover } = window.egl.bootstrap;
+      const { sanitizeHtml } = window.egl.sanitize;
+      document.getElementById('host').innerHTML =
+        '<button id="anchor2" type="button">Anchor</button>';
+      window.eglRan = 0;
+      const help = bsPopover(document.getElementById('anchor2'), {
+        title: '<b>Saved</b>',
+        content: '<em>Kept locally.</em><img src=x onerror="window.eglRan++">',
+        html: true,
+        sanitize: sanitizeHtml,
+        trigger: 'manual',
+      });
+      help.show();
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      const popover = document.querySelector('.popover');
+      return {
+        header: popover?.querySelector('.popover-header')?.innerHTML,
+        bodyHtml: popover?.querySelector('.popover-body')?.innerHTML,
+        ran: window.eglRan,
+      };
+    });
+
+    // The markup we allowed survived as markup…
+    expect(result.header).toContain('<b>Saved</b>');
+    expect(result.bodyHtml).toContain('<em>Kept locally.</em>');
+    // …and the payload the sanitizer stripped never executed.
+    expect(result.bodyHtml).not.toContain('onerror');
+    expect(result.ran).toBe(0);
+
+    await page.evaluate(() => document.querySelector('.popover')?.remove());
+  });
+
+  test('setContent replaces a live tip through its own slots', async ({ page }) => {
+    await page.evaluate(() => {
+      document.getElementById('host').innerHTML =
+        '<button id="anchor3" type="button">Anchor</button>';
+      window.eglHelp = window.egl.bootstrap.bsPopover(document.getElementById('anchor3'), {
+        title: 'First',
+        content: 'Before',
+        trigger: 'manual',
+      });
+      window.eglHelp.show();
+    });
+
+    // Wait for the tip to actually exist: Bootstrap creates it as the transition
+    // begins, so replacing content in the same tick would target nothing — and
+    // "a live tip" is precisely what this case is about.
+    await expect(page.locator('.popover-header')).toHaveText('First');
+
+    await page.evaluate(() => window.eglHelp.setContent({ title: 'Second', content: 'After' }));
+
+    await expect(page.locator('.popover-header')).toHaveText('Second');
+    await expect(page.locator('.popover-body')).toHaveText('After');
+
+    await page.evaluate(() => window.eglHelp.destroy());
+    // destroy() closed the tip and disposed it: no orphan left behind.
+    await expect(page.locator('.popover')).toHaveCount(0);
+  });
+});

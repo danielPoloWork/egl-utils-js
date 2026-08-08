@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-08 — A second peer, one sanitizer, and a catalogue closed (roadmap 16.4)](2026/08/2026-08-08-bootstrap-popper.md)
 - [2026-08-08 — Three shapes that are not a group (roadmap 16.3)](2026/08/2026-08-08-bootstrap-overlays.md)
 - [2026-08-08 — Ids are the accessibility (roadmap 16.2)](2026/08/2026-08-08-bootstrap-nav.md)
 - [2026-08-08 — A peer looked up, not imported (roadmap 16.1)](2026/08/2026-08-08-bootstrap-behaviors-core.md)

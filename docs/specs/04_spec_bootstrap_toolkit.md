@@ -322,7 +322,18 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   content is passed with Bootstrap's `html: false` (escaped); `{html: true}` requires
   the F52 `sanitize` pair **before** the content reaches Bootstrap, and the wrapper sets
   Bootstrap's own `sanitize` off only in that already-sanitized path (one sanitizer, the
-  caller's, never two half-trusted ones); requires Popper per F68
+  caller's, never two half-trusted ones); requires Popper per F68. **Amended in 16.4**
+  ([ADR-0044](../adr/0044-a-second-peer-one-sanitizer-and-a-catalogue-closed.md)) on two
+  points measured rather than assumed. Popper's absence is detected by **translating
+  Bootstrap's own `require Popper` diagnostic**, raised from inside `show()`, into
+  `EGL_PEER_MISSING` with `.peer === '@popperjs/core'` — there is no global to probe, since
+  the `bootstrap.bundle` build keeps Popper private, and anything that is *not* that
+  complaint passes through untouched so an unrelated failure is never mistranslated into a
+  packaging one. And `setContent` on a **shown** tip **sequences**: Bootstrap's own removes
+  the live tip and does not restore it, so the wrapper hides, replaces once the tip is gone,
+  and shows again; on a hidden tip it applies straight through. Passing `content` to a
+  tooltip is a `TypeError`, since a tooltip has one slot and silently dropping half of what
+  a caller wrote is worse than refusing it
 - F81 bsPopover(target, {title?, content?, placement?, trigger?, html?, sanitize?,
   bootstrap?, signal?}) — popover wrapper with the same contract as F80 for both
   `title` and `content`
@@ -397,7 +408,11 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   lifecycle helper's price), and `bsDropdown` 1160 B — **and twice more in 16.3:
   `bsOffcanvas` 1150 B and `bsScrollspy` 1040 B. Four wrappers, four fits: the clause is
   evidenced rather than assumed, and every symbol that exceeds it is one that also builds
-  or wires**. A wrapper that also *builds* or
+  or wires** — including the last pair, `bsTooltip` (1940 B) and `bsPopover` (1950 B), whose
+  rows are **2.1 kB, amended in 16.4 by
+  [ADR-0044](../adr/0044-a-second-peer-one-sanitizer-and-a-catalogue-closed.md)**: they
+  prepare content and translate a peer diagnostic, and the ten bytes between them are the
+  only difference two components sharing one internal factory can have. A wrapper that also *builds* or
   *wires* takes its own row instead: `bsToast` ≤ 2.32 kB (measured 2170 B, composes
   `bsCloseButton`, ADR-0041) and `bsCollapse` ≤ 1.5 kB (measured 1380 B, the toggler's
   aria sync and id minting, ADR-0042)**. The **root entry is not touched by this wave** (spec 01

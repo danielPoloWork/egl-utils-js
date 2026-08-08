@@ -178,9 +178,9 @@
     "limit": "1.03 kB"
   },
   {
-    "name": "/bootstrap - full import (NFR-17: 25 managers + both presets, measured 18390 B with the overlay set landed; entry clause 25 kB per ADR-0041, unmoved for the third milestone running)",
+    "name": "/bootstrap - full import (NFR-17: the COMPLETE Bootstrap 5 catalogue - 27 managers + both presets - measured 19163 B; entry clause 25 kB per ADR-0041, never moved across all of M14-M16)",
     "path": "dist/esm/bootstrap.js",
-    "limit": "19.7 kB"
+    "limit": "20.5 kB"
   },
   {
     "name": "single: bsIcon (NFR-17 <= 1.2 kB per ADR-0037; measured 865 B)",
@@ -337,6 +337,18 @@
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsScrollspy }",
     "limit": "1.12 kB"
+  },
+  {
+    "name": "single: bsTooltip (2.1 kB - NFR-17 row amended from 1.25 kB by ADR-0044; measured 1940 B: the content-preparation pass, the slot mapping and the Popper diagnostic are what a bare wrapper does not carry)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsTooltip }",
+    "limit": "2.1 kB"
+  },
+  {
+    "name": "single: bsPopover (2.1 kB - NFR-17 row amended from 1.25 kB by ADR-0044; measured 1950 B, ten bytes more than bsTooltip because both are the same internal factory with a different slot map)",
+    "path": "dist/esm/bootstrap.js",
+    "import": "{ bsPopover }",
+    "limit": "2.1 kB"
   },
   {
     "name": "/logging - full import (NFR-08: measured 1390 B, clause 1.6 kB)",

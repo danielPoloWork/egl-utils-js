@@ -77,3 +77,9 @@ export { bsAccordion, bsCollapse, bsDropdown, bsNavbar, bsTabs } from './bootstr
 // not one group: an offcanvas is the shared lifecycle again, a carousel builds
 // and labels its own slides, and a scrollspy has no open state at all.
 export { bsCarousel, bsOffcanvas, bsScrollspy } from './bootstrap-overlays.js';
+
+// The Popper-backed overlays (spec 04 §2 items F80-F81, ADR-0044) — the last two
+// components of the catalogue. They need a second peer, and they are the only
+// pair that hands content to a third-party renderer, so the escape contract
+// gains its one extra rule there: one sanitizer, the caller's.
+export { bsPopover, bsTooltip } from './bootstrap-popper.js';
