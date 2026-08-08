@@ -705,6 +705,40 @@ Every builder also takes `{ document }`, so it works inside an iframe or a serve
 with no ambient global; without one, a builder that needs the ambient document throws
 `DomContractError` rather than a bare `ReferenceError`.
 
+The composites assemble those atoms — and two of them **compose the framework-agnostic
+components instead of reimplementing them**, so a fix to either engine reaches both entries:
+
+```js
+import { bsAlert, bsBreadcrumb, bsCard, bsListGroup, bsPagination } from 'egl-utils-js/bootstrap';
+
+// Slots take a string (escaped), a node, or an array of either:
+container.append(
+  bsCard({
+    image: { src: '/cover.jpg', alt: '' },  // alt is required; '' declares it decorative
+    title: order.customer,
+    text: [order.summary, bsBadge(order.status, { variant: 'success' })],
+    actions: bsButton({ label: 'Open', size: 'sm' }),
+  }),
+);
+
+// One delegated listener survives every update() — no per-row rebinding, nothing to leak:
+const list = bsListGroup(rows.map((row) => ({ content: row.name, value: row, badge: row.count })), {
+  onSelect: (item) => open(item.value),
+});
+list.update(nextRows.map((row) => ({ content: row.name, value: row })));
+
+// The last crumb is the current page: no link, and aria-current="page".
+bsBreadcrumb([{ content: 'Home', href: '/' }, { content: 'Orders', href: '/orders' }, '4821']);
+
+// bsAlert IS inlineAlert (F49) in Bootstrap's costume — same instance API and timers:
+const alerts = bsAlert(document.querySelector('#form-alert'));
+alerts.show('success', 'Saved.', { autoHideMs: 3_000 });
+
+// bsPagination speaks the shape tablePipeline.view() already returns — no adapter:
+const pager = bsPagination(footer, { onPage: (n) => table.setPage(n) });
+table.on('change', (view) => pager.update(view));
+```
+
 ## How this project is run
 
 | Document | Purpose |
@@ -734,7 +768,7 @@ with no ambient global; without one, a builder that needs the ambient document t
 | 11 | DOM foundation | ✅ done |
 | 12 | UI components | ✅ done |
 | 13 | Composable table pipeline | ✅ done |
-| 14 | Bootstrap element builders | 🚧 in progress |
+| 14 | Bootstrap element builders | ✅ done |
 | 15 | Bootstrap table manager | ⏳ planned |
 | 16 | Bootstrap interactive wrappers | ⏳ planned |
 

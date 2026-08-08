@@ -160,8 +160,18 @@ describe('bsBadge', () => {
     expect(() => bsBadge('x', { variant: 'a b' })).toThrow(/variant must be a non-empty string/);
   });
 
-  it('rejects content that is neither a string nor a node', () => {
-    expect(() => bsBadge(/** @type {never} */ (7))).toThrow(/content must be a string or a Node/);
+  it('rejects content that is neither a string, a node, nor an array of those', () => {
+    expect(() => bsBadge(/** @type {never} */ (7))).toThrow(
+      /content must be a string, a Node, or an array of those/,
+    );
+  });
+
+  it('accepts an array, rendering members in order (F52, extended in 14.2)', () => {
+    const node = document.createElement('em');
+    node.textContent = 'live';
+    const badge = bsBadge(['x ', node]);
+    expect(badge.childNodes).toHaveLength(2);
+    expect(badge.textContent).toBe('x live');
   });
 });
 

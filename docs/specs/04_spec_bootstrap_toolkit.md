@@ -120,7 +120,15 @@ NFR-20):
   reimplemented) pre-configured with Bootstrap alert classes, `alert-dismissible` +
   F57 close button and `fade show` transitions; same instance API and per-instance
   timers as F49; `kind` maps to the four F49 kinds plus Bootstrap's full variant range
-  via the injected class map
+  via the injected class map. **Clarified in 14.2**
+  ([ADR-0038](../adr/0038-composites-compose-and-what-a-frozen-constant-costs.md)): "full
+  variant range" is reached by *retargeting a kind* in the class map
+  (`{ classes: { info: 'alert-primary' } }`), not by widening F49's frozen four-kind
+  vocabulary — a framework-agnostic component must not learn a framework's palette. The
+  same PR amends **spec 03 F49** so an empty close icon no longer hides the close control:
+  `.btn-close` draws its glyph in CSS, so its correct icon is empty, and hiding the button
+  for that left a dismissible alert nobody could dismiss. `dismissible: false` remains how
+  a caller asks for no button
 - F65 bsPagination(container, {onPage, siblingCount=1, boundaryCount=1, size?,
   labels?, signal?}) — pagination bar instance: `{element, update(view), destroy}` where
   `update({page, pageCount})` re-renders prev/next plus a windowed page list with
@@ -250,8 +258,16 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   composes `bsIcon`, because F55 accepts an icon *name*, which is the ergonomic point of
   the option — the same exemption this clause already grants `bsTable`, extended
   explicitly rather than by inference. Instance managers and composing facades
-  take named rows (indicative): `bsCard`/`bsListGroup` ≤ 1.25 kB; `bsBreadcrumb` ≤
-  0.75 kB; `bsAlert` ≤ 2 kB (composes F49); `bsPagination` ≤ 1.5 kB; **`bsTable` ≤
+  take named rows (indicative): `bsCard` ≤ 1.5 kB — **amended in 14.2 from 1.25 kB on
+  measuring 1418 B** — `bsListGroup` ≤ 2.15 kB — **amended from 1.25 kB on measuring
+  2006 B, and reclassified as a *composing* row: it composes `bsBadge` and owns a
+  delegated listener** — `bsBreadcrumb` ≤ 1.3 kB — **amended from 0.75 kB on measuring
+  1184 B, a ceiling that sat *below the shared F52 contract floor* (`bsCloseButton`, the
+  thinnest builder that still resolves a document, validates class tokens and sets an ARIA
+  surface, measures 763 B), so no builder of any kind could have met it** — all three by
+  [ADR-0038](../adr/0038-composites-compose-and-what-a-frozen-constant-costs.md);
+  `bsAlert` ≤ 2 kB (composes F49; **measured 1521 B, ceiling held**); `bsPagination` ≤
+  1.5 kB (**measured 1406 B, ceiling held**); **`bsTable` ≤
   6.5 kB** (a facade over F42 + F51 + F65 measures roughly as the sum of what it
   composes — the NFR-12 lesson, pre-declared); `bsLoadingOverlay` ≤ 1.75 kB (composes
   F50); `bsAccordion`/`bsTabs`/`bsNavbar`/`bsCarousel` ≤ 1.5 kB; every remaining

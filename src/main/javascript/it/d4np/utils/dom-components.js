@@ -228,7 +228,13 @@ export function inlineAlert(container, options = {}) {
       close.type = 'button';
       close.className = classes.close;
       close.setAttribute('aria-label', closeLabel);
-      renderIcon(close, icons.close ?? '×', 'info');
+      // `hideWhenEmpty: false` — the button is the slot here, not a decoration
+      // beside one. A design system whose close control is drawn entirely in CSS
+      // (Bootstrap's `.btn-close` background image, for one) supplies an empty
+      // icon, and hiding the control for that would remove the only way to
+      // dismiss the alert. `dismissible: false` is how a caller asks for no
+      // close button; an empty glyph asks for no *glyph* (found by 14.2/F64).
+      renderIcon(close, icons.close ?? '×', 'info', false);
       close.addEventListener('click', hide, { signal: controller.signal });
       root.append(close);
     }
@@ -318,14 +324,17 @@ function renderMessage(target, message, html, sanitize) {
  * @param {HideableElement} target
  * @param {AlertIcon | undefined} icon
  * @param {AlertKind} kind
+ * @param {boolean} [hideWhenEmpty=true] - Hide the slot when there is nothing to
+ *   put in it. True for a decorative icon span, whose empty box would still take
+ *   margin; false where the slot is itself the control.
  * @returns {void}
  * @throws {TypeError} If a supplied icon is neither a string nor a cloneable node.
  */
-function renderIcon(target, icon, kind) {
+function renderIcon(target, icon, kind, hideWhenEmpty = true) {
   target.replaceChildren();
   const value = typeof icon === 'function' ? icon(kind) : icon;
   if (value === undefined || value === null || value === '') {
-    target.hidden = true;
+    if (hideWhenEmpty) target.hidden = true;
     return;
   }
   target.hidden = false;

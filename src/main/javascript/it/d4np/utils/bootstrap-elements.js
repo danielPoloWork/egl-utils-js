@@ -52,8 +52,9 @@ import { isAbortSignal, isElement, requireDocument } from './dom-helpers.js';
  */
 
 /**
- * @typedef {string | Node} Content
- * Text (escaped on the way in) or a node the caller built for this call.
+ * @typedef {string | Node | Array<string | Node>} Content
+ * Text (escaped on the way in), a node the caller built for this call, or an
+ * array of either rendered in order.
  */
 
 /**
@@ -69,12 +70,12 @@ import { isAbortSignal, isElement, requireDocument } from './dom-helpers.js';
 
 /** Bootstrap Icons: one class per icon name. The default set. */
 export const bootstrapIconsSet = /** @type {IconSet} */ (
-  Object.freeze({ tag: 'i', classTemplate: 'bi bi-{name}' })
+  /* @__PURE__ */ Object.freeze({ tag: 'i', classTemplate: 'bi bi-{name}' })
 );
 
 /** Material Icons: one class for all, the name carried as a ligature. */
 export const materialIconsSet = /** @type {IconSet} */ (
-  Object.freeze({ tag: 'span', classTemplate: 'material-icons', ligature: true })
+  /* @__PURE__ */ Object.freeze({ tag: 'span', classTemplate: 'material-icons', ligature: true })
 );
 
 /**
@@ -86,7 +87,7 @@ export const materialIconsSet = /** @type {IconSet} */ (
  * @throws {TypeError} If `options.document` is present but not a document.
  * @throws {DomContractError} If it is absent and there is no ambient document.
  */
-function resolveDocument(options, api) {
+export function resolveDocument(options, api) {
   const explicit = options.document;
   if (explicit === undefined) return requireDocument(api);
   if (
@@ -113,7 +114,7 @@ function resolveDocument(options, api) {
  * @returns {string}
  * @throws {TypeError} If `value` is not a whitespace-free non-empty string.
  */
-function assertToken(value, name, api) {
+export function assertToken(value, name, api) {
   if (typeof value !== 'string' || value === '' || /\s/.test(value)) {
     throw new TypeError(`${api}: ${name} must be a non-empty string without whitespace`);
   }
@@ -131,7 +132,7 @@ function assertToken(value, name, api) {
  * @returns {void}
  * @throws {TypeError} If `extra` is neither a string nor an array of strings.
  */
-function applyClasses(el, base, extra, api) {
+export function applyClasses(el, base, extra, api) {
   for (const token of base) {
     if (typeof token === 'string' && token !== '') el.classList.add(token);
   }
@@ -175,27 +176,57 @@ function extraTokens(extra, name, api) {
  * (Icons are the opposite case: an icon set is shared across instances, so
  * {@link renderIconInto} clones. The distinction is deliberate.)
  *
+ * An **array** renders its members in order through one `DocumentFragment`, so
+ * a composite slot (a card body, a list item) costs the layout engine one
+ * insertion however many parts it has (F52). Each member obeys the same rule as
+ * a lone value would: strings are text unless `html` is set, nodes are used
+ * as-is.
+ *
  * @param {Element} target
  * @param {Content} content
  * @param {ContentOptions} options
  * @param {string} api
  * @returns {void}
- * @throws {TypeError} If `content` is neither a string nor a node, if `html` is
- *   set without `sanitize`, or if the sanitizer does not return a string.
+ * @throws {TypeError} If `content` is neither a string, a node, nor an array of
+ *   those, if `html` is set without `sanitize`, or if the sanitizer does not
+ *   return a string.
  */
-function renderContent(target, content, options, api) {
-  const { html = false, sanitize } = options;
+export function renderContent(target, content, options, api) {
+  target.replaceChildren();
+  appendContent(target, content, options, api);
+}
+
+/**
+ * Append one content value — the recursive half of {@link renderContent}.
+ *
+ * @param {Element | DocumentFragment} target
+ * @param {Content} content
+ * @param {ContentOptions} options
+ * @param {string} api
+ * @returns {void}
+ * @throws {TypeError} As {@link renderContent}.
+ */
+export function appendContent(target, content, options, api) {
+  const doc = target.ownerDocument;
+
+  if (Array.isArray(content)) {
+    const fragment = /** @type {Document} */ (doc).createDocumentFragment();
+    for (const part of content) appendContent(fragment, part, options, api);
+    target.append(fragment);
+    return;
+  }
 
   if (typeof content !== 'string') {
     if (!isNode(content)) {
-      throw new TypeError(`${api}: content must be a string or a Node`);
+      throw new TypeError(`${api}: content must be a string, a Node, or an array of those`);
     }
     target.append(content);
     return;
   }
 
+  const { html = false, sanitize } = options;
   if (html !== true) {
-    target.textContent = content;
+    target.append(/** @type {Document} */ (doc).createTextNode(content));
     return;
   }
   if (sanitize === undefined) {
@@ -211,7 +242,11 @@ function renderContent(target, content, options, api) {
   if (typeof markup !== 'string') {
     throw new TypeError(`${api}: the sanitizer must return a string`);
   }
-  target.innerHTML = markup;
+  // Parsed in a detached holder and moved across, so the same path serves an
+  // element and a fragment — `insertAdjacentHTML` exists only on the former.
+  const holder = /** @type {Document} */ (doc).createElement('div');
+  holder.innerHTML = markup;
+  target.append(...holder.childNodes);
 }
 
 /**
@@ -221,7 +256,7 @@ function renderContent(target, content, options, api) {
  * @param {unknown} value
  * @returns {boolean}
  */
-function isNode(value) {
+export function isNode(value) {
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -998,7 +1033,7 @@ export function bsPlaceholder(options = {}) {
  * @returns {void}
  * @throws {TypeError} If `value` is not a plain object.
  */
-function assertPlainObject(value, name, api) {
+export function assertPlainObject(value, name, api) {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new TypeError(`${api}: ${name} must be an object`);
   }
