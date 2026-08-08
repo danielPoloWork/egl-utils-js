@@ -60,6 +60,7 @@ describe('NFR-20 — the entry imports safely with no DOM', () => {
       'bsPlaceholder',
       'bsProgress',
       'bsSpinner',
+      'bsTable',
       'materialIconsSet',
     ]);
   });
@@ -136,6 +137,42 @@ describe('NFR-20 — an explicit document makes every builder work in Node', () 
     expect(badge.outerHTML).toBe('<span class="badge text-bg-secondary">New</span>');
     expect(progress.element.getAttribute('aria-valuenow')).toBe('50');
     expect(button.querySelector('span')?.textContent).toBe('Save');
+  });
+
+  it('renders a whole table server-side, pipeline and all', () => {
+    // The SSR claim spec 03 §4 makes for the pipeline, followed through to the
+    // Bootstrap layer: derivation is pure, the container supplies the realm, and
+    // a table with no row handler attaches no listeners — so the first page can
+    // be rendered where there is no browser at all.
+    const doc = isolatedDocument();
+    const container = doc.createElement('div');
+    const table = bootstrap.bsTable(container, {
+      columns: [
+        { key: 'host', label: 'Host', sortable: true },
+        { key: 'ip', label: 'Address' },
+      ],
+      data: [
+        { host: 'gw-01', ip: '192.168.1.1' },
+        { host: 'srv-01', ip: '10.0.0.7' },
+      ],
+      pageSize: 1,
+      caption: 'Hosts',
+    });
+
+    expect(globalThis.document).toBeUndefined();
+    expect(table.element.ownerDocument).toBe(doc);
+    expect(table.pipeline.view().pageCount).toBe(2);
+    // Page one only, derived before any browser saw it.
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(container.querySelector('tbody td')?.textContent).toBe('gw-01');
+    expect(container.querySelector('caption')?.textContent).toBe('Hosts');
+    expect(container.querySelector('th[data-sort-key]')?.getAttribute('data-sort-key')).toBe(
+      'host',
+    );
+
+    // And it is live server-side too: a command re-derives and re-renders.
+    table.pipeline.setPage(2);
+    expect(container.querySelector('tbody td')?.textContent).toBe('srv-01');
   });
 
   it('renders sanitized markup server-side too', () => {

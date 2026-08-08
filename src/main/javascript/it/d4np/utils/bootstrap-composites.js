@@ -29,6 +29,7 @@ import {
   assertPlainObject,
   assertToken,
   bsBadge,
+  closestWithin,
   isNode,
   renderContent,
   resolveDocument,
@@ -471,21 +472,6 @@ function renderItemBadge(badge, doc, options, api) {
     html: options.html,
     sanitize: options.sanitize,
   });
-}
-
-/**
- * The delegation match: the nearest ancestor of the event target matching
- * `selector`, bounded by `root`.
- *
- * @param {Element} root
- * @param {Event} event
- * @param {string} selector
- * @returns {Element | null}
- */
-function closestWithin(root, event, selector) {
-  const target = /** @type {{ closest?: (s: string) => Element | null } | null} */ (event.target);
-  const match = typeof target?.closest === 'function' ? target.closest(selector) : null;
-  return match !== null && root.contains(match) ? match : null;
 }
 
 /**

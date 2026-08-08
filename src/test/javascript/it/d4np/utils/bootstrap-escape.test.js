@@ -21,6 +21,7 @@ import {
   bsListGroup,
   bsProgress,
   bsSpinner,
+  bsTable,
 } from '../../../../../main/javascript/it/d4np/utils/bootstrap.js';
 
 /** Tags that mean a payload was parsed as markup rather than shown as text. */
@@ -196,6 +197,44 @@ describe('NFR-19 — payloads land as text, never as markup', () => {
       const nav = bsBreadcrumb([{ content: payload, href: '/x' }, payload]);
       assertInert(nav);
       expect(nav.textContent).toBe(`${payload}${payload}`);
+    },
+  );
+
+  it.each(BYPASS_CORPUS.map((entry) => [entry.id, entry.payload]))(
+    'bsTable renders %s inert in a header, a cell, a format result and the empty slot',
+    (_id, payload) => {
+      // The table is where untrusted records land in the largest volume, and
+      // through the most paths: a header label, a raw value, a format function's
+      // output, the key stamped as an attribute, and the empty-state slot.
+      const container = document.createElement('div');
+      const table = bsTable(container, {
+        columns: [
+          { key: 'raw', label: payload },
+          { key: 'shaped', format: (value) => `${String(value)}!` },
+        ],
+        data: [{ raw: payload, shaped: payload }],
+        rowKey: 'raw',
+        caption: payload,
+      });
+
+      assertInert(table.table);
+      expect(table.table.querySelector('th')?.textContent).toBe(payload);
+      expect(table.table.querySelector('caption')?.textContent).toBe(payload);
+      const cells = [...table.table.querySelectorAll('td')];
+      expect(cells[0].textContent).toBe(payload);
+      expect(cells[1].textContent).toBe(`${payload}!`);
+      // An attribute value cannot introduce markup, but the claim is about the
+      // whole surface, so the round-trip check covers this one too.
+      expect(table.table.querySelector('tr[data-key]')?.getAttribute('data-key')).toBe(payload);
+
+      table.setData([]);
+      const empty = bsTable(document.createElement('div'), {
+        columns: [{ key: 'raw' }],
+        data: [],
+        empty: payload,
+      });
+      assertInert(empty.table);
+      expect(empty.table.querySelector('td[colspan]')?.textContent).toBe(payload);
     },
   );
 

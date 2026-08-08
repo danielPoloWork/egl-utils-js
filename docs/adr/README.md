@@ -54,3 +54,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0036](0036-collecting-every-benchmark-and-the-collapse-floor.md) | Collect every benchmark, and gate the absolute ones on a collapse floor | Accepted |
 | [0037](0037-builder-contract-nodes-escape-and-the-atom-budget.md) | The builder contract — nodes over strings, escaping by construction, and what an atom costs | Accepted |
 | [0038](0038-composites-compose-and-what-a-frozen-constant-costs.md) | Composites compose — the close control is not an icon, and what a frozen constant costs | Accepted |
+| [0039](0039-a-facade-with-a-door-and-what-the-table-costs.md) | A facade with a door — the borrowed pipeline, the cell that refuses to guess, and what the table costs | Accepted |

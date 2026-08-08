@@ -739,6 +739,49 @@ const pager = bsPagination(footer, { onPage: (n) => table.setPage(n) });
 table.on('change', (view) => pager.update(view));
 ```
 
+`bsTable` is the toolkit's flagship: a complete Bootstrap table over the same
+`tablePipeline` the framework-agnostic entry exposes — and it keeps that pipeline **public**,
+so the facade is a shortcut rather than a ceiling.
+
+```js
+import { bsTable } from 'egl-utils-js/bootstrap';
+
+const table = bsTable(container, {
+  columns: [
+    { key: 'host', label: 'Host', sortable: true },
+    { key: 'ip', label: 'Address', sortable: true, align: 'end' },
+    // A value that is not a primitive needs a format — the library never picks
+    // a date format, or stringifies an object, on your behalf:
+    { key: 'seen', label: 'Last seen', type: 'date', format: (v) => v.toLocaleString('it') },
+    // A node needs no markup decision at all; { html, sanitize } opens ONE column:
+    { key: 'up', label: 'State', format: (v) => bsBadge(v ? 'up' : 'down', {
+      variant: v ? 'success' : 'danger',
+    }) },
+  ],
+  data: hosts,
+  pageSize: 25,
+  striped: true,
+  hover: true,
+  responsive: true,
+  rowKey: 'id',                       // stamped as data-key on each row
+  empty: 'No hosts match these filters.',
+  onRowClick: (row) => open(row.id),  // one delegated listener, and Enter/Space work
+});
+
+// The pipeline is the same F42 instance — commands re-render the table:
+table.pipeline.setFilter('ip', '^192.168');   // the F33 filter grammar
+table.pipeline.toggleSort('seen');            // asc → desc → none
+table.setData(await refresh());               // = pipeline.setSource, render wired
+
+// Already hold a pipeline (a server-rendered first page, one shared with a chart)?
+// Pass it: bsTable renders it and, on destroy(), unsubscribes without tearing it down.
+bsTable(container, { columns, pipeline: existing });
+```
+
+Filter, sort and page **compose** — applying one never discards the other — because the
+derivation belongs to the pipeline, not to the table. The filter row, search box and
+pagination controls that drive it from the page are F67, landing with roadmap 15.2.
+
 ## How this project is run
 
 | Document | Purpose |

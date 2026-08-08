@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-08 — composites that compose, and M14 complete`](docs/journal/2026/08/2026-08-08-bootstrap-composites.md).
+  [`2026-08-08 — the table, and the door left in the facade`](docs/journal/2026/08/2026-08-08-bootstrap-table-core.md).
 
 ## Model & effort routing
 
@@ -214,7 +214,7 @@ Spec: [`docs/specs/04_spec_bootstrap_toolkit.md`](docs/specs/04_spec_bootstrap_t
 The toolkit's flagship: a full Bootstrap table facade that composes the spec-03 pipeline
 and hides nothing (spec 04 §2, F66–F67).
 
-- [ ] 15.1 bsTable core: column descriptors → thead/tbody rendered through one fragment, style flags, escaped cells with `format` hooks, delegated row events, and the owned `tablePipeline` exposed as `.pipeline` (spec 04 F66; NFR-17's pre-declared composing exception) _(route: frontier-reasoning/high — decision-heavy: the toolkit's flagship composition)_
+- [x] 15.1 bsTable core: column descriptors → thead/tbody rendered through one fragment, style flags, escaped cells with `format` hooks, delegated row events, and the owned `tablePipeline` exposed as `.pipeline` (spec 04 F66; NFR-17's pre-declared composing exception) _(route: frontier-reasoning/high — decision-heavy: the toolkit's flagship composition)_ — the borrowed pipeline, the per-column markup decision, the cell that refuses to guess and the measured budget fixed by [ADR-0039](docs/adr/0039-a-facade-with-a-door-and-what-the-table-costs.md)
 - [ ] 15.2 bsTable controls: per-column filter row speaking the F33 grammar with custom `{operators}`, global search, page-size select, F65 pagination and `aria-sort` headers wired through F51; toolbar slot; one-pass structural teardown (spec 04 F67, NFR-15/NFR-21) _(route: standard/high)_
 
 
