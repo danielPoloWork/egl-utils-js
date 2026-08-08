@@ -12,6 +12,21 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `bsToast`, `bsModal` and `bsLoadingOverlay` on `egl-utils-js/bootstrap` (ROADMAP 16.1,
+  spec 04 F68–F71, ADR-0041): the first wrappers over Bootstrap's own JavaScript, which is
+  an **optional peer** this entry never imports. A wrapper resolves it when you first use
+  one — the `{ bootstrap }` option first, then a `window.bootstrap` a CDN bundle defined —
+  so constructing one costs nothing, a bundle that loads late still works, and importing
+  the entry can never fail for someone who only wanted a badge. When it is genuinely
+  missing you get a typed `PeerMissingError` (`EGL_PEER_MISSING`, with `.peer`) at the
+  call, naming the package and both remedies, rather than a `ReferenceError` or a silent
+  no-op. Each toast is a fresh node that disposes itself and leaves the DOM once hidden;
+  the modal publishes its Bootstrap instance and disposes only after the dialog has
+  actually closed; the overlay is the F50 gate — reference counting, anti-flicker floor,
+  focus restore — with its presentation bridged to a static-backdrop modal.
+- `PeerMissingError` on `egl-utils-js/errors` (code `EGL_PEER_MISSING`), carrying the npm
+  package name in `.peer`.
+
 - `bsTable` grows a `controls` option (ROADMAP 15.2, spec 04 F67, ADR-0040): a per-column
   filter row, a global search box, a page-size select and an F65 pagination bar, wired to
   the table's pipeline through F51 `bindTableControls` — public commands only, debounced

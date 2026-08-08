@@ -19,8 +19,11 @@
  *   zero-runtime-dependency promise (NFR-06) is untouched.
  * - **Behaviours are a peer.** Anything driving a Bootstrap component's
  *   JavaScript resolves the **optional** `bootstrap` peer lazily, at first use —
- *   the `/sanitize` precedent for DOMPurify (ADR-0012). Those wrappers arrive
- *   with M16; until then this entry has no peer contact at all.
+ *   the `/sanitize` precedent for DOMPurify (ADR-0012), with the difference that
+ *   nothing here is ever imported: the namespace is looked up from the injected
+ *   option or the ambient global, and its absence is a typed `EGL_PEER_MISSING`
+ *   throw at the call (ADR-0041). Importing this entry never needs the peer, and
+ *   every builder above runs without it.
  *
  * The application supplies Bootstrap's CSS itself: this toolkit emits markup and
  * class names, and ships no stylesheet (spec 04 §1 non-goals).
@@ -57,3 +60,9 @@ export {
 // pipeline that keeps it public: `.pipeline` is the instance itself, so the
 // escape hatch out of the facade is the same object the facade uses.
 export { bsTable } from './bootstrap-table.js';
+
+// Behaviour wrappers over the optional `bootstrap` peer (spec 04 §2 items
+// F68-F71, ADR-0041). Resolution is lazy and injected-first, so these cost the
+// builders above nothing: no import, no load-time contact, no peer required to
+// use this entry.
+export { bsLoadingOverlay, bsModal, bsToast } from './bootstrap-behaviors.js';
