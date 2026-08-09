@@ -1039,6 +1039,7 @@ try {
 | 14 | Bootstrap element builders | ✅ done |
 | 15 | Bootstrap table manager | ✅ done |
 | 16 | Bootstrap interactive wrappers | ✅ done |
+| 17 | v1.0.0 readiness & the first stable release | ⏳ planned |
 
 
 ## License

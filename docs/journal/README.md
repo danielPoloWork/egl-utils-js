@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-09 — Planning the road to 1.0 (M17)](2026/08/2026-08-09-v1-readiness-planning.md)
 - [2026-08-09 — A controller from the node's own realm, and M16 closes (roadmap 16.5)](2026/08/2026-08-09-cross-realm-abort-signal.md)
 - [2026-08-08 — A second peer, one sanitizer, and a catalogue closed (roadmap 16.4)](2026/08/2026-08-08-bootstrap-popper.md)
 - [2026-08-08 — Three shapes that are not a group (roadmap 16.3)](2026/08/2026-08-08-bootstrap-overlays.md)
