@@ -10,6 +10,7 @@ README badge.
 
 | Version | Date | Highlights | Notes |
 |---------|------|------------|-------|
+| v0.9.0 | 2026-08-09 | The Bootstrap 5 catalogue complete at 24/24 components — the behaviour wrappers over an optional peer this entry imports nowhere, resolved at first use and failing typed when absent; navigation managers that mint their own ARIA ids; one sanitizer, the caller's, for content handed to Bootstrap to render | [v0.9.0.md](v0.9.0.md) |
 | v0.8.0 | 2026-08-09 | `bsTable` — a complete Bootstrap 5 table over the `tablePipeline` it keeps **public**, so the facade is a shortcut you can step out of; with an optional controls band whose defaults render digits rather than a language | [v0.8.0.md](v0.8.0.md) |
 | v0.7.0 | 2026-08-08 | The opt-in `egl-utils-js/bootstrap` entry — thirteen Bootstrap 5 builders that return real DOM nodes rather than HTML strings, so caller data cannot become markup; `bsAlert` and `bsPagination` compose the v0.5.0/v0.6.0 engines rather than reimplementing them | [v0.7.0.md](v0.7.0.md) |
 | v0.6.0 | 2026-08-07 | A composable table pipeline on `egl-utils-js/table` where filtering and sorting compose instead of discarding each other, and `bindTableControls` on `egl-utils-js/dom` to drive it from real controls with structural teardown | [v0.6.0.md](v0.6.0.md) |
