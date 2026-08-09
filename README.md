@@ -1040,6 +1040,10 @@ try {
 | 15 | Bootstrap table manager | ✅ done |
 | 16 | Bootstrap interactive wrappers | ✅ done |
 | 17 | v1.0.0 readiness & the first stable release | ⏳ planned |
+| 18 | Browser distribution | ⏳ planned |
+| 19 | Table data & bsTable extras | ⏳ planned |
+| 20 | Application UX utilities | ⏳ planned |
+| 21 | Form engine | ⏳ planned |
 
 
 ## License
