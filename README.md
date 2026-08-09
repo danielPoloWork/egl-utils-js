@@ -1039,7 +1039,7 @@ try {
 | 14 | Bootstrap element builders | ✅ done |
 | 15 | Bootstrap table manager | ✅ done |
 | 16 | Bootstrap interactive wrappers | ✅ done |
-| 17 | v1.0.0 readiness & the first stable release | ⏳ planned |
+| 17 | v1.0.0 readiness & the first stable release | 🚧 in progress |
 | 18 | Browser distribution | ⏳ planned |
 | 19 | Table data & bsTable extras | ⏳ planned |
 | 20 | Application UX utilities | ⏳ planned |
