@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-09 — a controller from the node's own realm, and M16 closes`](docs/journal/2026/08/2026-08-09-cross-realm-abort-signal.md).
+  [`2026-08-09 — planning the road to 1.0`](docs/journal/2026/08/2026-08-09-v1-readiness-planning.md).
 
 ## Model & effort routing
 
@@ -234,6 +234,28 @@ failing typed when the peer is absent (spec 04 §2, F68–F81) — closes the ca
 
 ---
 
+## Milestone 17 — v1.0.0 readiness & the first stable release
+
+Not a capability wave: **no new surface ships here.** Specs 01–04 are delivered and the
+public surface is 110 exports across 10 entries — the question a 1.0 answers is not "is it
+ready" (no open items, no open bugs, every gate green) but **"what are we committing never
+to change again"**, since after 1.0 every export, every `EGL_*` code and every exports-map
+path is MAJOR-protected.
+
+So this milestone spends its budget on the things a major boundary is the *only* cheap
+moment for, and on the review that looks for the ones nobody has thought of. The known
+backlog — the `bsTable` extras catalogued in spec 04's non-goals — is deliberately **not**
+here: it is additive, and additive work belongs in 1.x.
+
+- [ ] 17.1 v1.0.0 readiness review: audit the whole public surface for what we would regret freezing — shape consistency across builders (an `Element` from some, an instance from others), option-name and callback-signature drift between sibling APIs, error-code coverage, the exports-map shape, and anything a consumer could reasonably read two ways. Findings become items in this milestone rather than being folded in (the roadmap 7.6 precedent). The review does **not** propose new features _(route: standard/high — verification review; the 1.0 decision itself stays with the owner)_
+- [ ] 17.2 Raise the supported-runtime floor for the 1.x line: Node 18 left maintenance in April 2025 and Node 20 in April 2026, so a 1.x born now would carry unmaintained runtimes for years. Decide and apply the new floor (`engines`, the CI matrix, `SUPPORT_MATRIX` in `tools/api-floor-inventory.js`, and the Safari figure), amending spec 01 NFR-07 in the same PR. **Breaking by construction, which is why it belongs here**: after 1.0 it costs a major _(route: frontier-reasoning/high — decision-heavy: the only cheap moment for it, and the floor governs the api-floor gate)_
+- [ ] 17.3 Publish the generated API reference: `docs/api/` is built by `pnpm docs:api` and gitignored, so a consumer of a 110-export surface has the README and their editor's JSDoc and nothing navigable. Add a Pages workflow that generates and publishes it per release, and link it from the README _(route: standard/medium)_
+- [ ] 17.4 Close the NFR-01 clause ADR-0015 left open — whether the per-function 1 kB budget exempts composing facades, or keeps naming them one by one as exceptions. Practice has amended it four times over (`httpClient`, `bsTable`, `tablePipeline`, `bindTableControls`); a 1.0 should ship the clause it actually enforces _(route: standard/medium — decision-heavy, and it is written down as the owner's call)_
+- [ ] 17.5 Cut **v1.0.0**: the first release whose version means what SemVer says it means. Changelog prose and release notes as ever, plus a short compatibility statement naming the supported runtimes and what the stability promise covers _(route: standard/high — the release decision stays with the owner)_
+
+
+---
+
 ## Spec Coverage Map
 
 Tracks which spec section is fulfilled by which roadmap item(s). Every spec section has a
@@ -246,9 +268,9 @@ progress · ✅ done · ❎ N/A.
 |--------|-------------|---------------|--------|
 | §1 | Objective & business context | 1.1, 7.6 | ✅ |
 | §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 7.6 | ✅ |
-| §3 | Non-functional requirements | 1.3, 1.4, 2.6, 3.6, 5.3, 6.4, 7.1, 7.2, 7.3, 7.6, 8.1 | ✅ |
+| §3 | Non-functional requirements | 1.3, 1.4, 2.6, 3.6, 5.3, 6.4, 7.1, 7.2, 7.3, 7.6, 8.1, 17.2, 17.4 | ✅ |
 | §4 | Logical architecture | 1.1, 7.6 | ✅ |
-| §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 7.6 | ✅ |
+| §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 7.6, 17.1 | ✅ |
 | §6 | Verification & test strategy | 1.2, 1.4, 2.6, 4.4, 5.6, 6.4, 6.5, 7.1, 7.2, 7.6, 8.1 | ✅ |
 
 ### Spec 02 — core extensions: text, net, query & logging (F26–F41)
