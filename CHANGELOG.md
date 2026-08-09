@@ -20,7 +20,7 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   sanitizer on either side, and markup goes through the `{html: true, sanitize}` pair
   before Bootstrap sees it, with Bootstrap's own filter switched off so the profile you
   chose is not narrowed by a second, invisible one. They also need **Popper**, and when it
-  is missing you are told *which* package: `EGL_PEER_MISSING` with
+  is missing you are told _which_ package: `EGL_PEER_MISSING` with
   `.peer === '@popperjs/core'`, so nobody re-checks the `bootstrap` install that was
   already fine. `setContent` on a tip that is on screen replaces its text and leaves it
   open — Bootstrap's own closes it and does not come back.
@@ -31,7 +31,7 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   its slides, and the scrollspy has no open state at all, so it is written plainly instead
   of inheriting `show`/`hide`/`toggle` methods that would throw. `bsCarousel` labels its
   own indicators (a row of identical unlabelled buttons is the usual defect), treats `alt`
-  as the field that *declares* a slide an image — so an image cannot reach the page
+  as the field that _declares_ a slide an image — so an image cannot reach the page
   unlabelled — and leaves autoplay off unless asked, because motion that starts on its own
   is the caller's decision. `bsScrollspy` gains a `nav` option naming the links it marks,
   without which it had no observable output.
@@ -64,26 +64,6 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - `PeerMissingError` on `egl-utils-js/errors` (code `EGL_PEER_MISSING`), carrying the npm
   package name in `.peer`.
 
-- `bsTable` grows a `controls` option (ROADMAP 15.2, spec 04 F67, ADR-0040): a per-column
-  filter row, a global search box, a page-size select and an F65 pagination bar, wired to
-  the table's pipeline through F51 `bindTableControls` — public commands only, debounced
-  inputs, `aria-sort` on sortable headers, and one structural teardown. Every
-  human-readable string is injectable and none is rendered unasked: the status text is
-  digits, page sizes are digits, and an unpaginated option appears only if you name it.
-  The rendered nodes are exposed as `table.controls`.
-- `tablePipeline` accepts `operators` (spec 03 F42, amended): the F33 custom-token
-  vocabulary, now applied to every filter string the pipeline compiles — a column filter
-  and the global search alike. Previously only `locale` was forwarded, so a project's own
-  operators were unreachable from any string filter.
-
-- `bsTable` on `egl-utils-js/bootstrap` (ROADMAP 15.1, spec 04 F66, ADR-0039): a complete
-  Bootstrap 5 table rendered from column descriptors over an F42 `tablePipeline` that stays
-  **public** as `.pipeline` — filter, sort and page compose, commands re-render, and an
-  existing pipeline can be passed in and is borrowed rather than adopted. Cells obey the
-  builder escape contract per column, row activation is one delegated listener and works
-  from the keyboard, and a non-primitive cell value without a `format` throws instead of
-  being stringified into the page.
-
 ### Changed
 
 - `bsToast` now builds in the **container's own document** rather than the ambient one,
@@ -100,7 +80,7 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - Builders that own a listener now work against a document from another realm — an iframe,
   a popup, or a `new JSDOM()` document under Node (ROADMAP 16.5,
   [BUG-0003](docs/bugs/2026/08/BUG-0003-cross-realm-abort-signal-in-composites.md),
-  ADR-0045). Each created its `AbortController` in *this* realm and handed the signal to
+  ADR-0045). Each created its `AbortController` in _this_ realm and handed the signal to
   `addEventListener` on a node from another, which the DOM refuses — so the `{document}`
   option worked for every builder that rendered and failed for every builder that also
   listened. The controller is now taken from the target's own view. Affects `inlineAlert`,
@@ -116,6 +96,7 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 | Version | Date       | Changelog                                                  |
 | ------- | ---------- | ---------------------------------------------------------- |
+| v0.8.0  | 2026-08-09 | [docs/changelog/v0/v0.8.0.md](docs/changelog/v0/v0.8.0.md) |
 | v0.7.0  | 2026-08-08 | [docs/changelog/v0/v0.7.0.md](docs/changelog/v0/v0.7.0.md) |
 | v0.6.0  | 2026-08-07 | [docs/changelog/v0/v0.6.0.md](docs/changelog/v0/v0.6.0.md) |
 | v0.5.0  | 2026-08-07 | [docs/changelog/v0/v0.5.0.md](docs/changelog/v0/v0.5.0.md) |
