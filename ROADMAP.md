@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-09 — planning the road to 1.0`](docs/journal/2026/08/2026-08-09-v1-readiness-planning.md).
+  [`2026-08-09 — planning the browser distribution wave`](docs/journal/2026/08/2026-08-09-browser-distribution-planning.md).
 
 ## Model & effort routing
 
@@ -252,6 +252,86 @@ here: it is additive, and additive work belongs in 1.x.
 - [ ] 17.3 Publish the generated API reference: `docs/api/` is built by `pnpm docs:api` and gitignored, so a consumer of a 110-export surface has the README and their editor's JSDoc and nothing navigable. Add a Pages workflow that generates and publishes it per release, and link it from the README _(route: standard/medium)_
 - [ ] 17.4 Close the NFR-01 clause ADR-0015 left open — whether the per-function 1 kB budget exempts composing facades, or keeps naming them one by one as exceptions. Practice has amended it four times over (`httpClient`, `bsTable`, `tablePipeline`, `bindTableControls`); a 1.0 should ship the clause it actually enforces _(route: standard/medium — decision-heavy, and it is written down as the owner's call)_
 - [ ] 17.5 Cut **v1.0.0**: the first release whose version means what SemVer says it means. Changelog prose and release notes as ever, plus a short compatibility statement naming the supported runtimes and what the stability promise covers _(route: standard/high — the release decision stays with the owner)_
+- [ ] 17.6 Decide the `/sanitize` peer-resolution contract before 1.0 freezes it: today `/sanitize` static-imports `dompurify` — fatal at module load on a page with no bundler and no import map — while `/bootstrap` resolves its peer lazily, injected-first, failing typed (ADR-0041). Two optional peers, two contradictory mechanisms, and only one survives a bundler-free page. The decision needs an ADR; if the chosen contract is incompatible with the static import, the flip ships inside this item (the 17.2 breaking-by-construction logic), and the purely additive remainder lands in M18 item 18.1 — spec 05 F82 is written mechanism-neutral and defers to that ADR _(route: frontier-reasoning/high — decision-heavy + security: the contract is the deliverable, and it pre-empts a 17.1 finding)_
+
+
+---
+
+## Milestone 18 — Browser distribution
+
+The no-bundler consumer becomes first-class: a plain HTML page — no Node, no npm, no
+bundler — loads the library from a static server or a CDN and gets the same typed
+contracts. Nine of ten entries already pass exactly this path in CI; this wave closes the
+tenth (`/sanitize`, per the 17.6 ADR), ships the missing single-file artifact and CDN
+resolution, and documents and gates what has so far been a fixture-only truth. Spec:
+[`docs/specs/05_spec_browser_distribution.md`](docs/specs/05_spec_browser_distribution.md).
+**Runs after v1.0.0** — additive by construction once 17.6 has extracted the only
+breaking-risk piece, per the owner's recorded 1.x stance. The candidate 1.x feature waves
+identified by the same triage (M19–M21 below, plus unnumbered widget candidates) are
+recorded in
+[ADR-0046](docs/adr/0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md).
+
+- [ ] 18.1 `/sanitize` no-bundler behavior per the 17.6 ADR: the entry loads with no import map, the peer is reachable per that contract, and absence surfaces as `EGL_PEER_MISSING` naming `dompurify` — never a module-resolution failure at load (spec 05 F82) _(route: standard/high — security: sanitizer reachability is security posture)_
+- [ ] 18.2 The global single-file artifact: `dist/global/egl-utils.global.js`, IIFE + sourcemap, `window.egl` namespacing the full public surface, peers external, no load side effects; the budget row lands pinned to measured + ≤ 7% under the 40 kB authoring ceiling (spec 05 F83, NFR-22) _(route: standard/high — sets-pattern: the artifact every CDN consumer scripts against)_
+- [ ] 18.3 CDN resolution and the packaging gates: `unpkg`/`jsdelivr` fields target the artifact, the exports map stays byte-identical, and a packaging test asserts the fields name files present in the packed tarball (spec 05 F84, NFR-23) _(route: standard/medium)_
+- [ ] 18.4 The no-bundler documentation: README "Use from a browser, without npm" — per-entry deep ESM URLs, the artifact route, how each peer is supplied on each route, and the same-version rule for shared chunks; every snippet mirrored by an 18.5 fixture (spec 05 F85) _(route: fast/medium)_
+- [ ] 18.5 CI no-bundler smoke and unbundled transfer accounting: Playwright loads the package exactly as the docs say (deep ESM with no import map; classic `<script src>`) on three engines, and size rows gate each documented request waterfall plus the artifact (spec 05 F86–F87, NFR-24) _(route: standard/medium)_
+
+
+---
+
+## Milestone 19 — Table data & bsTable extras
+
+Provisional wave ([ADR-0046](docs/adr/0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md)):
+items are planned now by owner decision; the wave's spec (06) is authored in its own
+planning PR before implementation starts — refining wording where needed, never
+renumbering — and will own the wave's F-numbers. Execution order among M19–M21 is the
+owner's post-1.0 call: numbering fixes identity, not sequence. Scope: the spec 04 §1
+backlog quoted verbatim — *"CSV/Excel export, sticky headers, column resize and reorder"*
+— plus the two capabilities the ADR-0046 triage found absent and highest-value:
+asynchronous data and row selection.
+
+- [ ] 19.1 Async/remote data for the pipeline: a source contract (`load(query, signal)`) with abort/latest-request-wins, loading/error reflected in the derived view, and serialization of pipeline state for a server — composing `httpClient`/`createResource`/`urlSearchParams` without importing them _(route: frontier-reasoning/high — sets-pattern + decision-heavy: the data contract every later data-driven component reuses)_
+- [ ] 19.2 Pipeline state ↔ URL: serialize/restore filters, search, sort and page to the query string, with history integration (api-floor amendment: `history.pushState`/`popstate`) _(route: standard/high)_
+- [ ] 19.3 Row selection: single/multi/checkbox column, `getSelection()`, selection events, select-all-on-page; `bsTable` wiring _(route: standard/high)_
+- [ ] 19.4 Export: CSV and clipboard from the derived view — client-side and zero-dep; Excel stays out of core, a caller callback being the extension point (the zero-runtime-deps rule) _(route: standard/medium)_
+- [ ] 19.5 Sticky header (spec 04 backlog) _(route: standard/medium)_
+- [ ] 19.6 Column resize (spec 04 backlog) _(route: standard/medium)_
+- [ ] 19.7 Column reorder (spec 04 backlog; spec 03's drag-and-drop non-goal is superseded by the wave spec if drag is the chosen mechanism) _(route: standard/high)_
+
+
+---
+
+## Milestone 20 — Application UX utilities
+
+Provisional wave ([ADR-0046](docs/adr/0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md)):
+same rules as M19 — the wave's spec (07) is authored in its own planning PR; execution
+order is the owner's post-1.0 call. This wave expects api-floor amendments (`matchMedia`
+at minimum), each an explicit ADR-0017 inventory decision.
+
+- [ ] 20.1 Promise-based dialogs over `bsModal`: `confirm`/`prompt`/custom returning a promise with the dialog's result, focus restoration included _(route: standard/high — sets-pattern: the promise-wrapper shape later dialogs copy)_
+- [ ] 20.2 Toast manager over `bsToast`: queue, max-visible cap, dedupe, update-by-id, and a `promise()` loading → success/error helper _(route: standard/medium)_
+- [ ] 20.3 Theme management: `data-bs-theme` get/set/toggle, `prefers-color-scheme` tracking, storage persistence, early no-flash apply, and a toggle-control builder _(route: standard/medium)_
+- [ ] 20.4 BreakpointObserver: `matchMedia` over Bootstrap's breakpoint names with a subscribe API (api-floor amendment) _(route: standard/medium)_
+- [ ] 20.5 A11y primitives: a reusable focus trap and focus save/restore extracted from the F50 overlay, and a LiveRegion announcer _(route: standard/high — focus and live-region timing are classically bug-prone)_
+- [ ] 20.6 Reduced-motion policy helper: one query point components consult (a MotionManager stays rejected, ADR-0046) _(route: fast/low)_
+
+
+---
+
+## Milestone 21 — Form engine
+
+Provisional wave ([ADR-0046](docs/adr/0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md)):
+the largest adopted gap, and the one behind a frozen non-goal — spec 04 §1 excludes "a
+form-validation framework", so this wave's spec (08) formally supersedes that clause
+before any implementation. Same rules as M19/M20; execution order is the owner's post-1.0
+call.
+
+- [ ] 21.1 Form value binding & serialization: `getValues`/`setValues` over native controls, JSON and `FormData` output, reset-to-initial _(route: frontier-reasoning/high — sets-pattern: the form contract everything below builds on)_
+- [ ] 21.2 Validation engine: declarative sync/async/cross-field rules, severity levels, incremental validation _(route: standard/high)_
+- [ ] 21.3 Bootstrap adapter: `is-invalid`/`invalid-feedback`/`was-validated` wiring over the engine _(route: standard/medium)_
+- [ ] 21.4 Submit lifecycle: busy state, double-submit guard, `HttpError` body → field-error mapping _(route: standard/high — security: mapping untrusted server payloads onto the DOM)_
+- [ ] 21.5 Dirty/touched tracking and an unsaved-changes guard _(route: standard/medium)_
 
 
 ---
@@ -270,7 +350,7 @@ progress · ✅ done · ❎ N/A.
 | §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 7.6 | ✅ |
 | §3 | Non-functional requirements | 1.3, 1.4, 2.6, 3.6, 5.3, 6.4, 7.1, 7.2, 7.3, 7.6, 8.1, 17.2, 17.4 | ✅ |
 | §4 | Logical architecture | 1.1, 7.6 | ✅ |
-| §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 7.6, 17.1 | ✅ |
+| §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 7.6, 17.1, 17.6 | ✅ |
 | §6 | Verification & test strategy | 1.2, 1.4, 2.6, 4.4, 5.6, 6.4, 6.5, 7.1, 7.2, 7.6, 8.1 | ✅ |
 
 ### Spec 02 — core extensions: text, net, query & logging (F26–F41)
@@ -309,3 +389,14 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 | §4 (04) | Logical architecture | 14.1, 15.1, 16.1 | ✅ |
 | §5 (04) | Public interface | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4 | ✅ |
 | §6 (04) | Verification & test strategy | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4, 16.5 | ✅ |
+
+### Spec 05 — browser distribution (F82–F87)
+
+| Spec § | Requirement | Roadmap items | Status |
+|--------|-------------|---------------|--------|
+| §1 (05) | Objective & business context | 18.1, 18.2, 18.3, 18.4, 18.5 | ⏳ |
+| §2 (05) | Functional requirements F82–F87 | 18.1, 18.2, 18.3, 18.4, 18.5 | ⏳ |
+| §3 (05) | Non-functional requirements | 18.2, 18.3, 18.5 | ⏳ |
+| §4 (05) | Logical architecture | 18.2, 18.3 | ⏳ |
+| §5 (05) | Public interface | 18.1, 18.2, 18.3 | ⏳ |
+| §6 (05) | Verification & test strategy | 18.1, 18.5 | ⏳ |
