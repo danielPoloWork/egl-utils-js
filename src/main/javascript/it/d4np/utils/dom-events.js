@@ -16,6 +16,7 @@
  */
 
 import { controllerFor, isAbortSignal, isElement } from './dom-helpers.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /**
  * True for anything that can host a delegated listener and answer
@@ -106,7 +107,8 @@ export function delegate(root, type, selector, handler, options = {}) {
   if (typeof handler !== 'function') {
     throw new TypeError('handler must be a function');
   }
-  const { signal, capture = false } = options;
+  const { signal, capture = false, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'delegate');
   if (signal !== undefined && !isAbortSignal(signal)) {
     throw new TypeError('options.signal must be an AbortSignal');
   }
@@ -239,7 +241,8 @@ export function setVisible(el, visible, options = {}) {
   if (typeof visible !== 'boolean') {
     throw new TypeError('setVisible: visible must be a boolean');
   }
-  const { hiddenClass } = options;
+  const { hiddenClass, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'setVisible');
   if (hiddenClass !== undefined) assertNonEmptyString(hiddenClass, 'options.hiddenClass');
   if (!actionable(el, 'setVisible')) return;
 

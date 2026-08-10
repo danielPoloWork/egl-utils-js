@@ -27,6 +27,7 @@ import { debounce } from './events.js';
 import { delegate, setEnabled } from './dom-events.js';
 import { controllerFor, isElement, requireDocument } from './dom-helpers.js';
 import { DomContractError } from './errors.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /** Commands each binding needs, so a wrong object fails at bind time. */
 const REQUIRED_COMMAND = /** @type {const} */ ({
@@ -160,7 +161,14 @@ export function bindTableControls(pipeline, bindings, options = {}) {
   if (bindings === null || typeof bindings !== 'object') {
     throw new TypeError('bindings must be an object');
   }
-  const { signal, debounceMs = 200, root, formatStatus = defaultStatus } = options ?? {};
+  const {
+    signal,
+    debounceMs = 200,
+    root,
+    formatStatus = defaultStatus,
+    ...unknown
+  } = options ?? {};
+  assertNoUnknownOptions(unknown, 'bindTableControls');
   if (!Number.isFinite(debounceMs) || debounceMs < 0) {
     throw new TypeError('options.debounceMs must be a number >= 0');
   }

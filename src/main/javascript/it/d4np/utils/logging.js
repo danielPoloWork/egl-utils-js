@@ -16,10 +16,14 @@
  * A failing sink, clock, id function, or `toString` is caught and reported once
  * through `console.error`; the call that logged it still returns normally.
  *
+ * Every options bag on this entry **rejects a key it does not know** with a
+ * `TypeError` naming it: the destructuring is the schema (ADR-0047).
+ *
  * @module egl-utils-js/logging
  */
 
 import { fixedWidth } from './text.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /**
  * The level vocabulary, ordered from most to least verbose (spec 02 F40).
@@ -156,7 +160,8 @@ export function formatTimestamp(date, options = {}) {
   if (!Number.isFinite(at.getTime())) {
     throw new TypeError('date must represent a valid instant');
   }
-  const { fractional = true } = options;
+  const { fractional = true, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'formatTimestamp');
 
   const ymd = `${at.getFullYear()}-${padZero(at.getMonth() + 1, 2)}-${padZero(at.getDate(), 2)}`;
   const hms = `${padZero(at.getHours(), 2)}:${padZero(at.getMinutes(), 2)}:${padZero(at.getSeconds(), 2)}`;
@@ -380,7 +385,9 @@ export function logger(options = {}) {
     format = formatLogLine,
     now = Date.now,
     id = '',
+    ...unknown
   } = options;
+  assertNoUnknownOptions(unknown, 'logger');
 
   if (typeof level !== 'string' || !Object.hasOwn(RANK, level)) {
     throw new TypeError(`level must be one of: ${LOG_LEVELS.join(', ')}`);

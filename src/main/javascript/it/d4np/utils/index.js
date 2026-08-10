@@ -12,6 +12,9 @@
  * ('egl-utils-js/storage', 'egl-utils-js/sanitize'), never on the root
  * (spec §4).
  *
+ * Every options bag on this entry **rejects a key it does not know** with a
+ * `TypeError` naming it: the destructuring is the schema (ADR-0047).
+ *
  * @module egl-utils-js
  */
 

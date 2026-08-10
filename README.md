@@ -44,6 +44,21 @@ Every example below is runnable as written against the published package. Root-e
 functions are pure and never mutate their inputs unless noted; `EventEmitter`, the
 storage wrappers, `cookieHelper`, and `httpClient` are stateful by contract.
 
+**Options bags reject keys they do not know.** Every function that takes an options object
+throws a `TypeError` naming an unrecognised key, rather than ignoring it
+([ADR-0047](docs/adr/0047-an-unknown-option-key-is-a-typeerror.md)):
+
+```js
+bsBadge('sale', { varient: 'danger' });
+// TypeError: bsBadge: unknown option 'varient'
+```
+
+A typo is the whole reason: silently dropping it leaves you reading a grey badge and
+wondering which layer lost the colour. Where an option genuinely is not modelled here,
+there is a typed channel for it instead — `bootstrap` on the behaviour wrappers passes
+vendor config straight through, `operators` extends the filter grammar, `classes`
+retargets the alert's class map.
+
 ### Async combinators (`egl-utils-js`)
 
 Signal-first cancellation throughout (ADR-0004): pass `{ signal }`, get `AbortError` on

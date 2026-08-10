@@ -25,6 +25,7 @@
  */
 
 import { isElement } from './dom-helpers.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 import {
   appendContent,
   applyClasses,
@@ -81,7 +82,7 @@ import {
  * @param {Element} target - The collapsible element.
  * @param {BsCollapseOptions} [options]
  * @returns {BehaviourWrapper}
- * @throws {TypeError} On a malformed option or a non-Element target.
+ * @throws {TypeError} On a malformed or unknown option or a non-Element target.
  * @throws {PeerMissingError} From the first operation, if `Collapse` is unreachable.
  */
 export function bsCollapse(target, options = {}) {
@@ -92,7 +93,8 @@ export function bsCollapse(target, options = {}) {
   assertPlainObject(options, 'options', api);
   assertSignal(options, api);
 
-  const { toggler, parent, toggle = false } = options;
+  const { toggler, parent, toggle = false, bootstrap, signal, ...unknown } = options;
+  assertNoUnknownOptions(unknown, api);
   if (toggler !== undefined && !isElement(toggler)) {
     throw new TypeError(`${api}: options.toggler must be an Element`);
   }
@@ -104,12 +106,16 @@ export function bsCollapse(target, options = {}) {
   const config = { toggle };
   if (parent !== undefined) config.parent = parent;
 
-  const wrapper = behaviourWrapper(target, options, {
-    api,
-    component: 'Collapse',
-    ns: 'bs.collapse',
-    config,
-  });
+  const wrapper = behaviourWrapper(
+    target,
+    { bootstrap, signal },
+    {
+      api,
+      component: 'Collapse',
+      ns: 'bs.collapse',
+      config,
+    },
+  );
 
   if (toggler === undefined) return wrapper;
 
@@ -208,7 +214,7 @@ export function bsCollapse(target, options = {}) {
  * @param {Element} container
  * @param {BsAccordionOptions} [options]
  * @returns {BsAccordionInstance}
- * @throws {TypeError} On a malformed option or a non-Element container.
+ * @throws {TypeError} On a malformed or unknown option or a non-Element container.
  * @throws {PeerMissingError} From the first operation, if `Collapse` is unreachable.
  */
 export function bsAccordion(container, options = {}) {
@@ -219,12 +225,24 @@ export function bsAccordion(container, options = {}) {
   assertPlainObject(options, 'options', api);
   assertSignal(options, api);
 
-  const { items, alwaysOpen = false, flush = false, html, sanitize, signal } = options;
+  const {
+    items,
+    alwaysOpen = false,
+    flush = false,
+    html,
+    sanitize,
+    signal,
+    bootstrap,
+    class: extraClass,
+    document: explicitDocument,
+    ...unknown
+  } = options;
+  assertNoUnknownOptions(unknown, api);
   if (items !== undefined && !Array.isArray(items)) {
     throw new TypeError(`${api}: options.items must be an array`);
   }
 
-  const doc = documentOf(container, options, api);
+  const doc = documentOf(container, { document: explicitDocument }, api);
   /** @type {Element} */
   let root;
 
@@ -232,7 +250,7 @@ export function bsAccordion(container, options = {}) {
     root = container;
   } else {
     root = doc.createElement('div');
-    applyClasses(root, ['accordion', flush === true && 'accordion-flush'], options.class, api);
+    applyClasses(root, ['accordion', flush === true && 'accordion-flush'], extraClass, api);
     /** @type {Set<string>} */
     const reserved = new Set();
     root.id = uniqueId(doc, 'egl-accordion', reserved);
@@ -291,7 +309,7 @@ export function bsAccordion(container, options = {}) {
       bsCollapse(pane, {
         ...(button === null ? {} : { toggler: button }),
         ...(alwaysOpen === true ? {} : { parent: root }),
-        ...(options.bootstrap === undefined ? {} : { bootstrap: options.bootstrap }),
+        ...(bootstrap === undefined ? {} : { bootstrap }),
       }),
     );
   }
@@ -384,7 +402,7 @@ export function bsAccordion(container, options = {}) {
  * @param {Element} toggler - The element carrying `dropdown-toggle`.
  * @param {BsDropdownOptions} [options]
  * @returns {BehaviourWrapper & { update: () => void }}
- * @throws {TypeError} On a malformed option or a non-Element toggler.
+ * @throws {TypeError} On a malformed or unknown option or a non-Element toggler.
  * @throws {PeerMissingError} From the first operation, if `Dropdown` is unreachable.
  */
 export function bsDropdown(toggler, options = {}) {
@@ -395,18 +413,23 @@ export function bsDropdown(toggler, options = {}) {
   assertPlainObject(options, 'options', api);
   assertSignal(options, api);
 
-  const { autoClose, reference } = options;
+  const { autoClose, reference, bootstrap, signal, ...unknown } = options;
+  assertNoUnknownOptions(unknown, api);
   /** @type {Record<string, unknown>} */
   const config = {};
   if (autoClose !== undefined) config.autoClose = autoClose;
   if (reference !== undefined) config.reference = reference;
 
-  const wrapper = behaviourWrapper(toggler, options, {
-    api,
-    component: 'Dropdown',
-    ns: 'bs.dropdown',
-    config,
-  });
+  const wrapper = behaviourWrapper(
+    toggler,
+    { bootstrap, signal },
+    {
+      api,
+      component: 'Dropdown',
+      ns: 'bs.dropdown',
+      config,
+    },
+  );
 
   return {
     ...wrapper,
@@ -476,7 +499,7 @@ export function bsDropdown(toggler, options = {}) {
  * @param {Element} container
  * @param {BsTabsOptions} [options]
  * @returns {BsTabsInstance}
- * @throws {TypeError} On a malformed option or a non-Element container.
+ * @throws {TypeError} On a malformed or unknown option or a non-Element container.
  * @throws {PeerMissingError} From `select`, if `Tab` is unreachable.
  */
 export function bsTabs(container, options = {}) {
@@ -496,19 +519,24 @@ export function bsTabs(container, options = {}) {
     html,
     sanitize,
     signal,
+    bootstrap,
+    class: extraClass,
+    document: explicitDocument,
+    ...unknown
   } = options;
+  assertNoUnknownOptions(unknown, api);
   if (tabs !== undefined && !Array.isArray(tabs)) {
     throw new TypeError(`${api}: options.tabs must be an array`);
   }
   assertToken(kind, 'options.kind', api);
 
-  const doc = documentOf(container, options, api);
+  const doc = documentOf(container, { document: explicitDocument }, api);
   /** @type {Element} */
   let root = container;
 
   if (tabs !== undefined) {
     root = doc.createElement('div');
-    applyClasses(root, [], options.class, api);
+    applyClasses(root, [], extraClass, api);
 
     const list = doc.createElement('ul');
     applyClasses(
@@ -601,7 +629,7 @@ export function bsTabs(container, options = {}) {
     if (trigger === undefined) {
       throw new TypeError(`${api}: no tab at index ${index} (${triggers.length} present)`);
     }
-    const instance = instantiate(resolveComponent(options, api, 'Tab'), trigger, {});
+    const instance = instantiate(resolveComponent({ bootstrap }, api, 'Tab'), trigger, {});
     instances.push(instance);
     invoke(instance, 'show');
   }
@@ -707,7 +735,7 @@ export function bsTabs(container, options = {}) {
  * @param {Element} container
  * @param {BsNavbarOptions} [options]
  * @returns {BsNavbarInstance}
- * @throws {TypeError} On a malformed option or a non-Element container.
+ * @throws {TypeError} On a malformed or unknown option or a non-Element container.
  * @throws {PeerMissingError} From the toggler or a dropdown, if the peer is unreachable.
  */
 export function bsNavbar(container, options = {}) {
@@ -729,7 +757,12 @@ export function bsNavbar(container, options = {}) {
     html,
     sanitize,
     signal,
+    bootstrap,
+    class: extraClass,
+    document: explicitDocument,
+    ...unknown
   } = options;
+  assertNoUnknownOptions(unknown, api);
   if (!Array.isArray(items)) {
     throw new TypeError(`${api}: options.items must be an array`);
   }
@@ -740,7 +773,7 @@ export function bsNavbar(container, options = {}) {
     throw new TypeError(`${api}: options.togglerLabel must be a non-empty string`);
   }
 
-  const doc = documentOf(container, options, api);
+  const doc = documentOf(container, { document: explicitDocument }, api);
   const contentOptions = { html, sanitize };
 
   const nav = doc.createElement('nav');
@@ -752,7 +785,7 @@ export function bsNavbar(container, options = {}) {
       placement !== undefined && placement,
       variant !== undefined && `bg-${variant}`,
     ],
-    options.class,
+    extraClass,
     api,
   );
 
@@ -843,9 +876,7 @@ export function bsNavbar(container, options = {}) {
     }
     li.append(menu);
 
-    dropdowns.push(
-      bsDropdown(link, options.bootstrap === undefined ? {} : { bootstrap: options.bootstrap }),
-    );
+    dropdowns.push(bsDropdown(link, bootstrap === undefined ? {} : { bootstrap }));
     return li;
   }
 
@@ -859,7 +890,7 @@ export function bsNavbar(container, options = {}) {
 
   const collapse = bsCollapse(region, {
     toggler,
-    ...(options.bootstrap === undefined ? {} : { bootstrap: options.bootstrap }),
+    ...(bootstrap === undefined ? {} : { bootstrap }),
   });
 
   let destroyed = false;

@@ -30,10 +30,12 @@ import {
   assertToken,
   bsBadge,
   closestWithin,
+  commonOptions,
   isNode,
   renderContent,
   resolveDocument,
 } from './bootstrap-elements.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /**
  * @typedef {import('./bootstrap-elements.js').Content} Content
@@ -95,7 +97,7 @@ import {
  *
  * @param {BsCardOptions} [options]
  * @returns {Element}
- * @throws {TypeError} On a malformed option, on an image without a string `alt`,
+ * @throws {TypeError} On a malformed or unknown option, on an image without a string `alt`,
  *   or on `{ html: true }` without `sanitize`.
  * @throws {DomContractError} If there is no document to build in.
  */
@@ -113,39 +115,41 @@ export function bsCard(options = {}) {
     image,
     listGroup,
     titleTag = 'h5',
+    ...rest
   } = options;
+  const common = commonOptions(rest, api);
 
   assertToken(titleTag, 'options.titleTag', api);
   if (listGroup !== undefined && !isElement(listGroup)) {
     throw new TypeError(`${api}: options.listGroup must be an Element`);
   }
 
-  const doc = resolveDocument(options, api);
+  const doc = resolveDocument(common, api);
   const el = doc.createElement('div');
-  applyClasses(el, ['card'], options.class, api);
+  applyClasses(el, ['card'], common.class, api);
 
   const fragment = doc.createDocumentFragment();
   const imageEl = image === undefined ? undefined : buildCardImage(image, doc, api);
   if (imageEl !== undefined && image?.position !== 'bottom') fragment.append(imageEl);
 
   if (header !== undefined) {
-    fragment.append(slot(doc, 'div', ['card-header'], header, options, api));
+    fragment.append(slot(doc, 'div', ['card-header'], header, common, api));
   }
 
   if (title !== undefined || subtitle !== undefined || text !== undefined || body !== undefined) {
     const bodyEl = doc.createElement('div');
     applyClasses(bodyEl, ['card-body'], undefined, api);
     if (title !== undefined) {
-      bodyEl.append(slot(doc, titleTag, ['card-title'], title, options, api));
+      bodyEl.append(slot(doc, titleTag, ['card-title'], title, common, api));
     }
     if (subtitle !== undefined) {
       const classes = ['card-subtitle', 'mb-2', 'text-body-secondary'];
-      bodyEl.append(slot(doc, 'h6', classes, subtitle, options, api));
+      bodyEl.append(slot(doc, 'h6', classes, subtitle, common, api));
     }
     if (text !== undefined) {
-      bodyEl.append(slot(doc, 'p', ['card-text'], text, options, api));
+      bodyEl.append(slot(doc, 'p', ['card-text'], text, common, api));
     }
-    if (body !== undefined) appendContent(bodyEl, body, options, api);
+    if (body !== undefined) appendContent(bodyEl, body, common, api);
     fragment.append(bodyEl);
   }
 
@@ -154,8 +158,8 @@ export function bsCard(options = {}) {
   if (footer !== undefined || actions !== undefined) {
     const footerEl = doc.createElement('div');
     applyClasses(footerEl, ['card-footer'], undefined, api);
-    if (footer !== undefined) appendContent(footerEl, footer, options, api);
-    if (actions !== undefined) appendContent(footerEl, actions, options, api);
+    if (footer !== undefined) appendContent(footerEl, footer, common, api);
+    if (actions !== undefined) appendContent(footerEl, actions, common, api);
     fragment.append(footerEl);
   }
 
@@ -271,14 +275,22 @@ function buildCardImage(image, doc, api) {
  * @param {Array<Content | BsListGroupItem>} items
  * @param {BsListGroupOptions} [options]
  * @returns {BsListGroupInstance}
- * @throws {TypeError} On a malformed option or item, or on `update()` after
+ * @throws {TypeError} On a malformed or unknown option or item, or on `update()` after
  *   `destroy()`.
  * @throws {DomContractError} If there is no document to build in.
  */
 export function bsListGroup(items, options = {}) {
   const api = 'bsListGroup';
   assertPlainObject(options, 'options', api);
-  const { flush = false, numbered = false, horizontal = false, onSelect, signal } = options;
+  const {
+    flush = false,
+    numbered = false,
+    horizontal = false,
+    onSelect,
+    signal,
+    ...rest
+  } = options;
+  const common = commonOptions(rest, api);
 
   if (onSelect !== undefined && typeof onSelect !== 'function') {
     throw new TypeError(`${api}: options.onSelect must be a function`);
@@ -288,7 +300,7 @@ export function bsListGroup(items, options = {}) {
   }
   if (typeof horizontal === 'string') assertToken(horizontal, 'options.horizontal', api);
 
-  const doc = resolveDocument(options, api);
+  const doc = resolveDocument(common, api);
   const interactive = onSelect !== undefined;
   // Bootstrap's three shapes: <ol> when numbered (the counter is CSS on the
   // list), a <div> of links/buttons when actionable, a plain <ul> otherwise.
@@ -302,7 +314,7 @@ export function bsListGroup(items, options = {}) {
       horizontal === true && 'list-group-horizontal',
       typeof horizontal === 'string' && `list-group-horizontal-${horizontal}`,
     ],
-    options.class,
+    common.class,
     api,
   );
 
@@ -317,7 +329,9 @@ export function bsListGroup(items, options = {}) {
 
     const fragment = doc.createDocumentFragment();
     for (const [index, item] of normalized.entries()) {
-      fragment.append(buildListItem(item, index, { doc, numbered, interactive, options, api }));
+      fragment.append(
+        buildListItem(item, index, { doc, numbered, interactive, options: common, api }),
+      );
     }
     el.replaceChildren(fragment);
   };
@@ -511,13 +525,14 @@ function renderItemBadge(badge, doc, options, api) {
  * @param {Array<Content | BsBreadcrumbItem>} items
  * @param {BsBreadcrumbOptions} [options]
  * @returns {Element}
- * @throws {TypeError} On a malformed option or item.
+ * @throws {TypeError} On a malformed or unknown option or item.
  * @throws {DomContractError} If there is no document to build in.
  */
 export function bsBreadcrumb(items, options = {}) {
   const api = 'bsBreadcrumb';
   assertPlainObject(options, 'options', api);
-  const { label = 'breadcrumb', divider } = options;
+  const { label = 'breadcrumb', divider, ...rest } = options;
+  const common = commonOptions(rest, api);
 
   if (!Array.isArray(items) || items.length === 0) {
     throw new TypeError(`${api}: items must be a non-empty array`);
@@ -529,10 +544,10 @@ export function bsBreadcrumb(items, options = {}) {
     throw new TypeError(`${api}: options.divider must be a CSS value string`);
   }
 
-  const doc = resolveDocument(options, api);
+  const doc = resolveDocument(common, api);
   const nav = doc.createElement('nav');
   nav.setAttribute('aria-label', label);
-  applyClasses(nav, [], options.class, api);
+  applyClasses(nav, [], common.class, api);
   if (divider !== undefined) {
     /** @type {{ style: CSSStyleDeclaration }} */ (nav).style.setProperty(
       '--bs-breadcrumb-divider',
@@ -560,14 +575,14 @@ export function bsBreadcrumb(items, options = {}) {
     applyClasses(li, ['breadcrumb-item', isCurrent && 'active'], undefined, api);
     if (isCurrent) {
       li.setAttribute('aria-current', 'page');
-      appendContent(li, item.content, options, api);
+      appendContent(li, item.content, common, api);
     } else if (typeof item.href === 'string') {
       const link = doc.createElement('a');
       link.setAttribute('href', item.href);
-      appendContent(link, item.content, options, api);
+      appendContent(link, item.content, common, api);
       li.append(link);
     } else {
-      appendContent(li, item.content, options, api);
+      appendContent(li, item.content, common, api);
     }
     fragment.append(li);
   }
@@ -629,17 +644,29 @@ const BOOTSTRAP_ALERT_CLASSES = /* @__PURE__ */ Object.freeze({
  * @param {Element} container
  * @param {BsAlertOptions} [options]
  * @returns {ReturnType<typeof inlineAlert>}
- * @throws {TypeError} On a malformed option, as F49 defines them.
+ * @throws {TypeError} On a malformed or unknown option, as F49 defines them.
  * @throws {DomContractError} If there is nowhere to build the alert.
  */
 export function bsAlert(container, options = {}) {
   assertPlainObject(options, 'options', 'bsAlert');
-  const { classes = {}, icons = {}, ...rest } = options;
+  const {
+    classes = {},
+    icons = {},
+    autoHideMs,
+    dismissible,
+    closeLabel,
+    signal,
+    ...unknown
+  } = options;
+  assertNoUnknownOptions(unknown, 'bsAlert');
   assertPlainObject(classes, 'options.classes', 'bsAlert');
   assertPlainObject(icons, 'options.icons', 'bsAlert');
 
   return inlineAlert(container, {
-    ...rest,
+    autoHideMs,
+    dismissible,
+    closeLabel,
+    signal,
     classes: { ...BOOTSTRAP_ALERT_CLASSES, ...classes },
     // `''` leaves the button visible with no glyph of ours — `.btn-close`
     // supplies one through CSS. That an empty icon no longer hides the control
@@ -708,7 +735,7 @@ export function bsAlert(container, options = {}) {
  * @param {Element} container
  * @param {BsPaginationOptions} options
  * @returns {BsPaginationInstance}
- * @throws {TypeError} On a malformed option, or on `update()` after `destroy()`.
+ * @throws {TypeError} On a malformed or unknown option, or on `update()` after `destroy()`.
  * @throws {DomContractError} If there is nowhere to build the bar.
  */
 export function bsPagination(container, options) {
@@ -717,7 +744,17 @@ export function bsPagination(container, options) {
     throw new TypeError(`${api}: container must be an Element`);
   }
   assertPlainObject(options, 'options', api);
-  const { onPage, siblingCount = 1, boundaryCount = 1, size, labels = {}, signal } = options;
+  const {
+    onPage,
+    siblingCount = 1,
+    boundaryCount = 1,
+    size,
+    labels = {},
+    signal,
+    class: extraClass,
+    ...unknown
+  } = options;
+  assertNoUnknownOptions(unknown, api);
 
   if (typeof onPage !== 'function') {
     throw new TypeError(`${api}: options.onPage must be a function`);
@@ -754,12 +791,7 @@ export function bsPagination(container, options) {
   const navEl = doc.createElement('nav');
   navEl.setAttribute('aria-label', nav);
   const list = doc.createElement('ul');
-  applyClasses(
-    list,
-    ['pagination', size !== undefined && `pagination-${size}`],
-    options.class,
-    api,
-  );
+  applyClasses(list, ['pagination', size !== undefined && `pagination-${size}`], extraClass, api);
   navEl.append(list);
 
   const controller = controllerFor(navEl);

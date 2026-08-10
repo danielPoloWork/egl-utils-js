@@ -132,7 +132,8 @@ describe('loadingOverlay — the minimum-visible floor', () => {
     // takes 300 ms must not have that time counted against its own floor.
     const hooks = makeHooks();
     hooks.gate.pending = true;
-    const overlay = loadingOverlay({ ...hooks, minVisibleMs: 400 });
+    const { onShow, onHide } = hooks;
+    const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 400 });
 
     const release = overlay.show();
     await vi.advanceTimersByTimeAsync(300); // still appearing
@@ -150,7 +151,8 @@ describe('loadingOverlay — the minimum-visible floor', () => {
   it('honours a hide requested while the overlay is still appearing', async () => {
     const hooks = makeHooks();
     hooks.gate.pending = true;
-    const overlay = loadingOverlay({ ...hooks, minVisibleMs: 100 });
+    const { onShow, onHide } = hooks;
+    const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 100 });
 
     const release = overlay.show();
     release(); // released before the presentation even finished
@@ -429,7 +431,8 @@ describe('loadingOverlay — teardown (NFR-15)', () => {
     // ticking against an instance nobody owns any more.
     const hooks = makeHooks();
     hooks.gate.pending = true;
-    const overlay = loadingOverlay({ ...hooks, minVisibleMs: 10_000 });
+    const { onShow, onHide } = hooks;
+    const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 10_000 });
 
     overlay.show();
     overlay.destroy();

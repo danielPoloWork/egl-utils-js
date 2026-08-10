@@ -13,6 +13,7 @@
  */
 
 import { AbortError, TimeoutError, RetryExhaustedError } from './errors.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /**
  * @param {number} ms
@@ -133,7 +134,8 @@ function timeoutSignalFor(ms) {
  *   and the timer is cleared.
  * @returns {Promise<void>}
  */
-export function delay(ms, { signal } = {}) {
+export function delay(ms, { signal, ...unknown } = {}) {
+  assertNoUnknownOptions(unknown, 'delay');
   assertMilliseconds(ms, 'ms');
   if (signal?.aborted) {
     return Promise.reject(abortErrorFrom(signal));
@@ -178,7 +180,8 @@ export function delay(ms, { signal } = {}) {
  *   operation before the deadline.
  * @returns {Promise<T>}
  */
-export function timeout(input, ms, { signal } = {}) {
+export function timeout(input, ms, { signal, ...unknown } = {}) {
+  assertNoUnknownOptions(unknown, 'timeout');
   assertMilliseconds(ms, 'ms');
   if (signal?.aborted) {
     return Promise.reject(abortErrorFrom(signal));
@@ -269,7 +272,8 @@ export function timeout(input, ms, { signal } = {}) {
  * @returns {Promise<T>}
  */
 export async function retry(fn, options = {}) {
-  const { retries = 3, minDelay = 100, maxDelay = 30_000, signal, onAttempt } = options;
+  const { retries = 3, minDelay = 100, maxDelay = 30_000, signal, onAttempt, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'retry');
 
   if (typeof fn !== 'function') {
     throw new TypeError('fn must be a function');
@@ -367,7 +371,8 @@ export async function retry(fn, options = {}) {
  * @returns {Promise<T[] | PromiseSettledResult<T>[]>}
  */
 export function parallelLimit(tasks, limit, options = {}) {
-  const { signal, settle = false } = options;
+  const { signal, settle = false, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'parallelLimit');
 
   if (!Array.isArray(tasks) || tasks.some((task) => typeof task !== 'function')) {
     throw new TypeError('tasks must be an array of task functions');
@@ -485,7 +490,8 @@ export function parallelLimit(tasks, limit, options = {}) {
  * @returns {AsyncQueue}
  */
 export function asyncQueue(options = {}) {
-  const { signal } = options;
+  const { signal, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'asyncQueue');
 
   /**
    * @typedef {object} QueueItem

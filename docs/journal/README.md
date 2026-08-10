@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-10 — An unknown option key is a TypeError (roadmap 17.7)](2026/08/2026-08-10-strict-option-keys.md)
 - [2026-08-09 — The v1.0.0 readiness review (roadmap 17.1)](2026/08/2026-08-09-v1-readiness-review.md)
 - [2026-08-09 — Planning the browser distribution wave (spec 05, M18)](2026/08/2026-08-09-browser-distribution-planning.md)
 - [2026-08-09 — Planning the road to 1.0 (M17)](2026/08/2026-08-09-v1-readiness-planning.md)

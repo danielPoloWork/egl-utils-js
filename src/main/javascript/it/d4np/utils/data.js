@@ -8,6 +8,7 @@
  */
 
 import { CloneError } from './errors.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /**
  * Name the type of a value that `structuredClone` cannot clone, or return
@@ -289,7 +290,8 @@ export function deepMerge(target, source, options = {}) {
   if (!isPlainObject(target) || !isPlainObject(source)) {
     throw new TypeError('deepMerge requires target and source to be plain objects');
   }
-  const { arrayMerge = 'replace' } = options;
+  const { arrayMerge = 'replace', ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'deepMerge');
   if (arrayMerge !== 'replace' && arrayMerge !== 'concat' && typeof arrayMerge !== 'function') {
     throw new TypeError("arrayMerge must be 'replace', 'concat', or a function");
   }

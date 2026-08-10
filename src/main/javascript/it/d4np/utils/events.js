@@ -9,6 +9,8 @@
  * @module egl-utils-js/events
  */
 
+import { assertNoUnknownOptions } from './option-keys.js';
+
 /**
  * @typedef {object} ListenerEntry
  * @property {(payload: any) => void} listener - The subscriber (internally
@@ -251,11 +253,11 @@ export function debounce(fn, delay, options = {}) {
   if (typeof delay !== 'number' || !Number.isFinite(delay) || delay < 0) {
     throw new TypeError('delay must be a finite non-negative number of milliseconds');
   }
-  const leading = options.leading ?? false;
-  const maxing = options.maxWait !== undefined;
+  const { leading = false, maxWait: requested, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'debounce');
+  const maxing = requested !== undefined;
   let maxWait = 0;
   if (maxing) {
-    const requested = options.maxWait;
     if (typeof requested !== 'number' || !Number.isFinite(requested) || requested < 0) {
       throw new TypeError('maxWait must be a finite non-negative number of milliseconds');
     }

@@ -14,6 +14,21 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- **BREAKING — an unknown option key is now a `TypeError`.** Every function that takes an
+  options bag rejects a key it does not know, naming it
+  (`bsBadge: unknown option 'varient'`), instead of ignoring it in silence. Applies to all
+  52 option bags across every entry, including the nested ones (`bsToast.show`,
+  `inlineAlert.show`, `loadingOverlay.focus`) and `cookieHelper`'s attribute bags, which say
+  *attribute* rather than *option*. Unmodelled vendor options keep their typed channel —
+  `bootstrap` on the behaviour wrappers, `operators` on `compileFilter`, `classes` on the
+  alert engine ([ADR-0047](docs/adr/0047-an-unknown-option-key-is-a-typeerror.md), roadmap
+  17.7).
+- Seventeen size-limit rows re-baselined on measurement for the shared per-entry cost of
+  that check; four documented budget exceptions grew (`httpClient` 1.35 → 1.4 kB,
+  `comparator` 1.05 → 1.1 kB, `logger` 1.45 → 1.5 kB, `/storage` 2.1 → 2.15 kB) and
+  `compileFilter` takes a new named one at 1.03 kB. No component or builder clause moved,
+  and the root entry stays inside its 6 kB ceiling at 5914 B.
+
 ### Deprecated
 
 ### Removed

@@ -44,6 +44,7 @@ export function urlSearchParams(params) {
 }
 
 import { HttpError } from './errors.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 import { timeout as withTimeout } from './async.js';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -190,7 +191,16 @@ export function httpClient(config = {}) {
     if (typeof path !== 'string') {
       throw new TypeError('path must be a string');
     }
-    const { method = 'GET', headers = {}, json, body, signal, timeout: perRequest } = options;
+    const {
+      method = 'GET',
+      headers = {},
+      json,
+      body,
+      signal,
+      timeout: perRequest,
+      ...unknown
+    } = options;
+    assertNoUnknownOptions(unknown, 'httpClient.request');
     if (json !== undefined && body !== undefined) {
       throw new TypeError('json and body are mutually exclusive');
     }
@@ -346,7 +356,8 @@ export function createResource(client, path, options = {}) {
   if (typeof path !== 'string' || path === '') {
     throw new TypeError('path must be a non-empty string');
   }
-  const { id: toSegment = String } = options;
+  const { id: toSegment = String, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'createResource');
   if (typeof toSegment !== 'function') {
     throw new TypeError('options.id must be a function');
   }

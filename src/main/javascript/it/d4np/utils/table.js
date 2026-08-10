@@ -24,10 +24,14 @@
  * `Number()` reads them, so results never depend on the machine's regional
  * settings.
  *
+ * Every options bag on this entry **rejects a key it does not know** with a
+ * `TypeError` naming it: the destructuring is the schema (ADR-0047).
+ *
  * @module egl-utils-js/table
  */
 
 import { EventEmitter } from './events.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /**
  * Expressions longer than this stop being parsed as a grammar and are matched
@@ -288,7 +292,8 @@ function sentinelPredicate(word) {
  */
 export function compileFilter(expression, options = {}) {
   assertString(expression, 'expression');
-  const { caseSensitive = false, locale, operators } = options;
+  const { caseSensitive = false, locale, operators, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'compileFilter');
   if (typeof caseSensitive !== 'boolean') {
     throw new TypeError('options.caseSensitive must be a boolean');
   }
@@ -440,7 +445,15 @@ export function compileFilter(expression, options = {}) {
  *   or `emptiesLast` is not a boolean.
  */
 export function comparator(options = {}) {
-  const { type = 'auto', direction = 'asc', locale, collator, emptiesLast = true } = options;
+  const {
+    type = 'auto',
+    direction = 'asc',
+    locale,
+    collator,
+    emptiesLast = true,
+    ...unknown
+  } = options;
+  assertNoUnknownOptions(unknown, 'comparator');
   assertOneOf(type, COMPARE_TYPES, 'options.type');
   assertOneOf(direction, DIRECTIONS, 'options.direction');
   if (typeof emptiesLast !== 'boolean') {
@@ -591,7 +604,8 @@ export function paginate(items, options) {
   if (!Array.isArray(items)) {
     throw new TypeError('items must be an array');
   }
-  const { page = 1, pageSize } = options ?? {};
+  const { page = 1, pageSize, ...unknown } = options ?? {};
+  assertNoUnknownOptions(unknown, 'paginate');
   if (!Number.isInteger(pageSize) || pageSize < 1) {
     throw new TypeError('options.pageSize must be an integer >= 1');
   }
@@ -806,7 +820,15 @@ function normalizePageSize(value, nullable = false) {
  *   `pageSize` is neither a positive integer nor omitted.
  */
 export function tablePipeline(options = {}) {
-  const { source = [], columns, locale, operators, pageSize: initialPageSize } = options ?? {};
+  const {
+    source = [],
+    columns,
+    locale,
+    operators,
+    pageSize: initialPageSize,
+    ...unknown
+  } = options ?? {};
+  assertNoUnknownOptions(unknown, 'tablePipeline');
   // One compile configuration for every string this pipeline is given, so a
   // filter typed into a box and one set from code cannot speak different
   // grammars (roadmap 15.2, ADR-0040).

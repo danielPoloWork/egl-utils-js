@@ -17,11 +17,15 @@
  * `document.cookie` — `HttpOnly` cookies are invisible to client-side
  * JavaScript by design, and this module makes no claim otherwise.
  *
+ * Every options bag on this entry **rejects a key it does not know** with a
+ * `TypeError` naming it: the destructuring is the schema (ADR-0047).
+ *
  * @module egl-utils-js/storage
  */
 
 import { StorageError } from './errors.js';
 import { uuid } from './crypto.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 
 const PROBE_KEY = '__egl_storage_probe__';
 
@@ -250,7 +254,8 @@ const PAGE_SESSION_ID_KEY = 'egl.pageSessionId';
  *   {@link StorageWrapper}.
  */
 export function pageSessionId(options = {}) {
-  const { key = PAGE_SESSION_ID_KEY, storage = sessionStorageWrapper } = options;
+  const { key = PAGE_SESSION_ID_KEY, storage = sessionStorageWrapper, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'pageSessionId');
   assertKey(key);
   if (typeof storage?.get !== 'function' || typeof storage?.set !== 'function') {
     throw new TypeError('options.storage must be a StorageWrapper with get and set');
@@ -508,7 +513,8 @@ export const cookieHelper = {
           'invisible to document.cookie by design. Set it on the server (Set-Cookie).',
       );
     }
-    const { maxAge, path = '/', domain, sameSite = 'Lax', secure } = attributes;
+    const { maxAge, path = '/', domain, sameSite = 'Lax', secure, ...unknown } = attributes;
+    assertNoUnknownOptions(unknown, 'cookieHelper.set', 'attribute');
 
     if (maxAge !== undefined && (!Number.isSafeInteger(maxAge) || maxAge < 0)) {
       throw new TypeError('maxAge must be a non-negative integer number of seconds');
@@ -572,7 +578,8 @@ export const cookieHelper = {
     assertAttributes(attributes);
     // A cookie can only be deleted by a write whose Path/Domain match the
     // ones it was created with — hence both are forwarded, not assumed.
-    const { path = '/', domain } = attributes;
+    const { path = '/', domain, ...unknown } = attributes;
+    assertNoUnknownOptions(unknown, 'cookieHelper.remove', 'attribute');
     const doc = getCookieDocument();
     if (doc === undefined) {
       warnNoCookies('remove');

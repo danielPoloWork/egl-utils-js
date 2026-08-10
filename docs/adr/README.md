@@ -62,3 +62,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0044](0044-a-second-peer-one-sanitizer-and-a-catalogue-closed.md) | A second peer, one sanitizer — and a catalogue closed | Accepted |
 | [0045](0045-a-controller-from-the-node-s-own-realm.md) | A controller from the node's own realm — and a bug report that undercounted | Accepted |
 | [0046](0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md) | One proposal triaged — and the no-bundler wave adopted | Accepted |
+| [0047](0047-an-unknown-option-key-is-a-typeerror.md) | An unknown option key is a `TypeError` — and the destructuring is the schema | Accepted |

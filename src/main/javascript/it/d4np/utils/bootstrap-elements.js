@@ -27,6 +27,7 @@
  */
 
 import { isAbortSignal, isElement, requireDocument } from './dom-helpers.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /**
  * @typedef {object} BuilderDocumentOption
@@ -393,10 +394,11 @@ export function bsIcon(name, options = {}) {
   const api = 'bsIcon';
   assertToken(name, 'name', api);
   assertPlainObject(options, 'options', api);
-  const { set = bootstrapIconsSet, label, class: extraClass } = options;
+  const { set = bootstrapIconsSet, label, ...rest } = options;
+  const common = commonNodeOptions(rest, api);
   assertPlainObject(set, 'options.set', api);
 
-  const doc = resolveDocument(options, api);
+  const doc = resolveDocument(common, api);
 
   /** @type {Element} */
   let el;
@@ -428,7 +430,7 @@ export function bsIcon(name, options = {}) {
     if (set.ligature === true) el.textContent = name;
   }
 
-  applyClasses(el, setClasses, extraClass, api);
+  applyClasses(el, setClasses, common.class, api);
 
   if (label === undefined) {
     el.setAttribute('aria-hidden', 'true');
@@ -517,16 +519,17 @@ function renderIconInto(parent, icon, defaultSet, doc, api) {
  * @param {Content} content - Badge text (escaped) or a node.
  * @param {BsBadgeOptions} [options]
  * @returns {Element}
- * @throws {TypeError} On a malformed option, or on `{ html: true }` without `sanitize`.
+ * @throws {TypeError} On a malformed or unknown option, or on `{ html: true }` without `sanitize`.
  * @throws {DomContractError} If there is no document to build in.
  */
 export function bsBadge(content, options = {}) {
   const api = 'bsBadge';
   assertPlainObject(options, 'options', api);
-  const { variant = 'secondary', pill = false, positioned = false } = options;
+  const { variant = 'secondary', pill = false, positioned = false, ...rest } = options;
+  const common = commonOptions(rest, api);
   assertToken(variant, 'options.variant', api);
 
-  const doc = resolveDocument(options, api);
+  const doc = resolveDocument(common, api);
   const el = doc.createElement('span');
   applyClasses(
     el,
@@ -539,11 +542,11 @@ export function bsBadge(content, options = {}) {
       positioned !== false && 'start-100',
       positioned !== false && 'translate-middle',
     ],
-    options.class,
+    common.class,
     api,
   );
 
-  renderContent(el, content, options, api);
+  renderContent(el, content, common, api);
   if (typeof positioned === 'string') el.append(visuallyHidden(doc, positioned));
   return el;
 }
@@ -601,7 +604,7 @@ export function bsBadge(content, options = {}) {
  *
  * @param {BsButtonOptions} [options]
  * @returns {Element}
- * @throws {TypeError} On a malformed option, on `{ html: true }` without
+ * @throws {TypeError} On a malformed or unknown option, on `{ html: true }` without
  *   `sanitize`, or when neither a visible label, a hidden label, nor `ariaLabel`
  *   gives the button an accessible name.
  * @throws {DomContractError} If there is no document to build in.
@@ -622,7 +625,9 @@ export function bsButton(options = {}) {
     disabled = false,
     onClick,
     signal,
+    ...rest
   } = options;
+  const common = commonOptions(rest, api);
 
   assertToken(variant, 'options.variant', api);
   if (size !== undefined) assertToken(size, 'options.size', api);
@@ -650,7 +655,7 @@ export function bsButton(options = {}) {
     );
   }
 
-  const doc = resolveDocument(options, api);
+  const doc = resolveDocument(common, api);
   const el = doc.createElement('button');
   el.setAttribute('type', type);
   applyClasses(
@@ -660,7 +665,7 @@ export function bsButton(options = {}) {
       `btn-${outline === true ? 'outline-' : ''}${variant}`,
       size !== undefined && `btn-${size}`,
     ],
-    options.class,
+    common.class,
     api,
   );
   if (disabled === true) el.setAttribute('disabled', '');
@@ -677,11 +682,11 @@ export function bsButton(options = {}) {
     } else if (icon === undefined) {
       // No icon: the label is the button's only content, so it goes straight in
       // — `<button class="btn">Save</button>`, the markup everyone expects.
-      renderContent(el, label, options, api);
+      renderContent(el, label, common, api);
     } else {
       // With an icon, the label needs its own box for a `gap` utility to act on.
       const slot = doc.createElement('span');
-      renderContent(slot, label, options, api);
+      renderContent(slot, label, common, api);
       el.append(slot);
     }
   }
@@ -725,7 +730,8 @@ export function bsButton(options = {}) {
 export function bsButtonGroup(buttons, options) {
   const api = 'bsButtonGroup';
   assertPlainObject(options, 'options', api);
-  const { label, size, vertical = false } = options;
+  const { label, size, vertical = false, ...rest } = options;
+  const common = commonNodeOptions(rest, api);
 
   if (!Array.isArray(buttons) || buttons.length === 0) {
     throw new TypeError(`${api}: buttons must be a non-empty array of Elements`);
@@ -743,7 +749,7 @@ export function bsButtonGroup(buttons, options) {
   }
   if (size !== undefined) assertToken(size, 'options.size', api);
 
-  const doc = resolveDocument(options, api);
+  const doc = resolveDocument(common, api);
   const el = doc.createElement('div');
   applyClasses(
     el,
@@ -751,7 +757,7 @@ export function bsButtonGroup(buttons, options) {
       vertical === true ? 'btn-group-vertical' : 'btn-group',
       size !== undefined && `btn-group-${size}`,
     ],
-    options.class,
+    common.class,
     api,
   );
   el.setAttribute('role', 'group');
@@ -784,13 +790,14 @@ export function bsButtonGroup(buttons, options) {
  *
  * @param {BsCloseButtonOptions} [options]
  * @returns {Element}
- * @throws {TypeError} On a malformed option.
+ * @throws {TypeError} On a malformed or unknown option.
  * @throws {DomContractError} If there is no document to build in.
  */
 export function bsCloseButton(options = {}) {
   const api = 'bsCloseButton';
   assertPlainObject(options, 'options', api);
-  const { label = 'Close', disabled = false, white = false, onClick, signal } = options;
+  const { label = 'Close', disabled = false, white = false, onClick, signal, ...rest } = options;
+  const common = commonNodeOptions(rest, api);
 
   if (typeof label !== 'string' || label === '') {
     throw new TypeError(`${api}: options.label must be a non-empty string`);
@@ -802,10 +809,10 @@ export function bsCloseButton(options = {}) {
     throw new TypeError(`${api}: options.signal must be an AbortSignal`);
   }
 
-  const doc = resolveDocument(options, api);
+  const doc = resolveDocument(common, api);
   const el = doc.createElement('button');
   el.setAttribute('type', 'button');
-  applyClasses(el, ['btn-close', white === true && 'btn-close-white'], options.class, api);
+  applyClasses(el, ['btn-close', white === true && 'btn-close-white'], common.class, api);
   el.setAttribute('aria-label', label);
   if (disabled === true) el.setAttribute('disabled', '');
   if (onClick !== undefined) {
@@ -837,13 +844,14 @@ export function bsCloseButton(options = {}) {
  *
  * @param {BsSpinnerOptions} [options]
  * @returns {Element}
- * @throws {TypeError} On a malformed option.
+ * @throws {TypeError} On a malformed or unknown option.
  * @throws {DomContractError} If there is no document to build in.
  */
 export function bsSpinner(options = {}) {
   const api = 'bsSpinner';
   assertPlainObject(options, 'options', api);
-  const { kind = 'border', size, variant, label = 'Loading…' } = options;
+  const { kind = 'border', size, variant, label = 'Loading…', ...rest } = options;
+  const common = commonNodeOptions(rest, api);
 
   if (kind !== 'border' && kind !== 'grow') {
     throw new TypeError(`${api}: options.kind must be 'border' or 'grow'`);
@@ -854,7 +862,7 @@ export function bsSpinner(options = {}) {
     throw new TypeError(`${api}: options.label must be a string`);
   }
 
-  const doc = resolveDocument(options, api);
+  const doc = resolveDocument(common, api);
   const el = doc.createElement('div');
   applyClasses(
     el,
@@ -863,7 +871,7 @@ export function bsSpinner(options = {}) {
       size !== undefined && `spinner-${kind}-${size}`,
       variant !== undefined && `text-${variant}`,
     ],
-    options.class,
+    common.class,
     api,
   );
   el.setAttribute('role', 'status');
@@ -913,7 +921,7 @@ export function bsSpinner(options = {}) {
  *
  * @param {BsProgressOptions} [options]
  * @returns {BsProgressInstance}
- * @throws {TypeError} On a malformed option, or if `min`/`max` are not a finite
+ * @throws {TypeError} On a malformed or unknown option, or if `min`/`max` are not a finite
  *   ascending pair.
  * @throws {DomContractError} If there is no document to build in.
  */
@@ -930,7 +938,9 @@ export function bsProgress(options = {}) {
     label,
     format = false,
     height,
+    ...rest
   } = options;
+  const common = commonNodeOptions(rest, api);
 
   if (typeof value !== 'number' || Number.isNaN(value)) {
     throw new TypeError(`${api}: options.value must be a number`);
@@ -955,9 +965,9 @@ export function bsProgress(options = {}) {
     throw new TypeError(`${api}: options.height must be a CSS length string`);
   }
 
-  const doc = resolveDocument(options, api);
+  const doc = resolveDocument(common, api);
   const track = doc.createElement('div');
-  applyClasses(track, ['progress'], options.class, api);
+  applyClasses(track, ['progress'], common.class, api);
   // Bootstrap 5.3 moved role and the aria-value triple to the track; the bar is
   // presentational, which is why the width lives there and the semantics here.
   track.setAttribute('role', 'progressbar');
@@ -1035,13 +1045,14 @@ const DEFAULT_PLACEHOLDER_WIDTHS = /** @type {const} */ ([12, 10, 11, 8]);
  *
  * @param {BsPlaceholderOptions} [options]
  * @returns {Element}
- * @throws {TypeError} On a malformed option.
+ * @throws {TypeError} On a malformed or unknown option.
  * @throws {DomContractError} If there is no document to build in.
  */
 export function bsPlaceholder(options = {}) {
   const api = 'bsPlaceholder';
   assertPlainObject(options, 'options', api);
-  const { lines = 1, size, animation = 'glow', widths } = options;
+  const { lines = 1, size, animation = 'glow', widths, ...rest } = options;
+  const common = commonNodeOptions(rest, api);
 
   if (!Number.isInteger(lines) || lines < 1) {
     throw new TypeError(`${api}: options.lines must be a positive integer`);
@@ -1054,9 +1065,9 @@ export function bsPlaceholder(options = {}) {
     throw new TypeError(`${api}: options.widths must be a non-empty array`);
   }
 
-  const doc = resolveDocument(options, api);
+  const doc = resolveDocument(common, api);
   const el = doc.createElement('p');
-  applyClasses(el, [animation !== false && `placeholder-${animation}`], options.class, api);
+  applyClasses(el, [animation !== false && `placeholder-${animation}`], common.class, api);
   el.setAttribute('aria-hidden', 'true');
 
   const cycle = widths ?? DEFAULT_PLACEHOLDER_WIDTHS;
@@ -1097,6 +1108,53 @@ export function assertPlainObject(value, name, api) {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
     throw new TypeError(`${api}: ${name} must be an object`);
   }
+}
+
+/**
+ * The options every builder accepts through the shared contract (F52), split
+ * off from a builder's own destructuring rest — and the point where an
+ * **unknown key is rejected** (ADR-0047).
+ *
+ * The returned object has exactly the shape {@link resolveDocument},
+ * {@link applyClasses} and {@link renderContent} already read, so a builder
+ * hands it straight on: `resolveDocument(common, api)`, `common.class`,
+ * `renderContent(el, content, common, api)`.
+ *
+ * @param {Record<string, unknown>} rest - What the builder did not destructure.
+ * @param {string} api - Public function name, for the message.
+ * @returns {ContentOptions & BuilderDocumentOption & { class?: ClassOption }}
+ * @throws {TypeError} On any key left over.
+ */
+export function commonOptions(rest, api) {
+  const { class: extraClass, document: doc, html, sanitize, ...unknown } = rest;
+  assertNoUnknownOptions(unknown, api);
+  // The values are each validated where they are used — `resolveDocument`,
+  // `applyClasses` and `renderContent` all take the caller's word for nothing —
+  // so the casts here only re-state the shape the typedefs already declare.
+  return {
+    class: /** @type {ClassOption} */ (extraClass),
+    document: /** @type {Document | undefined} */ (doc),
+    html: /** @type {boolean | undefined} */ (html),
+    sanitize: /** @type {((html: string) => string) | false | undefined} */ (sanitize),
+  };
+}
+
+/**
+ * {@link commonOptions} for a builder that renders no caller content, and so
+ * accepts no `{html, sanitize}` pair to reject one with.
+ *
+ * @param {Record<string, unknown>} rest - What the builder did not destructure.
+ * @param {string} api - Public function name, for the message.
+ * @returns {BuilderDocumentOption & { class?: ClassOption }}
+ * @throws {TypeError} On any key left over.
+ */
+export function commonNodeOptions(rest, api) {
+  const { class: extraClass, document: doc, ...unknown } = rest;
+  assertNoUnknownOptions(unknown, api);
+  return {
+    class: /** @type {ClassOption} */ (extraClass),
+    document: /** @type {Document | undefined} */ (doc),
+  };
 }
 
 /**
