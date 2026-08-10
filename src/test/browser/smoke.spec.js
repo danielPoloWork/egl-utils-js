@@ -819,11 +819,11 @@ test.describe('/bootstrap — builders in a real engine (roadmap 14.1, F52-F60)'
       host.append(
         bsBadge('99+', { variant: 'danger', pill: true }),
         bsButton({ icon: 'trash', label: 'Delete row', labelHidden: true }),
-        bsSpinner({ label: 'Loading…' }),
+        bsSpinner({ ariaLabel: 'Loading…' }),
       );
-      const progress = bsProgress({ value: 25, label: 'Upload', format: (v) => `${v}%` });
+      const progress = bsProgress({ value: 25, ariaLabel: 'Upload', format: (v) => `${v}%` });
       host.append(progress.element);
-      progress.update(60);
+      progress.setValue(60);
 
       return {
         badge: host.querySelector('.badge').className,
@@ -867,8 +867,8 @@ test.describe('/bootstrap — builders in a real engine (roadmap 14.1, F52-F60)'
       const pagerHost = document.createElement('div');
       container.append(pagerHost);
       let requested = 0;
-      const pager = bsPagination(pagerHost, { onPage: (n) => (requested = n) });
-      pager.update({ page: 2, pageCount: 5 });
+      const pager = bsPagination(pagerHost, { onPageChange: (n) => (requested = n) });
+      pager.setView({ page: 2, pageCount: 5 });
       /** @type {HTMLElement} */ (
         [...pagerHost.querySelectorAll('.page-link')].find((el) => el.textContent === '3')
       ).click();
