@@ -707,10 +707,10 @@ bsIcon('gear');                                  // <i class="bi bi-gear" aria-h
 bsIcon('delete', { set: materialIconsSet });     // any icon convention, injected as data
 
 // A progress bar is an instance, so width, aria-valuenow and text cannot drift apart:
-const progress = bsProgress({ max: total, label: 'Upload', format: (v) => `${v} / ${total}` });
-onChunk((sent) => progress.update(sent));
+const progress = bsProgress({ max: total, ariaLabel: 'Upload', format: (v) => `${v} / ${total}` });
+onChunk((sent) => progress.setValue(sent));
 
-bsSpinner({ label: 'Caricamento…' });    // role="status" + a visually-hidden name
+bsSpinner({ ariaLabel: 'Caricamento…' }); // role="status" + a visually-hidden name
 bsPlaceholder({ lines: 3 });             // skeleton block, aria-hidden by design
 ```
 
@@ -748,7 +748,7 @@ container.append(
 const list = bsListGroup(rows.map((row) => ({ content: row.name, value: row, badge: row.count })), {
   onSelect: (item) => open(item.value),
 });
-list.update(nextRows.map((row) => ({ content: row.name, value: row })));
+list.setData(nextRows.map((row) => ({ content: row.name, value: row })));
 
 // The last crumb is the current page: no link, and aria-current="page".
 bsBreadcrumb([{ content: 'Home', href: '/' }, { content: 'Orders', href: '/orders' }, '4821']);
@@ -758,8 +758,8 @@ const alerts = bsAlert(document.querySelector('#form-alert'));
 alerts.show('success', 'Saved.', { autoHideMs: 3_000 });
 
 // bsPagination speaks the shape tablePipeline.view() already returns — no adapter:
-const pager = bsPagination(footer, { onPage: (n) => table.setPage(n) });
-table.on('change', (view) => pager.update(view));
+const pager = bsPagination(footer, { onPageChange: (n) => table.setPage(n) });
+table.on('change', (view) => pager.setView(view));
 ```
 
 `bsTable` is the toolkit's flagship: a complete Bootstrap table over the same
@@ -867,7 +867,7 @@ import { bsToast, bsModal, bsLoadingOverlay } from 'egl-utils-js/bootstrap';
 // once hidden.
 const toasts = bsToast(document.querySelector('.toast-container'));
 toasts.show('Saved.');
-toasts.show('Could not save.', { variant: 'danger', title: 'Error', autohide: false });
+toasts.show('Could not save.', { variant: 'danger', title: 'Error', autoHideMs: false });
 
 // A modal wrapper for the lifecycle, not the API: `on` returns an unsubscribe,
 // and destroy() hides first, then disposes — disposing a shown dialog is what

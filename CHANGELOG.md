@@ -14,6 +14,22 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- **BREAKING — the option and method vocabulary v1.0.0 freezes** ([ADR-0048](docs/adr/0048-one-word-one-meaning.md), roadmap 17.8). One word, one meaning:
+  - `label` → **`ariaLabel`** on `bsIcon`, `bsButtonGroup`, `bsCloseButton`, `bsSpinner`,
+    `bsProgress`, `bsBreadcrumb` (and inside an `icon` spec). `label` now always means text
+    the user sees, which is why `bsButton.label` and a column's `label` are unchanged.
+  - `bsToast`'s `{autohide, delay}` pair → one **`autoHideMs: number | false`**, at the
+    manager and per `show()` — the same word `inlineAlert` and `bsAlert` already used.
+    Bootstrap's pair survives only in the config handed to its constructor.
+  - `bsListGroup(...).update(items)` → **`setData(items)`**;
+    `bsProgress(...).update(value)` → **`setValue(value)`**;
+    `bsPagination(...).update(view)` → **`setView(view)`**. A no-argument recompute keeps the
+    vendor's own name, so `bsTooltip`/`bsPopover`/dropdown `.update()` and
+    `bsScrollspy(...).refresh()` are unchanged.
+  - `bsPagination`'s `onPage` → **`onPageChange`**: a callback is named for the event.
+  - Every stale call fails loudly rather than silently, because unknown option keys became a
+    `TypeError` in the previous change.
+
 - **BREAKING — an unknown option key is now a `TypeError`.** Every function that takes an
   options bag rejects a key it does not know, naming it
   (`bsBadge: unknown option 'varient'`), instead of ignoring it in silence. Applies to all
