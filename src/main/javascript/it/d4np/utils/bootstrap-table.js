@@ -790,7 +790,7 @@ function buildControls(context) {
     // would put two controls on one job.
     pager = bsPagination(footer, {
       ...pagerOptions,
-      onPage: (page) => pipeline.setPage(page),
+      onPageChange: (/** @type {number} */ page) => pipeline.setPage(page),
     });
     parts.pagination = pager.element;
   }
@@ -811,13 +811,13 @@ function buildControls(context) {
 
   // The pager starts on its own defaults (one page, page one), and F51's
   // reflection covers its own bindings and not this one — so without a first
-  // update the bar would claim a single page until the first command arrived.
-  pager?.update(pipeline.view());
+  // call the bar would claim a single page until the first command arrived.
+  pager?.setView(pipeline.view());
 
   return {
     element: wrapper,
     parts,
-    reflect: (view) => pager?.update(view),
+    reflect: (view) => pager?.setView(view),
     destroy: () => {
       unbind();
       pager?.destroy();

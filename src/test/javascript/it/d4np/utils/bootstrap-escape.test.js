@@ -128,7 +128,7 @@ describe('NFR-19 — payloads land as text, never as markup', () => {
   it.each(BYPASS_CORPUS.map((entry) => [entry.id, entry.payload]))(
     'bsSpinner renders %s inert as its status text',
     (_id, payload) => {
-      const spinner = bsSpinner({ label: payload });
+      const spinner = bsSpinner({ ariaLabel: payload });
       expect(spinner.querySelector('.visually-hidden')?.textContent).toBe(payload);
       assertInert(spinner);
     },
@@ -151,9 +151,9 @@ describe('NFR-19 — payloads land as text, never as markup', () => {
       // setAttribute cannot introduce markup by construction; asserted anyway,
       // because the claim is about the whole surface and not only textContent.
       for (const el of [
-        bsCloseButton({ label: payload }),
-        bsIcon('gear', { label: payload }),
-        bsButtonGroup([bsButton({ label: 'x' })], { label: payload }),
+        bsCloseButton({ ariaLabel: payload }),
+        bsIcon('gear', { ariaLabel: payload }),
+        bsButtonGroup([bsButton({ ariaLabel: 'x' })], { ariaLabel: payload }),
         bsButton({ icon: 'gear', ariaLabel: payload }),
       ]) {
         expect(el.getAttribute('aria-label')).toBe(payload);

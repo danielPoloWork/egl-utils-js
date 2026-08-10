@@ -68,10 +68,10 @@ NFR-20):
   `InvalidCharacterError` `DOMException`; a caller's `class` string is split on whitespace
   rather than rejected, while `variant`/`size` values are *not* checked against a fixed
   vocabulary, since a project's custom `$theme-colors` entry is a legitimate variant
-- F53 bsIcon(name, {set?, label?}) — icon adapter returning an element from an injected
+- F53 bsIcon(name, {set?, ariaLabel?}) — icon adapter returning an element from an injected
   **icon set** (`{render}` or class-template pure-data map). Ships two data presets:
   `bootstrapIconsSet` (`<i class="bi bi-<name>">`) as the default and
-  `materialIconsSet` (ligature span); `label` sets `aria-label` + `role="img"`, its
+  `materialIconsSet` (ligature span); `ariaLabel` sets `aria-label` + `role="img"`, its
   absence sets `aria-hidden="true"` (decorative default)
 - F54 bsBadge(text, {variant='secondary', pill?, positioned?}) — `<span class="badge
   text-bg-<variant>">`; `pill` adds `rounded-pill`; `positioned` renders the
@@ -81,18 +81,19 @@ NFR-20):
   [btn-<size>]`; `icon` (F53 input shape) may precede or replace the label — an icon-only
   button **requires an accessible name** (`label` rendered visually-hidden or
   `ariaLabel`), TypeError otherwise; `onClick` is attached with `{signal}` teardown
-- F56 bsButtonGroup(buttons, {size?, vertical?, label}) — `role="group"` wrapper with
+- F56 bsButtonGroup(buttons, {size?, vertical?, ariaLabel}) — `role="group"` wrapper with
   required `aria-label`; accepts F55 results or existing button elements
-- F57 bsCloseButton({onClick?, disabled?, label='Close', signal?}) — `<button
+- F57 bsCloseButton({onClick?, disabled?, ariaLabel='Close', signal?}) — `<button
   class="btn-close">` with the accessible name configurable, never hardcoded markup
-- F58 bsSpinner({kind='border', size?, variant?, label='Loading…'}) — border/grow
-  spinner with `role="status"` and a visually-hidden label
-- F59 bsProgress({value, min=0, max=100, variant?, striped?, animated?, label?,
+- F58 bsSpinner({kind='border', size?, variant?, ariaLabel='Loading…'}) — border/grow
+  spinner with `role="status"` and its accessible name delivered as visually-hidden text
+- F59 bsProgress({value, min=0, max=100, variant?, striped?, animated?, ariaLabel?,
   height?, format?}) — progress bar with `role="progressbar"` and the aria-value* triple
   always set (on the track, per Bootstrap 5.3, the bar itself being presentational);
-  `label` is the accessible name; returns an instance with `update(value)` beside
-  `.element`, `update` moving the width, the `aria-valuenow` and the visible text together
-  so the three cannot drift apart. **`format` added in 14.1**
+  `ariaLabel` is the accessible name; returns an instance with `setValue(value)` beside
+  `.element`, `setValue` moving the width, the `aria-valuenow` and the visible text together
+  so the three cannot drift apart. **`format` added in 14.1; `label`→`ariaLabel` and
+  `update`→`setValue` in 17.8, [ADR-0048](../adr/0048-one-word-one-meaning.md)**
   ([ADR-0037](../adr/0037-builder-contract-nodes-escape-and-the-atom-budget.md)): the
   visible text inside the bar comes from an injected `(value, {min, max}) => string`
   defaulting to `false` — no text, which is Bootstrap's own default — because `'25%'` is a
@@ -111,8 +112,9 @@ NFR-20):
   group where each item is a string (escaped) or `{content, variant?, active?,
   disabled?, href?, badge?}`; with `onSelect` items render as actionable
   (`list-group-item-action`, correct `<a>`/`<button>` element) behind **one** delegated
-  listener (F44), never per-item bindings; returns `{element, update(items), destroy}`
-- F63 bsBreadcrumb(items, {divider?, label='breadcrumb'}) — `<nav aria-label>` +
+  listener (F44), never per-item bindings; returns `{element, setData(items), destroy}`
+  (`update`→`setData` in 17.8, [ADR-0048](../adr/0048-one-word-one-meaning.md))
+- F63 bsBreadcrumb(items, {divider?, ariaLabel='breadcrumb'}) — `<nav aria-label>` +
   `breadcrumb` list; the last item is the current page (`aria-current="page"`, no link);
   `divider` sets the `--bs-breadcrumb-divider` custom property rather than injecting
   markup
@@ -129,11 +131,13 @@ NFR-20):
   `.btn-close` draws its glyph in CSS, so its correct icon is empty, and hiding the button
   for that left a dismissible alert nobody could dismiss. `dismissible: false` remains how
   a caller asks for no button
-- F65 bsPagination(container, {onPage, siblingCount=1, boundaryCount=1, size?,
-  labels?, signal?}) — pagination bar instance: `{element, update(view), destroy}` where
-  `update({page, pageCount})` re-renders prev/next plus a windowed page list with
+- F65 bsPagination(container, {onPageChange, siblingCount=1, boundaryCount=1, size?,
+  labels?, signal?}) — pagination bar instance: `{element, setView(view), destroy}` where
+  `setView({page, pageCount})` re-renders prev/next plus a windowed page list with
   ellipsis markers; the active page carries `aria-current="page"`, disabled steps
-  `disabled`; page clicks call `onPage(n)` through one delegated listener; `labels`
+  `disabled`; page clicks call `onPageChange(n)` through one delegated listener
+  (`onPage`→`onPageChange`, `update`→`setView` in 17.8,
+  [ADR-0048](../adr/0048-one-word-one-meaning.md)); `labels`
   injects every human-readable string (`previous`, `next`, `ellipsis`, nav `aria-label`)
   with language-neutral glyph defaults (F51's policy rule)
 
@@ -188,7 +192,7 @@ Table manager — `egl-utils-js/bootstrap` (composes F42/F51/F65):
   carries the vocabulary (spec 03 F42, amended in the same PR) and the input hands over
   text — the Bootstrap layer holds no grammar knowledge at all; without that change the
   promise was unkeepable, since `tablePipeline` forwarded only `locale` to
-  `compileFilter`. The **pager is wired through its own F65 `onPage`/`update` rather than
+  `compileFilter`. The **pager is wired through its own F65 `onPageChange`/`setView` rather than
   F51's prev/next pair** — F65 already contains prev and next, so routing both would put
   two controls on one job — and it rides the table's existing `'change'` subscription;
   only the status element goes through F51. Each control takes `true` for its defaults or
@@ -225,8 +229,10 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   component** raises the same code with a message naming the component, because the
   caller's problem — an unreachable capability — is identical. A bundler consumer, having
   no ambient global, passes `{ bootstrap }`
-- F69 bsToast(container, {variant?, autohide?, delay?, animation?, labels?, bootstrap?,
-  signal?}) — toast manager: `show(message, {title?, variant?, autohide?, delay?})`
+- F69 bsToast(container, {variant?, autoHideMs?, animation?, labels?, bootstrap?,
+  signal?}) — toast manager: `show(message, {title?, variant?, autoHideMs?})`
+  (Bootstrap's `{autohide, delay}` pair became one `autoHideMs` in 17.8,
+  [ADR-0048](../adr/0048-one-word-one-meaning.md), translated at the constructor boundary)
   builds the toast node (escaped body/title, F57 close button, `role="alert"`/`"status"`
   by severity, correct `aria-live`/`aria-atomic`), shows it via `bootstrap.Toast`, and
   removes the node after `hidden.bs.toast`; consecutive `show`s never accumulate stale

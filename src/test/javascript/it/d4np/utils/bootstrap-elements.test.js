@@ -38,7 +38,7 @@ describe('bsIcon — icon-set adapter', () => {
   });
 
   it('announces the icon when a label is supplied', () => {
-    const icon = bsIcon('trash', { label: 'Delete row' });
+    const icon = bsIcon('trash', { ariaLabel: 'Delete row' });
     expect(icon.getAttribute('role')).toBe('img');
     expect(icon.getAttribute('aria-label')).toBe('Delete row');
     expect(icon.hasAttribute('aria-hidden')).toBe(false);
@@ -104,8 +104,8 @@ describe('bsIcon — icon-set adapter', () => {
     ],
     [
       'a non-string label',
-      () => bsIcon('x', { label: /** @type {never} */ (7) }),
-      /label must be a string/,
+      () => bsIcon('x', { ariaLabel: /** @type {never} */ (7) }),
+      /ariaLabel must be a string/,
     ],
     [
       'a non-document document',
@@ -301,7 +301,7 @@ describe('bsButton', () => {
 describe('bsButtonGroup', () => {
   it('renders a named group around its buttons', () => {
     const buttons = [bsButton({ label: 'Left' }), bsButton({ label: 'Right' })];
-    const group = bsButtonGroup(buttons, { label: 'Alignment' });
+    const group = bsButtonGroup(buttons, { ariaLabel: 'Alignment' });
 
     expect([...group.classList]).toEqual(['btn-group']);
     expect(group.getAttribute('role')).toBe('group');
@@ -310,8 +310,8 @@ describe('bsButtonGroup', () => {
   });
 
   it('renders the vertical and sized variants', () => {
-    const group = bsButtonGroup([bsButton({ label: 'A' })], {
-      label: 'Tools',
+    const group = bsButtonGroup([bsButton({ ariaLabel: 'A' })], {
+      ariaLabel: 'Tools',
       vertical: true,
       size: 'lg',
     });
@@ -324,30 +324,30 @@ describe('bsButtonGroup', () => {
       () => bsButtonGroup([], /** @type {never} */ (undefined)),
       /options must be an object/,
     ],
-    ['an empty array', () => bsButtonGroup([], { label: 'x' }), /non-empty array/],
+    ['an empty array', () => bsButtonGroup([], { ariaLabel: 'x' }), /non-empty array/],
     [
       'a non-array',
-      () => bsButtonGroup(/** @type {never} */ ('x'), { label: 'y' }),
+      () => bsButtonGroup(/** @type {never} */ ('x'), { ariaLabel: 'y' }),
       /non-empty array/,
     ],
     [
       'a non-element entry',
-      () => bsButtonGroup([/** @type {never} */ ('<button>')], { label: 'x' }),
+      () => bsButtonGroup([/** @type {never} */ ('<button>')], { ariaLabel: 'x' }),
       /buttons\[0\] must be an Element/,
     ],
     [
       'a missing label',
-      () => bsButtonGroup([bsButton({ label: 'a' })], /** @type {never} */ ({})),
-      /options\.label is required/,
+      () => bsButtonGroup([bsButton({ ariaLabel: 'a' })], /** @type {never} */ ({})),
+      /options\.ariaLabel is required/,
     ],
     [
       'an empty label',
-      () => bsButtonGroup([bsButton({ label: 'a' })], { label: '' }),
-      /options\.label is required/,
+      () => bsButtonGroup([bsButton({ ariaLabel: 'a' })], { ariaLabel: '' }),
+      /options\.ariaLabel is required/,
     ],
     [
       'an invalid size',
-      () => bsButtonGroup([bsButton({ label: 'a' })], { label: 'x', size: 'a b' }),
+      () => bsButtonGroup([bsButton({ ariaLabel: 'a' })], { ariaLabel: 'x', size: 'a b' }),
       /size must be a non-empty string/,
     ],
   ])('rejects %s', (_label, act, message) => {
@@ -366,7 +366,7 @@ describe('bsCloseButton', () => {
   });
 
   it('takes an injected label — "Close" is an English string', () => {
-    expect(bsCloseButton({ label: 'Chiudi' }).getAttribute('aria-label')).toBe('Chiudi');
+    expect(bsCloseButton({ ariaLabel: 'Chiudi' }).getAttribute('aria-label')).toBe('Chiudi');
   });
 
   it('renders the white and disabled variants and wires onClick', () => {
@@ -388,7 +388,7 @@ describe('bsCloseButton', () => {
   });
 
   it.each([
-    ['an empty label', { label: '' }, /label must be a non-empty string/],
+    ['an empty ariaLabel', { ariaLabel: '' }, /ariaLabel must be a non-empty string/],
     ['a non-function onClick', { onClick: /** @type {never} */ (7) }, /onClick must be a function/],
     ['a non-signal signal', { signal: /** @type {never} */ ({}) }, /must be an AbortSignal/],
   ])('rejects %s', (_label, options, message) => {
@@ -411,7 +411,7 @@ describe('bsSpinner', () => {
       kind: 'grow',
       size: 'sm',
       variant: 'primary',
-      label: 'Attendere…',
+      ariaLabel: 'Attendere…',
     });
     expect([...spinner.classList]).toEqual(['spinner-grow', 'spinner-grow-sm', 'text-primary']);
     expect(spinner.querySelector('.visually-hidden')?.textContent).toBe('Attendere…');
@@ -419,12 +419,16 @@ describe('bsSpinner', () => {
 
   it('omits the hidden text when the label is deliberately empty', () => {
     // For a spinner inside an already-labelled live region, a second name is noise.
-    expect(bsSpinner({ label: '' }).querySelector('.visually-hidden')).toBeNull();
+    expect(bsSpinner({ ariaLabel: '' }).querySelector('.visually-hidden')).toBeNull();
   });
 
   it.each([
     ['an invalid kind', { kind: /** @type {never} */ ('pulse') }, /kind must be/],
-    ['a non-string label', { label: /** @type {never} */ (7) }, /label must be a string/],
+    [
+      'a non-string ariaLabel',
+      { ariaLabel: /** @type {never} */ (7) },
+      /ariaLabel must be a string/,
+    ],
     ['an invalid size', { size: 'a b' }, /size must be a non-empty string/],
     ['an invalid variant', { variant: '' }, /variant must be a non-empty string/],
   ])('rejects %s', (_label, options, message) => {
@@ -435,7 +439,7 @@ describe('bsSpinner', () => {
 
 describe('bsProgress', () => {
   it('sets the whole aria-value triple on the track (Bootstrap 5.3 shape)', () => {
-    const { element } = bsProgress({ value: 25, label: 'Upload' });
+    const { element } = bsProgress({ value: 25, ariaLabel: 'Upload' });
     expect(element.getAttribute('role')).toBe('progressbar');
     expect(element.getAttribute('aria-valuemin')).toBe('0');
     expect(element.getAttribute('aria-valuemax')).toBe('100');
@@ -452,7 +456,7 @@ describe('bsProgress', () => {
     const bar = /** @type {HTMLElement} */ (progress.element.firstElementChild);
 
     expect(progress.element.getAttribute('aria-valuenow')).toBe('0');
-    progress.update(50);
+    progress.setValue(50);
     // The three cannot drift, which is the reason this returns an instance.
     expect(progress.element.getAttribute('aria-valuenow')).toBe('50');
     expect(bar.style.width).toBe('25%');
@@ -461,9 +465,9 @@ describe('bsProgress', () => {
 
   it('clamps out-of-range values instead of drawing past the track', () => {
     const progress = bsProgress({ min: 10, max: 20 });
-    progress.update(999);
+    progress.setValue(999);
     expect(progress.element.getAttribute('aria-valuenow')).toBe('20');
-    progress.update(-999);
+    progress.setValue(-999);
     expect(progress.element.getAttribute('aria-valuenow')).toBe('10');
   });
 
@@ -502,7 +506,11 @@ describe('bsProgress', () => {
     ['a non-number min', { min: /** @type {never} */ ('0') }, /min must be a finite number/],
     ['an infinite max', { max: Number.POSITIVE_INFINITY }, /max must be a finite number/],
     ['an inverted range', { min: 10, max: 10 }, /min must be less than options\.max/],
-    ['a non-string label', { label: /** @type {never} */ (7) }, /label must be a string/],
+    [
+      'a non-string ariaLabel',
+      { ariaLabel: /** @type {never} */ (7) },
+      /ariaLabel must be a string/,
+    ],
     [
       'a non-function format',
       { format: /** @type {never} */ ('pct') },
@@ -527,10 +535,10 @@ describe('bsProgress', () => {
     expect(() => bsProgress(options)).toThrow(message);
   });
 
-  it('rejects a non-numeric update', () => {
+  it('rejects a non-numeric setValue', () => {
     const progress = bsProgress();
-    expect(() => progress.update(/** @type {never} */ ('50'))).toThrow(
-      /update\(value\) requires a number/,
+    expect(() => progress.setValue(/** @type {never} */ ('50'))).toThrow(
+      /setValue\(value\) requires a number/,
     );
   });
 });
@@ -594,7 +602,7 @@ describe('the F52 class option', () => {
     ['bsButton', () => bsButton({ label: 'x', class: ['mt-2', 'me-1'] })],
     [
       'bsButtonGroup',
-      () => bsButtonGroup([bsButton({ label: 'x' })], { label: 'g', class: 'mt-2 me-1' }),
+      () => bsButtonGroup([bsButton({ ariaLabel: 'x' })], { ariaLabel: 'g', class: 'mt-2 me-1' }),
     ],
     ['bsCloseButton', () => bsCloseButton({ class: ['mt-2 me-1'] })],
     ['bsSpinner', () => bsSpinner({ class: 'mt-2 me-1' })],

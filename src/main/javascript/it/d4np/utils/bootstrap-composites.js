@@ -247,18 +247,18 @@ function buildCardImage(image, doc, api) {
 /**
  * @typedef {object} BsListGroupInstance
  * @property {Element} element
- * @property {(items: Array<Content | BsListGroupItem>) => void} update
+ * @property {(items: Array<Content | BsListGroupItem>) => void} setData
  * @property {() => void} destroy
  */
 
 /**
  * A Bootstrap list group (spec 04 F62).
  *
- * This returns an instance rather than an element because of `update()`. A list
+ * This returns an instance rather than an element because of `setData()`. A list
  * that reflects data is re-rendered often, and the per-item click binding is
  * exactly what gets forgotten on the second render — the rebind-per-row cycle
  * F44 exists to end. One delegated listener is attached once and survives every
- * replacement, so `update(items)` is a pure re-render with no listener
+ * replacement, so `setData(items)` is a pure re-render with no listener
  * bookkeeping and nothing to leak.
  *
  * @example
@@ -270,12 +270,12 @@ function buildCardImage(image, doc, api) {
  *   rows.map((row) => ({ content: row.name, value: row, badge: row.count })),
  *   { onSelect: (item) => open(item.value) },
  * );
- * list.update(nextRows.map((row) => ({ content: row.name, value: row })));
+ * list.setData(nextRows.map((row) => ({ content: row.name, value: row })));
  *
  * @param {Array<Content | BsListGroupItem>} items
  * @param {BsListGroupOptions} [options]
  * @returns {BsListGroupInstance}
- * @throws {TypeError} On a malformed or unknown option or item, or on `update()` after
+ * @throws {TypeError} On a malformed or unknown option or item, or on `setData()` after
  *   `destroy()`.
  * @throws {DomContractError} If there is no document to build in.
  */
@@ -373,8 +373,8 @@ export function bsListGroup(items, options = {}) {
 
   return {
     element: el,
-    update: (next) => {
-      if (destroyed) throw new TypeError(`${api}: update() was called after destroy()`);
+    setData: (next) => {
+      if (destroyed) throw new TypeError(`${api}: setData() was called after destroy()`);
       render(next);
     },
     destroy,
@@ -498,7 +498,7 @@ function renderItemBadge(badge, doc, options, api) {
 
 /**
  * @typedef {object} BsBreadcrumbOptions
- * @property {string} [label='breadcrumb'] - The nav's accessible name.
+ * @property {string} [ariaLabel='breadcrumb'] - The nav's accessible name.
  * @property {string} [divider] - A CSS value for `--bs-breadcrumb-divider`,
  *   e.g. `"'>'"`. Set as a custom property rather than injected as markup, so the
  *   separator stays presentation and never becomes a node.
@@ -531,14 +531,14 @@ function renderItemBadge(badge, doc, options, api) {
 export function bsBreadcrumb(items, options = {}) {
   const api = 'bsBreadcrumb';
   assertPlainObject(options, 'options', api);
-  const { label = 'breadcrumb', divider, ...rest } = options;
+  const { ariaLabel = 'breadcrumb', divider, ...rest } = options;
   const common = commonOptions(rest, api);
 
   if (!Array.isArray(items) || items.length === 0) {
     throw new TypeError(`${api}: items must be a non-empty array`);
   }
-  if (typeof label !== 'string' || label === '') {
-    throw new TypeError(`${api}: options.label must be a non-empty string`);
+  if (typeof ariaLabel !== 'string' || ariaLabel === '') {
+    throw new TypeError(`${api}: options.ariaLabel must be a non-empty string`);
   }
   if (divider !== undefined && typeof divider !== 'string') {
     throw new TypeError(`${api}: options.divider must be a CSS value string`);
@@ -546,7 +546,7 @@ export function bsBreadcrumb(items, options = {}) {
 
   const doc = resolveDocument(common, api);
   const nav = doc.createElement('nav');
-  nav.setAttribute('aria-label', label);
+  nav.setAttribute('aria-label', ariaLabel);
   applyClasses(nav, [], common.class, api);
   if (divider !== undefined) {
     /** @type {{ style: CSSStyleDeclaration }} */ (nav).style.setProperty(
@@ -688,7 +688,7 @@ export function bsAlert(container, options = {}) {
 
 /**
  * @typedef {object} BsPaginationOptions
- * @property {(page: number) => void} onPage - Called with the requested page.
+ * @property {(page: number) => void} onPageChange - Called with the requested page.
  * @property {number} [siblingCount=1] - Pages shown either side of the current one.
  * @property {number} [boundaryCount=1] - Pages always shown at each end.
  * @property {string} [size] - `pagination-<size>`.
@@ -700,14 +700,14 @@ export function bsAlert(container, options = {}) {
 /**
  * @typedef {object} BsPaginationInstance
  * @property {Element} element
- * @property {(view: { page: number, pageCount: number }) => void} update
+ * @property {(view: { page: number, pageCount: number }) => void} setView
  * @property {() => void} destroy
  */
 
 /**
  * A Bootstrap pagination bar (spec 04 F65).
  *
- * `update({page, pageCount})` takes the shape `tablePipeline.view()` already
+ * `setView({page, pageCount})` takes the shape `tablePipeline.view()` already
  * returns (F42), so wiring the two is one subscription and no adapter — which is
  * the point of having defined the pipeline's read model first. Clicks arrive
  * through **one** delegated listener that survives every re-render.
@@ -723,19 +723,19 @@ export function bsAlert(container, options = {}) {
  * precedent, stated (ADR-0038).
  *
  * @example
- * const pager = bsPagination(footer, { onPage: (n) => table.setPage(n) });
- * table.on('change', (view) => pager.update(view));
+ * const pager = bsPagination(footer, { onPageChange: (n) => table.setPage(n) });
+ * table.on('change', (view) => pager.setView(view));
  *
  * @example
  * bsPagination(footer, {
- *   onPage: goTo,
+ *   onPageChange: goTo,
  *   labels: { nav: 'Navigazione pagine', previous: 'Precedente', next: 'Successiva' },
  * });
  *
  * @param {Element} container
  * @param {BsPaginationOptions} options
  * @returns {BsPaginationInstance}
- * @throws {TypeError} On a malformed or unknown option, or on `update()` after `destroy()`.
+ * @throws {TypeError} On a malformed or unknown option, or on `setView()` after `destroy()`.
  * @throws {DomContractError} If there is nowhere to build the bar.
  */
 export function bsPagination(container, options) {
@@ -745,7 +745,7 @@ export function bsPagination(container, options) {
   }
   assertPlainObject(options, 'options', api);
   const {
-    onPage,
+    onPageChange,
     siblingCount = 1,
     boundaryCount = 1,
     size,
@@ -756,8 +756,8 @@ export function bsPagination(container, options) {
   } = options;
   assertNoUnknownOptions(unknown, api);
 
-  if (typeof onPage !== 'function') {
-    throw new TypeError(`${api}: options.onPage must be a function`);
+  if (typeof onPageChange !== 'function') {
+    throw new TypeError(`${api}: options.onPageChange must be a function`);
   }
   if (!Number.isInteger(siblingCount) || siblingCount < 0) {
     throw new TypeError(`${api}: options.siblingCount must be a non-negative integer`);
@@ -828,10 +828,10 @@ export function bsPagination(container, options) {
   };
 
   /** @param {{ page: number, pageCount: number }} view */
-  const update = (view) => {
-    assertPlainObject(view, 'update(view)', api);
+  const setView = (view) => {
+    assertPlainObject(view, 'setView(view)', api);
     if (!Number.isFinite(view.page) || !Number.isFinite(view.pageCount)) {
-      throw new TypeError(`${api}: update(view) requires finite page and pageCount numbers`);
+      throw new TypeError(`${api}: setView(view) requires finite page and pageCount numbers`);
     }
     total = Math.max(1, Math.trunc(view.pageCount));
     current = Math.min(total, Math.max(1, Math.trunc(view.page)));
@@ -855,7 +855,7 @@ export function bsPagination(container, options) {
     list.replaceChildren(fragment);
   };
 
-  update({ page: 1, pageCount: 1 });
+  setView({ page: 1, pageCount: 1 });
   container.append(navEl);
 
   list.addEventListener(
@@ -865,7 +865,7 @@ export function bsPagination(container, options) {
       if (match === null) return;
       const requested = Number(match.getAttribute('data-egl-page'));
       if (requested < 1 || requested > total || requested === current) return;
-      onPage(requested);
+      onPageChange(requested);
     },
     { signal: controller.signal },
   );
@@ -883,9 +883,9 @@ export function bsPagination(container, options) {
 
   return {
     element: navEl,
-    update: (view) => {
-      if (destroyed) throw new TypeError(`${api}: update() was called after destroy()`);
-      update(view);
+    setView: (view) => {
+      if (destroyed) throw new TypeError(`${api}: setView() was called after destroy()`);
+      setView(view);
     },
     destroy,
   };

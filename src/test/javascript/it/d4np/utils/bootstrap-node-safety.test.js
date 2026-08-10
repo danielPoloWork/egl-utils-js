@@ -104,7 +104,7 @@ describe('NFR-20 — a builder needing the ambient document fails typed', () => 
     // error, or a typo in Node reads as "you need a browser".
     expect(() => bootstrap.bsIcon('two words')).toThrow(TypeError);
     expect(() => bootstrap.bsButton({ icon: 'gear' })).toThrow(/needs an accessible name/);
-    expect(() => bootstrap.bsButtonGroup([], { label: 'x' })).toThrow(/non-empty array/);
+    expect(() => bootstrap.bsButtonGroup([], { ariaLabel: 'x' })).toThrow(/non-empty array/);
   });
 });
 
@@ -114,7 +114,7 @@ describe('NFR-20 — an explicit document makes every builder work in Node', () 
 
     const badge = bootstrap.bsBadge('New', { document: doc });
     const button = bootstrap.bsButton({ label: 'Save', icon: 'check', document: doc });
-    const group = bootstrap.bsButtonGroup([button], { label: 'Actions', document: doc });
+    const group = bootstrap.bsButtonGroup([button], { ariaLabel: 'Actions', document: doc });
     const close = bootstrap.bsCloseButton({ document: doc });
     const spinner = bootstrap.bsSpinner({ document: doc });
     const progress = bootstrap.bsProgress({ value: 50, document: doc });
@@ -224,13 +224,13 @@ describe('NFR-18 — the builders never touch the optional peer', () => {
       bootstrap.bsIcon('check', { document: doc });
       bootstrap.bsBadge('New', { document: doc });
       bootstrap.bsButton({ label: 'Save', document: doc });
-      bootstrap.bsButtonGroup([bootstrap.bsButton({ label: 'A', document: doc })], {
-        label: 'Actions',
+      bootstrap.bsButtonGroup([bootstrap.bsButton({ ariaLabel: 'A', document: doc })], {
+        ariaLabel: 'Actions',
         document: doc,
       });
       bootstrap.bsCloseButton({ document: doc });
       bootstrap.bsSpinner({ document: doc });
-      bootstrap.bsProgress({ value: 40, label: 'Upload', document: doc });
+      bootstrap.bsProgress({ value: 40, ariaLabel: 'Upload', document: doc });
       bootstrap.bsPlaceholder({ lines: 2, document: doc });
       bootstrap.bsCard({ title: 'Card', document: doc });
       bootstrap.bsListGroup(['one', 'two'], { document: doc });
@@ -245,7 +245,7 @@ describe('NFR-18 — the builders never touch the optional peer', () => {
       // foreign-realm safe. Passing one used to be dropped in silence; since
       // ADR-0047 an unknown key is a TypeError.
       bootstrap.bsAlert(host).show('info', 'hello');
-      bootstrap.bsPagination(host, { onPage: () => {} }).update({ page: 1, pageCount: 3 });
+      bootstrap.bsPagination(host, { onPageChange: () => {} }).setView({ page: 1, pageCount: 3 });
     }).not.toThrow();
   });
 

@@ -290,8 +290,8 @@ describe('bsListGroup', () => {
     const list = bsListGroup(['A'], { onSelect });
     const added = vi.spyOn(list.element, 'addEventListener');
 
-    list.update(['B', 'C']);
-    list.update(['D']);
+    list.setData(['B', 'C']);
+    list.setData(['D']);
 
     // Not one per render, and not one per item.
     expect(added).not.toHaveBeenCalled();
@@ -312,7 +312,7 @@ describe('bsListGroup', () => {
     expect(onSelect).not.toHaveBeenCalled();
     // Idempotent, and refuses to be used afterwards.
     expect(() => list.destroy()).not.toThrow();
-    expect(() => list.update(['B'])).toThrow(/update\(\) was called after destroy\(\)/);
+    expect(() => list.setData(['B'])).toThrow(/setData\(\) was called after destroy\(\)/);
   });
 
   it('an aborted signal destroys it, before or after construction (NFR-15)', () => {
@@ -325,7 +325,7 @@ describe('bsListGroup', () => {
     const already = new AbortController();
     already.abort();
     const dead = bsListGroup(['A'], { signal: already.signal });
-    expect(() => dead.update(['B'])).toThrow(/after destroy/);
+    expect(() => dead.setData(['B'])).toThrow(/after destroy/);
   });
 
   it.each([
@@ -413,7 +413,7 @@ describe('bsBreadcrumb', () => {
   });
 
   it('sets the divider as a custom property, not as markup', () => {
-    const nav = bsBreadcrumb(['A'], { divider: "'>'", label: 'Percorso' });
+    const nav = bsBreadcrumb(['A'], { divider: "'>'", ariaLabel: 'Percorso' });
     // A separator is presentation; injecting it as a node would put it in the
     // accessibility tree and in textContent.
     expect(/** @type {HTMLElement} */ (nav).style.getPropertyValue('--bs-breadcrumb-divider')).toBe(
@@ -426,7 +426,11 @@ describe('bsBreadcrumb', () => {
   it.each([
     ['an empty list', () => bsBreadcrumb([]), /non-empty array/],
     ['a non-array', () => bsBreadcrumb(/** @type {never} */ ('a')), /non-empty array/],
-    ['an empty label', () => bsBreadcrumb(['a'], { label: '' }), /label must be a non-empty/],
+    [
+      'an empty label',
+      () => bsBreadcrumb(['a'], { ariaLabel: '' }),
+      /ariaLabel must be a non-empty/,
+    ],
     [
       'a non-string divider',
       () => bsBreadcrumb(['a'], { divider: /** @type {never} */ (7) }),
@@ -535,10 +539,10 @@ describe('bsPagination', () => {
   /** @param {number} page @param {number} pageCount */
   function pagerFor(page, pageCount, options = {}) {
     const container = host();
-    const onPage = vi.fn();
-    const pager = bsPagination(container, { onPage, ...options });
-    pager.update({ page, pageCount });
-    return { container, pager, onPage };
+    const onPageChange = vi.fn();
+    const pager = bsPagination(container, { onPageChange, ...options });
+    pager.setView({ page, pageCount });
+    return { container, pager, onPageChange };
   }
 
   /** @param {Element} container */
@@ -617,28 +621,28 @@ describe('bsPagination', () => {
     expect(container.querySelector('a')).toBeNull();
   });
 
-  it('calls onPage for a real move and stays silent otherwise', () => {
-    const { container, onPage } = pagerFor(2, 5);
+  it('calls onPageChange for a real move and stays silent otherwise', () => {
+    const { container, onPageChange } = pagerFor(2, 5);
     const click = (/** @type {string} */ text) => {
       const el = [...container.querySelectorAll('.page-link')].find((n) => n.textContent === text);
       /** @type {HTMLElement} */ (el).click();
     };
 
     click('3');
-    expect(onPage).toHaveBeenLastCalledWith(3);
+    expect(onPageChange).toHaveBeenLastCalledWith(3);
     click('‹');
-    expect(onPage).toHaveBeenLastCalledWith(1);
+    expect(onPageChange).toHaveBeenLastCalledWith(1);
     // The current page and a disabled step are no-ops, not events.
     click('2');
-    expect(onPage).toHaveBeenCalledTimes(2);
+    expect(onPageChange).toHaveBeenCalledTimes(2);
   });
 
   it('does not move past the ends', () => {
-    const { container, onPage } = pagerFor(1, 3);
+    const { container, onPageChange } = pagerFor(1, 3);
     const prev = /** @type {HTMLElement} */ (container.querySelector('.page-link'));
     expect(prev.hasAttribute('disabled')).toBe(true);
     prev.click();
-    expect(onPage).not.toHaveBeenCalled();
+    expect(onPageChange).not.toHaveBeenCalled();
   });
 
   it('takes the pipeline’s view shape unchanged, and clamps a stale one', () => {
@@ -667,37 +671,37 @@ describe('bsPagination', () => {
   });
 
   it('keeps one listener across re-renders and tears down completely', () => {
-    const { container, pager, onPage } = pagerFor(1, 5);
+    const { container, pager, onPageChange } = pagerFor(1, 5);
     const added = vi.spyOn(container.querySelector('.pagination'), 'addEventListener');
-    pager.update({ page: 3, pageCount: 5 });
+    pager.setView({ page: 3, pageCount: 5 });
     expect(added).not.toHaveBeenCalled();
 
     pager.destroy();
     expect(container.children).toHaveLength(0);
-    expect(onPage).not.toHaveBeenCalled();
+    expect(onPageChange).not.toHaveBeenCalled();
     expect(() => pager.destroy()).not.toThrow();
-    expect(() => pager.update({ page: 1, pageCount: 1 })).toThrow(/after destroy\(\)/);
+    expect(() => pager.setView({ page: 1, pageCount: 1 })).toThrow(/after destroy\(\)/);
   });
 
   it('an aborted signal destroys it, before or after construction (NFR-15)', () => {
     const controller = new AbortController();
     const container = host();
-    const pager = bsPagination(container, { onPage: () => {}, signal: controller.signal });
+    const pager = bsPagination(container, { onPageChange: () => {}, signal: controller.signal });
     controller.abort();
     expect(pager.element.parentElement).toBeNull();
 
     const already = new AbortController();
     already.abort();
-    const dead = bsPagination(host(), { onPage: () => {}, signal: already.signal });
-    expect(() => dead.update({ page: 1, pageCount: 1 })).toThrow(/after destroy\(\)/);
+    const dead = bsPagination(host(), { onPageChange: () => {}, signal: already.signal });
+    expect(() => dead.setView({ page: 1, pageCount: 1 })).toThrow(/after destroy\(\)/);
   });
 
   it('ignores a click that lands on no page control', () => {
-    const { container, onPage } = pagerFor(1, 3);
+    const { container, onPageChange } = pagerFor(1, 3);
     /** @type {HTMLElement} */ (container.querySelector('.pagination')).dispatchEvent(
       new Event('click', { bubbles: true }),
     );
-    expect(onPage).not.toHaveBeenCalled();
+    expect(onPageChange).not.toHaveBeenCalled();
   });
 
   it('drops the boundaries when boundaryCount is zero', () => {
@@ -721,7 +725,7 @@ describe('bsPagination', () => {
   it.each([
     [
       'a non-element container',
-      () => bsPagination(/** @type {never} */ (null), { onPage() {} }),
+      () => bsPagination(/** @type {never} */ (null), { onPageChange() {} }),
       /container must be an Element/,
     ],
     [
@@ -730,34 +734,35 @@ describe('bsPagination', () => {
       /options must be an object/,
     ],
     [
-      'a non-function onPage',
-      () => bsPagination(host(), { onPage: /** @type {never} */ (7) }),
-      /onPage must be a function/,
+      'a non-function onPageChange',
+      () => bsPagination(host(), { onPageChange: /** @type {never} */ (7) }),
+      /onPageChange must be a function/,
     ],
     [
       'a negative siblingCount',
-      () => bsPagination(host(), { onPage() {}, siblingCount: -1 }),
+      () => bsPagination(host(), { onPageChange() {}, siblingCount: -1 }),
       /siblingCount must be a non-negative integer/,
     ],
     [
       'a fractional boundaryCount',
-      () => bsPagination(host(), { onPage() {}, boundaryCount: 1.5 }),
+      () => bsPagination(host(), { onPageChange() {}, boundaryCount: 1.5 }),
       /boundaryCount must be a non-negative integer/,
     ],
-    ['a bad size', () => bsPagination(host(), { onPage() {}, size: 'a b' }), /size must be/],
+    ['a bad size', () => bsPagination(host(), { onPageChange() {}, size: 'a b' }), /size must be/],
     [
       'non-object labels',
-      () => bsPagination(host(), { onPage() {}, labels: /** @type {never} */ (7) }),
+      () => bsPagination(host(), { onPageChange() {}, labels: /** @type {never} */ (7) }),
       /labels must be an object/,
     ],
     [
       'a non-function page label',
-      () => bsPagination(host(), { onPage() {}, labels: { page: /** @type {never} */ ('x') } }),
+      () =>
+        bsPagination(host(), { onPageChange() {}, labels: { page: /** @type {never} */ ('x') } }),
       /labels\.page must be a function/,
     ],
     [
       'a non-signal signal',
-      () => bsPagination(host(), { onPage() {}, signal: /** @type {never} */ ({}) }),
+      () => bsPagination(host(), { onPageChange() {}, signal: /** @type {never} */ ({}) }),
       /must be an AbortSignal/,
     ],
   ])('rejects %s', (_label, act, message) => {
@@ -767,10 +772,10 @@ describe('bsPagination', () => {
 
   it('rejects a malformed view', () => {
     const { pager } = pagerFor(1, 2);
-    expect(() => pager.update(/** @type {never} */ (null))).toThrow(
-      /update\(view\) must be an object/,
+    expect(() => pager.setView(/** @type {never} */ (null))).toThrow(
+      /setView\(view\) must be an object/,
     );
-    expect(() => pager.update({ page: Number.NaN, pageCount: 2 })).toThrow(
+    expect(() => pager.setView({ page: Number.NaN, pageCount: 2 })).toThrow(
       /finite page and pageCount/,
     );
   });

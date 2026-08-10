@@ -182,6 +182,24 @@ export function qualifyEvent(event, suffix, api) {
 }
 
 /**
+ * Validate an `autoHideMs`: a non-negative finite number of milliseconds, or
+ * `false` for "stay up until dismissed" (ADR-0048).
+ *
+ * @param {unknown} value
+ * @param {string} api
+ * @returns {void}
+ * @throws {TypeError} On anything else.
+ */
+function assertAutoHideMs(value, api) {
+  if (value === false) return;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    throw new TypeError(
+      `${api}: options.autoHideMs must be a non-negative finite number of milliseconds, or false`,
+    );
+  }
+}
+
+/**
  * Validate the options every wrapper shares.
  *
  * @param {{ signal?: unknown }} options
@@ -326,8 +344,10 @@ export function behaviourWrapper(target, options, spec) {
  * @typedef {object} BsToastOptions
  * @property {string} [variant] - Theme colour, applied as `text-bg-<variant>`.
  *   Per-show overridable.
- * @property {boolean} [autohide=true] - Bootstrap's own default.
- * @property {number} [delay=5000] - Milliseconds before auto-hiding.
+ * @property {number | false} [autoHideMs=5000] - Hide this many milliseconds
+ *   after showing, or `false` to leave the toast up until it is dismissed. One
+ *   option rather than Bootstrap's `{autohide, delay}` pair, and the same name
+ *   {@link inlineAlert} uses for the same idea (ADR-0048).
  * @property {boolean} [animation=true]
  * @property {boolean} [dismissible=true] - Render an F57 close button.
  * @property {string} [closeLabel='Close'] - Its accessible name (NFR-21).
@@ -344,8 +364,8 @@ export function behaviourWrapper(target, options, spec) {
  * @property {Content} [title] - Rendered in the toast header; omitting it omits
  *   the header entirely.
  * @property {string} [variant]
- * @property {boolean} [autohide]
- * @property {number} [delay]
+ * @property {number | false} [autoHideMs] - Overrides the manager's default for
+ *   this one toast.
  * @property {boolean} [html=false] - Treat string content as markup.
  * @property {((html: string) => string) | false} [sanitize] - Required with
  *   `{ html: true }` (F52).
@@ -371,7 +391,7 @@ export function behaviourWrapper(target, options, spec) {
  * @example
  * const toasts = bsToast(document.querySelector('.toast-container'));
  * toasts.show('Saved.');
- * toasts.show('Could not save.', { variant: 'danger', title: 'Error', autohide: false });
+ * toasts.show('Could not save.', { variant: 'danger', title: 'Error', autoHideMs: false });
  *
  * @param {Element} container - Where toasts are appended. A
  *   `.toast-container` positions them; this wrapper does not position anything.
@@ -390,8 +410,7 @@ export function bsToast(container, options = {}) {
 
   const {
     variant: defaultVariant,
-    autohide: defaultAutohide = true,
-    delay: defaultDelay = 5000,
+    autoHideMs: defaultAutoHideMs = 5000,
     animation = true,
     dismissible = true,
     closeLabel = 'Close',
@@ -404,12 +423,7 @@ export function bsToast(container, options = {}) {
   assertNoUnknownOptions(unknown, api);
 
   if (defaultVariant !== undefined) assertToken(defaultVariant, 'options.variant', api);
-  if (typeof defaultAutohide !== 'boolean') {
-    throw new TypeError(`${api}: options.autohide must be a boolean`);
-  }
-  if (typeof defaultDelay !== 'number' || !Number.isFinite(defaultDelay) || defaultDelay < 0) {
-    throw new TypeError(`${api}: options.delay must be a non-negative finite number`);
-  }
+  assertAutoHideMs(defaultAutoHideMs, api);
 
   // The container's own document, with `options.document` as an override —
   // matching every other container-taking manager (`bsTable`, `bsPagination`).
@@ -435,14 +449,14 @@ export function bsToast(container, options = {}) {
     const {
       title,
       variant = defaultVariant,
-      autohide = defaultAutohide,
-      delay = defaultDelay,
+      autoHideMs = defaultAutoHideMs,
       html,
       sanitize,
       ...unknownShow
     } = showOptions;
     assertNoUnknownOptions(unknownShow, `${api}.show`);
     if (variant !== undefined) assertToken(variant, 'options.variant', `${api}.show`);
+    assertAutoHideMs(autoHideMs, `${api}.show`);
 
     // Resolved before anything is built, so a packaging failure leaves no
     // orphaned node in the container.
@@ -473,7 +487,7 @@ export function bsToast(container, options = {}) {
      * @returns {Element}
      */
     const dismissButton = (extraClass) => {
-      const button = bsCloseButton({ label: closeLabel, class: extraClass, document: doc });
+      const button = bsCloseButton({ ariaLabel: closeLabel, class: extraClass, document: doc });
       button.setAttribute('data-bs-dismiss', 'toast');
       return button;
     };
@@ -506,7 +520,13 @@ export function bsToast(container, options = {}) {
     }
 
     container.append(el);
-    const instance = instantiate(component, el, { animation, autohide, delay });
+    // Translated to Bootstrap's own pair at the boundary, which is the only
+    // place that vocabulary belongs (ADR-0048).
+    const instance = instantiate(component, el, {
+      animation,
+      autohide: autoHideMs !== false,
+      ...(autoHideMs === false ? {} : { delay: autoHideMs }),
+    });
 
     /** @type {{ element: Element, instance: BootstrapInstanceLike, cleanup: () => void }} */
     const record = { element: el, instance, cleanup: () => {} };
@@ -725,7 +745,7 @@ export function bsLoadingOverlay(options = {}) {
     const body = doc.createElement('div');
     body.className = 'modal-body text-center';
 
-    body.append(bsSpinner({ label: spinnerLabel, document: doc }));
+    body.append(bsSpinner({ ariaLabel: spinnerLabel, document: doc }));
     if (message !== undefined) {
       const text = doc.createElement('div');
       text.className = 'mt-2';

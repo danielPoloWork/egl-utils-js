@@ -337,9 +337,43 @@ describe('F69 — bsToast', () => {
 
   it('rejects a non-Element container and malformed timing options', () => {
     expect(() => bsToast('#host')).toThrow(TypeError);
-    expect(() => bsToast(container(), { autohide: 'yes' })).toThrow(TypeError);
-    expect(() => bsToast(container(), { delay: -1 })).toThrow(TypeError);
-    expect(() => bsToast(container(), { delay: Number.POSITIVE_INFINITY })).toThrow(TypeError);
+    expect(() => bsToast(container(), { autoHideMs: 'yes' })).toThrow(
+      /autoHideMs must be a non-negative finite number/,
+    );
+    expect(() => bsToast(container(), { autoHideMs: -1 })).toThrow(TypeError);
+    expect(() => bsToast(container(), { autoHideMs: Number.POSITIVE_INFINITY })).toThrow(TypeError);
+    expect(() => bsToast(container(), { autoHideMs: true })).toThrow(TypeError);
+  });
+
+  it('speaks one autoHideMs and translates it to Bootstrap at the boundary', () => {
+    // ADR-0048: the library's vocabulary is one duration, the same word
+    // `inlineAlert` uses; Bootstrap's `{autohide, delay}` pair exists only in the
+    // config handed to its constructor, which is the one place it belongs.
+    const { namespace, created } = makeBootstrap();
+    const toasts = bsToast(container(), { bootstrap: namespace });
+
+    toasts.show('default');
+    expect(created.at(-1)?.options).toMatchObject({ autohide: true, delay: 5000 });
+
+    toasts.show('override', { autoHideMs: 1500 });
+    expect(created.at(-1)?.options).toMatchObject({ autohide: true, delay: 1500 });
+
+    toasts.show('sticky', { autoHideMs: false });
+    // `false` means "stay up": Bootstrap wants `autohide: false` and no `delay`,
+    // because a delay beside it reads as a timing that will never fire.
+    expect(created.at(-1)?.options).toMatchObject({ autohide: false });
+    expect(created.at(-1)?.options).not.toHaveProperty('delay');
+  });
+
+  it('takes a manager-level autoHideMs as the default for every toast', () => {
+    const { namespace, created } = makeBootstrap();
+    const toasts = bsToast(container(), { bootstrap: namespace, autoHideMs: false });
+
+    toasts.show('inherits the manager default');
+    expect(created.at(-1)?.options).toMatchObject({ autohide: false });
+
+    toasts.show('overrides it back on', { autoHideMs: 200 });
+    expect(created.at(-1)?.options).toMatchObject({ autohide: true, delay: 200 });
   });
 });
 

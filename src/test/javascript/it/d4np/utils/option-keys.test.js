@@ -124,7 +124,7 @@ const CALLS = [
   ['bsIcon', () => bootstrap.bsIcon('gear', { labl: 'Settings' })],
   ['bsBadge', () => bootstrap.bsBadge('x', { varient: 'danger' })],
   ['bsButton', () => bootstrap.bsButton({ label: 'Save', varient: 'danger' })],
-  ['bsButtonGroup', () => bootstrap.bsButtonGroup([host()], { label: 'g', verticle: true })],
+  ['bsButtonGroup', () => bootstrap.bsButtonGroup([host()], { ariaLabel: 'g', verticle: true })],
   ['bsCloseButton', () => bootstrap.bsCloseButton({ whitee: true })],
   ['bsSpinner', () => bootstrap.bsSpinner({ kindd: 'grow' })],
   ['bsProgress', () => bootstrap.bsProgress({ valu: 10 })],
@@ -134,9 +134,9 @@ const CALLS = [
   ['bsListGroup', () => bootstrap.bsListGroup(['a'], { flushh: true })],
   ['bsBreadcrumb', () => bootstrap.bsBreadcrumb(['a'], { dividerr: "'>'" })],
   ['bsAlert', () => bootstrap.bsAlert(host(), { autoHide: 10 })],
-  ['bsPagination', () => bootstrap.bsPagination(host(), { onPage: () => {}, sibling: 2 })],
+  ['bsPagination', () => bootstrap.bsPagination(host(), { onPageChange: () => {}, sibling: 2 })],
   // /bootstrap — behaviour wrappers and managers
-  ['bsToast', () => bootstrap.bsToast(host(), { autohyde: false })],
+  ['bsToast', () => bootstrap.bsToast(host(), { autohide: false })],
   ['bsModal', () => bootstrap.bsModal(host(), { backdropp: 'static' })],
   ['bsLoadingOverlay', () => bootstrap.bsLoadingOverlay({ mesage: 'Loading' })],
   ['bsCollapse', () => bootstrap.bsCollapse(host(), { togglerr: host() })],
@@ -200,8 +200,11 @@ describe('every options-taking entry point rejects an unknown key', () => {
     // A nested bag reports the operation, not just the constructor, so the
     // reader knows which of the two bags to look at.
     const toasts = bootstrap.bsToast(host(), { bootstrap: {} });
-    expect(() => toasts.show('hi', { autoHideMs: 10 })).toThrow(
-      "bsToast.show: unknown option 'autoHideMs'",
+    // `autohide` was the option's name until ADR-0048 merged Bootstrap's
+    // `{autohide, delay}` pair into one `autoHideMs`; the old key is now exactly
+    // the kind of thing this contract exists to name.
+    expect(() => toasts.show('hi', { autohide: false })).toThrow(
+      "bsToast.show: unknown option 'autohide'",
     );
   });
 

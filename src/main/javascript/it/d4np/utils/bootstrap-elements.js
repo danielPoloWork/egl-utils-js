@@ -346,10 +346,10 @@ function visuallyHidden(doc, text) {
  * @property {IconSet} [set=bootstrapIconsSet] - The icon convention to render
  *   through. Pass {@link materialIconsSet}, or any `{classTemplate}` /
  *   `{ligature}` / `{render}` shape.
- * @property {string} [label] - Accessible name. With it the icon is `role="img"`
- *   and announced; without it the icon is `aria-hidden` — decorative, which is
- *   what an icon beside a text label must be, or a screen reader says everything
- *   twice.
+ * @property {string} [ariaLabel] - Accessible name. With it the icon is
+ *   `role="img"` and announced; without it the icon is `aria-hidden` —
+ *   decorative, which is what an icon beside a text label must be, or a screen
+ *   reader says everything twice.
  * @property {ClassOption} [class]
  * @property {Document} [document]
  */
@@ -366,7 +366,7 @@ function visuallyHidden(doc, text) {
  * @example
  * bsIcon('check-circle');                          // <i class="bi bi-check-circle" aria-hidden="true">
  * bsIcon('delete', { set: materialIconsSet });     // <span class="material-icons">delete</span>
- * bsIcon('trash', { label: 'Delete row' });        // role="img" + aria-label, announced
+ * bsIcon('trash', { ariaLabel: 'Delete row' });    // role="img" + aria-label, announced
  *
  * @example
  * // An SVG sprite set — same interface, no library involved:
@@ -394,7 +394,7 @@ export function bsIcon(name, options = {}) {
   const api = 'bsIcon';
   assertToken(name, 'name', api);
   assertPlainObject(options, 'options', api);
-  const { set = bootstrapIconsSet, label, ...rest } = options;
+  const { set = bootstrapIconsSet, ariaLabel, ...rest } = options;
   const common = commonNodeOptions(rest, api);
   assertPlainObject(set, 'options.set', api);
 
@@ -432,14 +432,14 @@ export function bsIcon(name, options = {}) {
 
   applyClasses(el, setClasses, common.class, api);
 
-  if (label === undefined) {
+  if (ariaLabel === undefined) {
     el.setAttribute('aria-hidden', 'true');
   } else {
-    if (typeof label !== 'string') {
-      throw new TypeError(`${api}: options.label must be a string`);
+    if (typeof ariaLabel !== 'string') {
+      throw new TypeError(`${api}: options.ariaLabel must be a string`);
     }
     el.setAttribute('role', 'img');
-    el.setAttribute('aria-label', label);
+    el.setAttribute('aria-label', ariaLabel);
   }
   return el;
 }
@@ -471,10 +471,12 @@ function renderIconInto(parent, icon, defaultSet, doc, api) {
     return;
   }
   const spec =
-    /** @type {{ name?: unknown, set?: IconSet, label?: string, class?: ClassOption }} */ (icon);
+    /** @type {{ name?: unknown, set?: IconSet, ariaLabel?: string, class?: ClassOption }} */ (
+      icon
+    );
   if (typeof spec !== 'object' || spec === null || typeof spec.name !== 'string') {
     throw new TypeError(
-      `${api}: options.icon must be an icon name, a Node, or { name, set?, label? }`,
+      `${api}: options.icon must be an icon name, a Node, or { name, set?, ariaLabel? }`,
     );
   }
   const { name, ...rest } = spec;
@@ -482,7 +484,7 @@ function renderIconInto(parent, icon, defaultSet, doc, api) {
 }
 
 /**
- * @typedef {string | Node | { name: string, set?: IconSet, label?: string, class?: ClassOption }} IconSpec
+ * @typedef {string | Node | { name: string, set?: IconSet, ariaLabel?: string, class?: ClassOption }} IconSpec
  * An icon: a name for the ambient set to render, a node used as-is (cloned), or
  * full {@link bsIcon} options.
  */
@@ -699,7 +701,7 @@ export function bsButton(options = {}) {
 
 /**
  * @typedef {object} BsButtonGroupOptions
- * @property {string} label - Accessible name for the group. **Required**: a
+ * @property {string} ariaLabel - Accessible name for the group. **Required**: a
  *   `role="group"` with no name is an unlabelled landmark, which is worse for a
  *   screen reader than no grouping at all (NFR-21).
  * @property {'sm' | 'lg' | string} [size] - `btn-group-<size>`.
@@ -717,20 +719,20 @@ export function bsButton(options = {}) {
  * @example
  * bsButtonGroup(
  *   [bsButton({ label: 'Left' }), bsButton({ label: 'Right' })],
- *   { label: 'Alignment' },
+ *   { ariaLabel: 'Alignment' },
  * );
  *
  * @param {Element[]} buttons - Built buttons, or any existing elements.
  * @param {BsButtonGroupOptions} options
  * @returns {Element}
  * @throws {TypeError} If `buttons` is not a non-empty array of elements, or if
- *   `label` is missing.
+ *   `ariaLabel` is missing.
  * @throws {DomContractError} If there is no document to build in.
  */
 export function bsButtonGroup(buttons, options) {
   const api = 'bsButtonGroup';
   assertPlainObject(options, 'options', api);
-  const { label, size, vertical = false, ...rest } = options;
+  const { ariaLabel, size, vertical = false, ...rest } = options;
   const common = commonNodeOptions(rest, api);
 
   if (!Array.isArray(buttons) || buttons.length === 0) {
@@ -741,9 +743,9 @@ export function bsButtonGroup(buttons, options) {
       throw new TypeError(`${api}: buttons[${index}] must be an Element`);
     }
   }
-  if (typeof label !== 'string' || label === '') {
+  if (typeof ariaLabel !== 'string' || ariaLabel === '') {
     throw new TypeError(
-      `${api}: options.label is required — a role="group" without an accessible name ` +
+      `${api}: options.ariaLabel is required — a role="group" without an accessible name ` +
         'is announced as an unnamed group.',
     );
   }
@@ -761,7 +763,7 @@ export function bsButtonGroup(buttons, options) {
     api,
   );
   el.setAttribute('role', 'group');
-  el.setAttribute('aria-label', label);
+  el.setAttribute('aria-label', ariaLabel);
 
   const fragment = doc.createDocumentFragment();
   for (const button of buttons) fragment.append(button);
@@ -771,9 +773,9 @@ export function bsButtonGroup(buttons, options) {
 
 /**
  * @typedef {object} BsCloseButtonOptions
- * @property {string} [label='Close'] - Accessible name. Defaulted rather than
- *   required, because a close button's purpose is unambiguous — but injectable,
- *   because "Close" is an English string (NFR-21).
+ * @property {string} [ariaLabel='Close'] - Accessible name. Defaulted rather
+ *   than required, because a close button's purpose is unambiguous — but
+ *   injectable, because "Close" is an English string (NFR-21).
  * @property {boolean} [disabled=false]
  * @property {boolean} [white=false] - `btn-close-white`, for dark backgrounds.
  * @property {(event: Event) => void} [onClick]
@@ -786,7 +788,7 @@ export function bsButtonGroup(buttons, options) {
  * A Bootstrap close button (spec 04 F57).
  *
  * @example
- * bsCloseButton({ onClick: () => toast.hide(), label: 'Chiudi' });
+ * bsCloseButton({ onClick: () => toast.hide(), ariaLabel: 'Chiudi' });
  *
  * @param {BsCloseButtonOptions} [options]
  * @returns {Element}
@@ -796,11 +798,18 @@ export function bsButtonGroup(buttons, options) {
 export function bsCloseButton(options = {}) {
   const api = 'bsCloseButton';
   assertPlainObject(options, 'options', api);
-  const { label = 'Close', disabled = false, white = false, onClick, signal, ...rest } = options;
+  const {
+    ariaLabel = 'Close',
+    disabled = false,
+    white = false,
+    onClick,
+    signal,
+    ...rest
+  } = options;
   const common = commonNodeOptions(rest, api);
 
-  if (typeof label !== 'string' || label === '') {
-    throw new TypeError(`${api}: options.label must be a non-empty string`);
+  if (typeof ariaLabel !== 'string' || ariaLabel === '') {
+    throw new TypeError(`${api}: options.ariaLabel must be a non-empty string`);
   }
   if (onClick !== undefined && typeof onClick !== 'function') {
     throw new TypeError(`${api}: options.onClick must be a function`);
@@ -813,7 +822,7 @@ export function bsCloseButton(options = {}) {
   const el = doc.createElement('button');
   el.setAttribute('type', 'button');
   applyClasses(el, ['btn-close', white === true && 'btn-close-white'], common.class, api);
-  el.setAttribute('aria-label', label);
+  el.setAttribute('aria-label', ariaLabel);
   if (disabled === true) el.setAttribute('disabled', '');
   if (onClick !== undefined) {
     el.addEventListener('click', onClick, signal === undefined ? undefined : { signal });
@@ -826,7 +835,8 @@ export function bsCloseButton(options = {}) {
  * @property {'border' | 'grow'} [kind='border']
  * @property {'sm' | string} [size] - `spinner-<kind>-<size>`.
  * @property {string} [variant] - Theme colour, as `text-<variant>`.
- * @property {string} [label='Loading…'] - Visually-hidden status text.
+ * @property {string} [ariaLabel='Loading…'] - Accessible name, delivered as
+ *   visually-hidden status text — the shape Bootstrap's own spinner example uses.
  * @property {ClassOption} [class]
  * @property {Document} [document]
  */
@@ -850,7 +860,7 @@ export function bsCloseButton(options = {}) {
 export function bsSpinner(options = {}) {
   const api = 'bsSpinner';
   assertPlainObject(options, 'options', api);
-  const { kind = 'border', size, variant, label = 'Loading…', ...rest } = options;
+  const { kind = 'border', size, variant, ariaLabel = 'Loading…', ...rest } = options;
   const common = commonNodeOptions(rest, api);
 
   if (kind !== 'border' && kind !== 'grow') {
@@ -858,8 +868,8 @@ export function bsSpinner(options = {}) {
   }
   if (size !== undefined) assertToken(size, 'options.size', api);
   if (variant !== undefined) assertToken(variant, 'options.variant', api);
-  if (typeof label !== 'string') {
-    throw new TypeError(`${api}: options.label must be a string`);
+  if (typeof ariaLabel !== 'string') {
+    throw new TypeError(`${api}: options.ariaLabel must be a string`);
   }
 
   const doc = resolveDocument(common, api);
@@ -875,7 +885,7 @@ export function bsSpinner(options = {}) {
     api,
   );
   el.setAttribute('role', 'status');
-  if (label !== '') el.append(visuallyHidden(doc, label));
+  if (ariaLabel !== '') el.append(visuallyHidden(doc, ariaLabel));
   return el;
 }
 
@@ -887,9 +897,10 @@ export function bsSpinner(options = {}) {
  * @property {string} [variant] - Theme colour of the bar, as `bg-<variant>`.
  * @property {boolean} [striped=false]
  * @property {boolean} [animated=false] - Implies striped, as Bootstrap requires.
- * @property {string} [label] - Accessible name for the bar.
+ * @property {string} [ariaLabel] - Accessible name for the bar. The *visible*
+ *   text inside it is `format` — the two are separate on purpose.
  * @property {((value: number, range: { min: number, max: number }) => string) | false} [format=false]
- *   Visible text inside the bar, recomputed on every `update`. `false` shows
+ *   Visible text inside the bar, recomputed on every `setValue`. `false` shows
  *   none, which is Bootstrap's own default. A function rather than a boolean
  *   because "25%" is a human-readable string and this library does not ship
  *   those (NFR-21) — `(v) => \`${v}%\`` is the caller's one-line policy.
@@ -901,7 +912,7 @@ export function bsSpinner(options = {}) {
 /**
  * @typedef {object} BsProgressInstance
  * @property {Element} element - The track. Append this.
- * @property {(value: number) => void} update - Move the bar; re-runs `format`.
+ * @property {(value: number) => void} setValue - Move the bar; re-runs `format`.
  * @property {() => void} destroy - Remove the element.
  */
 
@@ -909,15 +920,15 @@ export function bsSpinner(options = {}) {
  * A Bootstrap progress bar (spec 04 F59).
  *
  * Returns an instance rather than an element because a progress bar exists to
- * change: `update(value)` keeps the width, the `aria-valuenow`, and the visible
+ * change: `setValue(value)` keeps the width, the `aria-valuenow`, and the visible
  * text in one place, so the three cannot drift apart — which they do the moment
  * a caller sets the width by hand and forgets the ARIA value.
  *
  * @example
- * const progress = bsProgress({ max: totalBytes, label: 'Upload', format: (v, { max }) =>
+ * const progress = bsProgress({ max: totalBytes, ariaLabel: 'Upload', format: (v, { max }) =>
  *   `${Math.round((v / max) * 100)}%` });
  * container.append(progress.element);
- * onChunk((sent) => progress.update(sent));
+ * onChunk((sent) => progress.setValue(sent));
  *
  * @param {BsProgressOptions} [options]
  * @returns {BsProgressInstance}
@@ -935,7 +946,7 @@ export function bsProgress(options = {}) {
     variant,
     striped = false,
     animated = false,
-    label,
+    ariaLabel,
     format = false,
     height,
     ...rest
@@ -955,8 +966,8 @@ export function bsProgress(options = {}) {
     throw new TypeError(`${api}: options.min must be less than options.max`);
   }
   if (variant !== undefined) assertToken(variant, 'options.variant', api);
-  if (label !== undefined && typeof label !== 'string') {
-    throw new TypeError(`${api}: options.label must be a string`);
+  if (ariaLabel !== undefined && typeof ariaLabel !== 'string') {
+    throw new TypeError(`${api}: options.ariaLabel must be a string`);
   }
   if (format !== false && typeof format !== 'function') {
     throw new TypeError(`${api}: options.format must be a function or false`);
@@ -973,7 +984,7 @@ export function bsProgress(options = {}) {
   track.setAttribute('role', 'progressbar');
   track.setAttribute('aria-valuemin', String(min));
   track.setAttribute('aria-valuemax', String(max));
-  if (label !== undefined) track.setAttribute('aria-label', label);
+  if (ariaLabel !== undefined) track.setAttribute('aria-label', ariaLabel);
   if (height !== undefined) {
     /** @type {{ style: CSSStyleDeclaration }} */ (track).style.height = height;
   }
@@ -993,9 +1004,9 @@ export function bsProgress(options = {}) {
   track.append(bar);
 
   /** @param {number} next */
-  const update = (next) => {
+  const setValue = (next) => {
     if (typeof next !== 'number' || Number.isNaN(next)) {
-      throw new TypeError(`${api}: update(value) requires a number`);
+      throw new TypeError(`${api}: setValue(value) requires a number`);
     }
     const clamped = Math.min(max, Math.max(min, next));
     track.setAttribute('aria-valuenow', String(clamped));
@@ -1006,9 +1017,9 @@ export function bsProgress(options = {}) {
     bar.textContent = format === false ? '' : String(format(clamped, { min, max }));
   };
 
-  update(value);
+  setValue(value);
 
-  return { element: track, update, destroy: () => track.remove() };
+  return { element: track, setValue, destroy: () => track.remove() };
 }
 
 /**
