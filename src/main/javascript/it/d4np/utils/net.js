@@ -13,8 +13,13 @@
  * — the parsers return `null`, never throw — while a wrong argument *type* is a
  * programmer error and throws `TypeError`.
  *
+ * Every options bag on this entry **rejects a key it does not know** with a
+ * `TypeError` naming it: the destructuring is the schema (ADR-0047).
+ *
  * @module egl-utils-js/net
  */
+
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /** An IPv4 address has four octets; a key may cover a 1-4 octet prefix. */
 const MAX_OCTETS = 4;
@@ -208,7 +213,8 @@ export function formatIpv4(octets) {
  */
 export function ipv4ToKey(value, options = {}) {
   assertString(value, 'value');
-  const { octets = MAX_OCTETS } = options;
+  const { octets = MAX_OCTETS, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'ipv4ToKey');
   if (!Number.isInteger(octets) || octets < 1 || octets > MAX_OCTETS) {
     throw new TypeError('options.octets must be an integer between 1 and 4');
   }

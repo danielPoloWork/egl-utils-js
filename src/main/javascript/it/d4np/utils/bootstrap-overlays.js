@@ -22,6 +22,7 @@
  */
 
 import { isElement } from './dom-helpers.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 import {
   applyClasses,
   appendContent,
@@ -70,7 +71,7 @@ import {
  * @param {Element} target - The `.offcanvas` element.
  * @param {BsOffcanvasOptions} [options]
  * @returns {BehaviourWrapper}
- * @throws {TypeError} On a malformed option or a non-Element target.
+ * @throws {TypeError} On a malformed or unknown option or a non-Element target.
  * @throws {PeerMissingError} From the first operation, if `Offcanvas` is unreachable.
  */
 export function bsOffcanvas(target, options = {}) {
@@ -81,19 +82,24 @@ export function bsOffcanvas(target, options = {}) {
   assertPlainObject(options, 'options', api);
   assertSignal(options, api);
 
-  const { backdrop, scroll, keyboard } = options;
+  const { backdrop, scroll, keyboard, bootstrap, signal, ...unknown } = options;
+  assertNoUnknownOptions(unknown, api);
   /** @type {Record<string, unknown>} */
   const config = {};
   if (backdrop !== undefined) config.backdrop = backdrop;
   if (scroll !== undefined) config.scroll = scroll;
   if (keyboard !== undefined) config.keyboard = keyboard;
 
-  return behaviourWrapper(target, options, {
-    api,
-    component: 'Offcanvas',
-    ns: 'bs.offcanvas',
-    config,
-  });
+  return behaviourWrapper(
+    target,
+    { bootstrap, signal },
+    {
+      api,
+      component: 'Offcanvas',
+      ns: 'bs.offcanvas',
+      config,
+    },
+  );
 }
 
 /**
@@ -175,7 +181,7 @@ export function bsOffcanvas(target, options = {}) {
  * @param {Element} container
  * @param {BsCarouselOptions} [options]
  * @returns {BsCarouselInstance}
- * @throws {TypeError} On a malformed option, or an image item whose `alt` is not a string.
+ * @throws {TypeError} On a malformed or unknown option, or an image item whose `alt` is not a string.
  * @throws {PeerMissingError} From the first operation, if `Carousel` is unreachable.
  */
 export function bsCarousel(container, options = {}) {
@@ -199,7 +205,12 @@ export function bsCarousel(container, options = {}) {
     html,
     sanitize,
     signal,
+    bootstrap,
+    class: extraClass,
+    document: explicitDocument,
+    ...unknown
   } = options;
+  assertNoUnknownOptions(unknown, api);
   if (items !== undefined && !Array.isArray(items)) {
     throw new TypeError(`${api}: options.items must be an array`);
   }
@@ -214,7 +225,7 @@ export function bsCarousel(container, options = {}) {
     throw new TypeError(`${api}: options.labels.slide must be a function`);
   }
 
-  const doc = documentOf(container, options, api);
+  const doc = documentOf(container, { document: explicitDocument }, api);
   const contentOptions = { html, sanitize };
   /** @type {Element} */
   let root;
@@ -226,7 +237,7 @@ export function bsCarousel(container, options = {}) {
     /** @type {Set<string>} */
     const reserved = new Set();
     root = doc.createElement('div');
-    applyClasses(root, ['carousel', 'slide', fade === true && 'carousel-fade'], options.class, api);
+    applyClasses(root, ['carousel', 'slide', fade === true && 'carousel-fade'], extraClass, api);
     root.id = uniqueId(doc, 'egl-carousel', reserved);
 
     const inner = doc.createElement('div');
@@ -339,7 +350,7 @@ export function bsCarousel(container, options = {}) {
   function instance() {
     if (destroyed) throw new TypeError(`${api}: this manager has been destroyed`);
     if (resolved === undefined) {
-      resolved = instantiate(resolveComponent(options, api, 'Carousel'), root, config);
+      resolved = instantiate(resolveComponent({ bootstrap }, api, 'Carousel'), root, config);
     }
     return resolved;
   }
@@ -453,7 +464,7 @@ export function bsCarousel(container, options = {}) {
  * @param {Element} target - The scrollable element being spied on.
  * @param {BsScrollspyOptions} [options]
  * @returns {BsScrollspyInstance}
- * @throws {TypeError} On a malformed option or a non-Element target.
+ * @throws {TypeError} On a malformed or unknown option or a non-Element target.
  * @throws {PeerMissingError} From the first operation, if `ScrollSpy` is unreachable.
  */
 export function bsScrollspy(target, options = {}) {
@@ -464,7 +475,8 @@ export function bsScrollspy(target, options = {}) {
   assertPlainObject(options, 'options', api);
   assertSignal(options, api);
 
-  const { nav, rootMargin, smoothScroll, threshold, signal } = options;
+  const { nav, rootMargin, smoothScroll, threshold, signal, bootstrap, ...unknown } = options;
+  assertNoUnknownOptions(unknown, api);
   if (nav !== undefined && typeof nav !== 'string' && !isElement(nav)) {
     throw new TypeError(`${api}: options.nav must be an Element or a selector string`);
   }
@@ -485,7 +497,7 @@ export function bsScrollspy(target, options = {}) {
   function instance() {
     if (destroyed) throw new TypeError(`${api}: this wrapper has been destroyed`);
     if (resolved === undefined) {
-      resolved = instantiate(resolveComponent(options, api, 'ScrollSpy'), target, config);
+      resolved = instantiate(resolveComponent({ bootstrap }, api, 'ScrollSpy'), target, config);
     }
     return resolved;
   }

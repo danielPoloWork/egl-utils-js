@@ -16,6 +16,7 @@
  */
 
 import { DomContractError } from './errors.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /**
  * The live document, or `null` outside a browser.
@@ -182,7 +183,8 @@ export function bindElements(map, options = {}) {
   if (map === null || typeof map !== 'object' || Array.isArray(map)) {
     throw new TypeError('map must be an object of name -> selector');
   }
-  const { root, strict = false } = options;
+  const { root, strict = false, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'bindElements');
 
   const scope = root === undefined ? requireDocument('bindElements') : root;
   if (!isElement(scope) && !isDocumentLike(scope)) {

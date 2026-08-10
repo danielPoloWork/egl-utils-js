@@ -12,6 +12,7 @@
 
 import { HttpError } from './errors.js';
 import { controllerFor, isAbortSignal, isElement } from './dom-helpers.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /**
  * @param {unknown} value
@@ -116,7 +117,9 @@ export async function injectFragment(target, url, options) {
     fetch: fetchImpl = globalThis.fetch,
     signal,
     headers,
+    ...unknown
   } = /** @type {Partial<InjectFragmentOptions>} */ (options ?? {});
+  assertNoUnknownOptions(unknown, 'injectFragment');
 
   if (sanitize === undefined) {
     throw new TypeError(
@@ -208,7 +211,8 @@ export async function injectFragment(target, url, options) {
  */
 export function autoGrow(textarea, options = {}) {
   assertElement(textarea, 'autoGrow');
-  const { maxRows, measure = defaultMeasure, signal } = options;
+  const { maxRows, measure = defaultMeasure, signal, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'autoGrow');
 
   if (maxRows !== undefined && (!Number.isInteger(maxRows) || maxRows < 1)) {
     throw new TypeError('autoGrow: options.maxRows must be a positive integer');

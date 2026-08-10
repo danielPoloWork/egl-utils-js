@@ -239,10 +239,13 @@ describe('NFR-18 — the builders never touch the optional peer', () => {
       });
       // The three that used to be excluded, each attaching a listener.
       bootstrap.bsListGroup(['one', 'two'], { document: doc, onSelect: () => {} });
-      bootstrap.bsAlert(host, { document: doc }).show('info', 'hello');
-      bootstrap
-        .bsPagination(host, { onPage: () => {}, document: doc })
-        .update({ page: 1, pageCount: 3 });
+      // `bsAlert` and `bsPagination` take no `document`: both work from the
+      // container they are given — the alert through the F49 engine, the pager
+      // through `container.ownerDocument` — which is exactly what makes them
+      // foreign-realm safe. Passing one used to be dropped in silence; since
+      // ADR-0047 an unknown key is a TypeError.
+      bootstrap.bsAlert(host).show('info', 'hello');
+      bootstrap.bsPagination(host, { onPage: () => {} }).update({ page: 1, pageCount: 3 });
     }).not.toThrow();
   });
 

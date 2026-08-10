@@ -9,8 +9,13 @@
  * Grapheme clusters and East-Asian display width are deliberately out of
  * scope — see the ADR for why.
  *
+ * Every options bag on this entry **rejects a key it does not know** with a
+ * `TypeError` naming it: the destructuring is the schema (ADR-0047).
+ *
  * @module egl-utils-js/text
  */
+
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /** @param {number} code @returns {boolean} */
 function isHighSurrogate(code) {
@@ -132,7 +137,8 @@ function isSpace(code) {
 export function truncate(str, maxLength, options = {}) {
   assertString(str, 'str');
   assertWidth(maxLength, 'maxLength', 0);
-  const { ellipsis = '…', position = 'end' } = options;
+  const { ellipsis = '…', position = 'end', ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'truncate');
   assertString(ellipsis, 'options.ellipsis');
   assertOneOf(position, SIDES, 'options.position');
 
@@ -183,7 +189,8 @@ export function truncate(str, maxLength, options = {}) {
 export function wrapText(str, width, options = {}) {
   assertString(str, 'str');
   assertWidth(width, 'width', 1);
-  const { breakLongWords = false } = options;
+  const { breakLongWords = false, ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'wrapText');
 
   /** @type {string[]} */
   const lines = [];
@@ -277,7 +284,8 @@ export function wrapText(str, width, options = {}) {
 export function fixedWidth(str, width, options = {}) {
   assertString(str, 'str');
   assertWidth(width, 'width', 0);
-  const { align = 'left', truncate: side = 'end', pad = ' ' } = options;
+  const { align = 'left', truncate: side = 'end', pad = ' ', ...unknown } = options;
+  assertNoUnknownOptions(unknown, 'fixedWidth');
   assertString(pad, 'options.pad');
   if (pad === '') {
     throw new TypeError('options.pad must be a non-empty string');

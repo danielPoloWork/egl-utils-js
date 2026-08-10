@@ -1,19 +1,19 @@
 [
   {
-    "name": "root - full import (NFR-01: measured 5806 B, ceiling 6 kB; spec-02 root surface complete)",
+    "name": "root - full import (NFR-01: measured 5914 B, ceiling 6 kB; +108 B for the ADR-0047 option-key contract, still inside the ceiling)",
     "path": "dist/esm/index.js",
-    "limit": "5.85 kB"
+    "limit": "5.95 kB"
   },
   {
-    "name": "/storage - full import (2.1 kB - documented NFR-01 divergence, ADR-0024: measured 2027 B)",
+    "name": "/storage - full import (2.15 kB - documented NFR-01 divergence, ADR-0024, amended by ADR-0047: measured 2106 B)",
     "path": "dist/esm/storage.js",
-    "limit": "2.1 kB"
+    "limit": "2.15 kB"
   },
   {
-    "name": "/storage - wrappers only (NFR-02: F39 costs non-importers nothing; measured 1698 B)",
+    "name": "/storage - wrappers only (NFR-02: F39 costs non-importers nothing; measured 1764 B incl. the ADR-0047 option-key contract)",
     "path": "dist/esm/storage.js",
     "import": "{ localStorageWrapper, sessionStorageWrapper, cookieHelper }",
-    "limit": "1.75 kB"
+    "limit": "1.8 kB"
   },
   {
     "name": "single: pageSessionId (composes uuid + the session wrapper; measured 888 B)",
@@ -32,9 +32,9 @@
     "limit": "376 B"
   },
   {
-    "name": "/text (NFR-08: measured 837 B)",
+    "name": "/text (NFR-08: measured 924 B, clause 1 kB; +87 B for the ADR-0047 option-key contract)",
     "path": "dist/esm/text.js",
-    "limit": "0.9 kB"
+    "limit": "0.95 kB"
   },
   {
     "name": "single: truncate (NFR-08 <= 1 kB / NFR-02)",
@@ -77,16 +77,16 @@
     "limit": "3.4 kB"
   },
   {
-    "name": "single: compileFilter (NFR-08 <= 1 kB / NFR-02)",
+    "name": "single: compileFilter (1.03 kB - named NFR-08 exception per ADR-0047: measured 1010 B, ten bytes over the 1 kB clause, all of it the option-key check)",
     "path": "dist/esm/table.js",
     "import": "{ compileFilter }",
-    "limit": "1 kB"
+    "limit": "1.03 kB"
   },
   {
-    "name": "single: comparator (1.05 kB - documented NFR-08 exception, ADR-0022)",
+    "name": "single: comparator (1.1 kB - documented NFR-08 exception, ADR-0022, amended by ADR-0047: measured 1067 B)",
     "path": "dist/esm/table.js",
     "import": "{ comparator }",
-    "limit": "1.05 kB"
+    "limit": "1.1 kB"
   },
   {
     "name": "single: paginate (NFR-08 <= 1 kB / NFR-02)",
@@ -160,10 +160,10 @@
     "limit": "1 kB"
   },
   {
-    "name": "single: inlineAlert (NFR-12 component row: measured 1382 B, clause 1.5 kB per ADR-0031)",
+    "name": "single: inlineAlert (NFR-12 component row: measured 1489 B, clause 1.5 kB per ADR-0031; +107 B for the ADR-0047 option-key contract, inside the clause)",
     "path": "dist/esm/dom.js",
     "import": "{ inlineAlert }",
-    "limit": "1.48 kB"
+    "limit": "1.51 kB"
   },
   {
     "name": "single: bindTableControls (2.2 kB - documented NFR-12 composing-facade row, ADR-0035; measured 2093 B)",
@@ -183,10 +183,10 @@
     "limit": "20.5 kB"
   },
   {
-    "name": "single: bsIcon (NFR-17 <= 1.2 kB per ADR-0037; measured 865 B)",
+    "name": "single: bsIcon (NFR-17 <= 1.2 kB per ADR-0037; measured 933 B incl. the ADR-0047 option-key contract)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsIcon }",
-    "limit": "0.93 kB"
+    "limit": "0.96 kB"
   },
   {
     "name": "single: bootstrapIconsSet (NFR-02: a data preset costs nothing once marked pure, ADR-0038; measured 43 B)",
@@ -195,10 +195,10 @@
     "limit": "0.1 kB"
   },
   {
-    "name": "single: bsBadge (NFR-17 <= 1.2 kB per ADR-0037; measured 1046 B)",
+    "name": "single: bsBadge (NFR-17 <= 1.2 kB per ADR-0037; measured 1125 B incl. the ADR-0047 option-key contract)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsBadge }",
-    "limit": "1.12 kB"
+    "limit": "1.15 kB"
   },
   {
     "name": "single: bsButton (1.9 kB - documented NFR-17 composing row, ADR-0037: composes bsIcon; measured 1763 B)",
@@ -207,22 +207,22 @@
     "limit": "1.9 kB"
   },
   {
-    "name": "single: bsButtonGroup (NFR-17 <= 1.2 kB per ADR-0037; measured 832 B)",
+    "name": "single: bsButtonGroup (NFR-17 <= 1.2 kB per ADR-0037; measured 911 B incl. the ADR-0047 option-key contract)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsButtonGroup }",
-    "limit": "0.9 kB"
+    "limit": "0.94 kB"
   },
   {
-    "name": "single: bsCloseButton (NFR-17 <= 1.2 kB per ADR-0037; measured 763 B - the shared F52 contract floor)",
+    "name": "single: bsCloseButton (NFR-17 <= 1.2 kB per ADR-0037; measured 835 B - the smallest builder, so it carries the shared F52 + ADR-0047 option-key contract floor most visibly)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsCloseButton }",
-    "limit": "0.82 kB"
+    "limit": "0.86 kB"
   },
   {
-    "name": "single: bsSpinner (NFR-17 <= 1.2 kB per ADR-0037; measured 778 B)",
+    "name": "single: bsSpinner (NFR-17 <= 1.2 kB per ADR-0037; measured 844 B incl. the ADR-0047 option-key contract)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsSpinner }",
-    "limit": "0.84 kB"
+    "limit": "0.87 kB"
   },
   {
     "name": "single: bsProgress (NFR-17 <= 1.2 kB per ADR-0037; measured 1051 B)",
@@ -231,10 +231,10 @@
     "limit": "1.13 kB"
   },
   {
-    "name": "single: bsPlaceholder (NFR-17 <= 1.2 kB per ADR-0037; measured 946 B)",
+    "name": "single: bsPlaceholder (NFR-17 <= 1.2 kB per ADR-0037; measured 1026 B incl. the ADR-0047 option-key contract)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsPlaceholder }",
-    "limit": "1.02 kB"
+    "limit": "1.05 kB"
   },
   {
     "name": "single: bsCard (NFR-17 composite row, clause 1.5 kB per ADR-0038; measured 1418 B)",
@@ -249,10 +249,10 @@
     "limit": "2.15 kB"
   },
   {
-    "name": "single: bsBreadcrumb (NFR-17 composite row, clause 1.3 kB per ADR-0038; measured 1184 B)",
+    "name": "single: bsBreadcrumb (NFR-17 composite row, clause 1.3 kB per ADR-0038; measured 1274 B incl. the ADR-0047 option-key contract, inside the clause)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsBreadcrumb }",
-    "limit": "1.27 kB"
+    "limit": "1.31 kB"
   },
   {
     "name": "single: bsAlert (NFR-17 <= 2 kB composing row: the F49 engine in a costume; measured 1521 B)",
@@ -351,15 +351,15 @@
     "limit": "2.1 kB"
   },
   {
-    "name": "/logging - full import (NFR-08: measured 1390 B, clause 1.6 kB)",
+    "name": "/logging - full import (NFR-08: measured 1475 B, clause 1.6 kB; +85 B for the ADR-0047 option-key contract)",
     "path": "dist/esm/logging.js",
-    "limit": "1.45 kB"
+    "limit": "1.52 kB"
   },
   {
-    "name": "single: logger (1.45 kB - documented NFR-08 exception, ADR-0027: measured 1361 B)",
+    "name": "single: logger (1.5 kB - documented NFR-08 exception, ADR-0027, amended by ADR-0047: measured 1462 B)",
     "path": "dist/esm/logging.js",
     "import": "{ logger }",
-    "limit": "1.45 kB"
+    "limit": "1.5 kB"
   },
   {
     "name": "single: formatLogLine (NFR-08 <= 1 kB / NFR-02)",
@@ -572,9 +572,9 @@
     "limit": "1 kB"
   },
   {
-    "name": "single: httpClient (1.35 kB \u00e2\u20ac\u201d documented NFR-01 exception, ADR-0015)",
+    "name": "single: httpClient (1.4 kB - documented NFR-01 exception, ADR-0015, amended by ADR-0047: measured 1371 B)",
     "path": "dist/esm/index.js",
     "import": "{ httpClient }",
-    "limit": "1.35 kB"
+    "limit": "1.4 kB"
   }
 ]

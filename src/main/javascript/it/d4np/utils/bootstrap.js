@@ -28,6 +28,9 @@
  * The application supplies Bootstrap's CSS itself: this toolkit emits markup and
  * class names, and ships no stylesheet (spec 04 §1 non-goals).
  *
+ * Every options bag on this entry **rejects a key it does not know** with a
+ * `TypeError` naming it: the destructuring is the schema (ADR-0047).
+ *
  * @module egl-utils-js/bootstrap
  */
 

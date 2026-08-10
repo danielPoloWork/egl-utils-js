@@ -15,10 +15,15 @@
  * Browser-first. In Node the sanitizer needs a real DOM — pass a `jsdom`
  * window via `options.window`. That cost is stated, not implied.
  *
+ * Every options bag on this entry **rejects a key it does not know** with a
+ * `TypeError` naming it: the destructuring is the schema (ADR-0047).
+ *
  * @module egl-utils-js/sanitize
  */
 
 import createDOMPurify from 'dompurify';
+
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /**
  * Curated default tag allowlist (ADR-0012): structural and formatting
@@ -268,7 +273,9 @@ export function sanitizeHtml(html, options = {}) {
     allowedUriSchemes = DEFAULT_ALLOWED_URI_SCHEMES,
     allowDataAttributes = false,
     window: explicitWindow,
+    ...unknown
   } = options;
+  assertNoUnknownOptions(unknown, 'sanitizeHtml');
 
   if (allowedTags !== undefined && additionalTags !== undefined) {
     throw new TypeError('allowedTags and additionalTags are mutually exclusive');

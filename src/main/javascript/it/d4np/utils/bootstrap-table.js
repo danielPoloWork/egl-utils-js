@@ -35,6 +35,7 @@
  */
 
 import { controllerFor, isAbortSignal, isElement } from './dom-helpers.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 import { bindTableControls } from './dom-table.js';
 import { tablePipeline } from './table.js';
 import { bsPagination } from './bootstrap-composites.js';
@@ -250,7 +251,7 @@ const ALIGNMENTS = /* @__PURE__ */ new Set(['start', 'center', 'end']);
  * @param {Element} container - Where the table is appended.
  * @param {BsTableOptions<Row>} options
  * @returns {BsTableInstance<Row>}
- * @throws {TypeError} On a malformed option, on a non-primitive cell value with
+ * @throws {TypeError} On a malformed or unknown option, on a non-primitive cell value with
  *   no `format`, on `{ html: true }` without `sanitize`, on combining
  *   `pipeline` with the options that would build one, or on `setData()` after
  *   `destroy()`.
@@ -278,7 +279,18 @@ export function bsTable(container, options) {
     variant,
     responsive = false,
     signal,
+    striped = false,
+    stripedColumns = false,
+    hover = false,
+    bordered = false,
+    borderless = false,
+    small = false,
+    html,
+    sanitize,
+    class: extraClass,
+    ...unknown
   } = options;
+  assertNoUnknownOptions(unknown, api);
 
   if (!Array.isArray(columns) || columns.length === 0) {
     throw new TypeError(`${api}: options.columns must be a non-empty array`);
@@ -344,22 +356,22 @@ export function bsTable(container, options) {
     table,
     [
       'table',
-      options.striped === true && 'table-striped',
-      options.stripedColumns === true && 'table-striped-columns',
-      options.hover === true && 'table-hover',
-      options.bordered === true && 'table-bordered',
-      options.borderless === true && 'table-borderless',
-      options.small === true && 'table-sm',
+      striped === true && 'table-striped',
+      stripedColumns === true && 'table-striped-columns',
+      hover === true && 'table-hover',
+      bordered === true && 'table-bordered',
+      borderless === true && 'table-borderless',
+      small === true && 'table-sm',
       captionTop === true && 'caption-top',
       variant !== undefined && `table-${variant}`,
     ],
-    options.class,
+    extraClass,
     api,
   );
 
   if (caption !== undefined) {
     const captionEl = doc.createElement('caption');
-    appendContent(captionEl, caption, contentOptions(options, undefined), api);
+    appendContent(captionEl, caption, contentOptions({ html, sanitize }, undefined), api);
     table.append(captionEl);
   }
 
@@ -398,7 +410,12 @@ export function bsTable(container, options) {
     // header would mean enriching a status column silently parses that column's
     // own label as markup — a door nobody asked to open. A rich header is a
     // `label` node, which needs no markup decision at all.
-    appendContent(th, column.label ?? column.key, contentOptions(options, undefined), api);
+    appendContent(
+      th,
+      column.label ?? column.key,
+      contentOptions({ html, sanitize }, undefined),
+      api,
+    );
     headRow.append(th);
   }
   thead.append(headRow);
@@ -424,7 +441,7 @@ export function bsTable(container, options) {
         const tr = doc.createElement('tr');
         const td = doc.createElement('td');
         td.setAttribute('colspan', String(columns.length));
-        appendContent(td, empty, contentOptions(options, undefined), api);
+        appendContent(td, empty, contentOptions({ html, sanitize }, undefined), api);
         tr.append(td);
         fragment.append(tr);
       }
@@ -472,7 +489,7 @@ export function bsTable(container, options) {
           : column.getValue(row);
       const content =
         column.format === undefined ? defaultCell(raw, column.key, api) : column.format(raw, row);
-      appendContent(td, content, contentOptions(options, column), api);
+      appendContent(td, content, contentOptions({ html, sanitize }, column), api);
       tr.append(td);
     }
     return tr;
@@ -752,10 +769,18 @@ function buildControls(context) {
 
   let pager = /** @type {import('./bootstrap-composites.js').BsPaginationInstance | null} */ (null);
   if (pagination !== undefined && pagination !== false) {
-    const options = pagination === true ? {} : opts(pagination, 'options.controls.pagination', api);
-    if (options.status !== false) {
+    // `status`/`statusClass` configure the band this function owns; everything
+    // else is F65's own option bag. They are separated here rather than spread
+    // wholesale, because `bsPagination` rejects a key it does not know
+    // (ADR-0047) — and a control config is not a pager config.
+    const {
+      status: wantStatus = true,
+      statusClass,
+      ...pagerOptions
+    } = pagination === true ? {} : opts(pagination, 'options.controls.pagination', api);
+    if (wantStatus !== false) {
       const status = doc.createElement('span');
-      applyClasses(status, ['text-body-secondary', 'small'], options.statusClass, api);
+      applyClasses(status, ['text-body-secondary', 'small'], statusClass, api);
       footer.append(status);
       bindings.pagination = { status };
       parts.status = status;
@@ -764,7 +789,7 @@ function buildControls(context) {
     // its own `onPage` rather than through F51's prev/next pair — passing both
     // would put two controls on one job.
     pager = bsPagination(footer, {
-      ...options,
+      ...pagerOptions,
       onPage: (page) => pipeline.setPage(page),
     });
     parts.pagination = pager.element;
@@ -873,16 +898,17 @@ function defaultCell(value, key, api) {
  * single table-wide `html: true` would do.
  *
  * @template Row
- * @param {BsTableOptions<Row>} options
+ * @param {import('./bootstrap-elements.js').ContentOptions} table - The
+ *   table-level pair, as `bsTable` destructured it.
  * @param {BsTableColumn<Row> | undefined} column
  * @returns {import('./bootstrap-elements.js').ContentOptions}
  */
-function contentOptions(options, column) {
+function contentOptions(table, column) {
   if (column === undefined || (column.html === undefined && column.sanitize === undefined)) {
-    return { html: options.html, sanitize: options.sanitize };
+    return table;
   }
   return {
-    html: column.html ?? options.html,
-    sanitize: column.sanitize ?? options.sanitize,
+    html: column.html ?? table.html,
+    sanitize: column.sanitize ?? table.sanitize,
   };
 }

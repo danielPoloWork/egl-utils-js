@@ -26,6 +26,7 @@
 
 import { PeerMissingError } from './errors.js';
 import { isAbortSignal, isElement } from './dom-helpers.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 import { loadingOverlay } from './dom-components.js';
 import {
   appendContent,
@@ -376,7 +377,7 @@ export function behaviourWrapper(target, options, spec) {
  *   `.toast-container` positions them; this wrapper does not position anything.
  * @param {BsToastOptions} [options]
  * @returns {BsToastInstance}
- * @throws {TypeError} On a malformed option or a non-Element container.
+ * @throws {TypeError} On a malformed or unknown option or a non-Element container.
  * @throws {PeerMissingError} From `show`, if Bootstrap's `Toast` is unreachable.
  */
 export function bsToast(container, options = {}) {
@@ -395,7 +396,12 @@ export function bsToast(container, options = {}) {
     dismissible = true,
     closeLabel = 'Close',
     signal,
+    bootstrap,
+    class: extraClass,
+    document: explicitDocument,
+    ...unknown
   } = options;
+  assertNoUnknownOptions(unknown, api);
 
   if (defaultVariant !== undefined) assertToken(defaultVariant, 'options.variant', api);
   if (typeof defaultAutohide !== 'boolean') {
@@ -410,9 +416,9 @@ export function bsToast(container, options = {}) {
   // Resolving the ambient one instead would build a toast in the top document
   // for a container living in an iframe.
   const doc =
-    options.document === undefined
+    explicitDocument === undefined
       ? /** @type {Document} */ (container.ownerDocument)
-      : resolveDocument(options, api);
+      : resolveDocument({ document: explicitDocument }, api);
   /** @type {Set<{ element: Element, instance: BootstrapInstanceLike, cleanup: () => void }>} */
   const live = new Set();
   let destroyed = false;
@@ -433,19 +439,21 @@ export function bsToast(container, options = {}) {
       delay = defaultDelay,
       html,
       sanitize,
+      ...unknownShow
     } = showOptions;
+    assertNoUnknownOptions(unknownShow, `${api}.show`);
     if (variant !== undefined) assertToken(variant, 'options.variant', `${api}.show`);
 
     // Resolved before anything is built, so a packaging failure leaves no
     // orphaned node in the container.
-    const component = resolveComponent(options, `${api}.show`, 'Toast');
+    const component = resolveComponent({ bootstrap }, `${api}.show`, 'Toast');
     const contentOptions = { html, sanitize };
 
     const el = doc.createElement('div');
     applyClasses(
       el,
       ['toast', variant !== undefined && `text-bg-${variant}`],
-      options.class,
+      extraClass,
       `${api}.show`,
     );
     // A warning or an error interrupts; anything else waits its turn. The pair
@@ -581,7 +589,7 @@ export function bsToast(container, options = {}) {
  * @param {Element} target - The `.modal` element.
  * @param {BsModalOptions} [options]
  * @returns {BsModalInstance}
- * @throws {TypeError} On a malformed option or a non-Element target.
+ * @throws {TypeError} On a malformed or unknown option or a non-Element target.
  * @throws {PeerMissingError} From the first operation, if `Modal` is unreachable.
  */
 export function bsModal(target, options = {}) {
@@ -592,19 +600,24 @@ export function bsModal(target, options = {}) {
   assertPlainObject(options, 'options', api);
   assertSignal(options, api);
 
-  const { backdrop, keyboard, focus } = options;
+  const { backdrop, keyboard, focus, bootstrap, signal, ...unknown } = options;
+  assertNoUnknownOptions(unknown, api);
   /** @type {Record<string, unknown>} */
   const config = {};
   if (backdrop !== undefined) config.backdrop = backdrop;
   if (keyboard !== undefined) config.keyboard = keyboard;
   if (focus !== undefined) config.focus = focus;
 
-  const wrapper = behaviourWrapper(target, options, {
-    api,
-    component: 'Modal',
-    ns: 'bs.modal',
-    config,
-  });
+  const wrapper = behaviourWrapper(
+    target,
+    { bootstrap, signal },
+    {
+      api,
+      component: 'Modal',
+      ns: 'bs.modal',
+      config,
+    },
+  );
   // Spelled out rather than spread: F70 froze this surface, and `isShown` — which
   // the shared helper also offers — is not part of it.
   return {
@@ -661,7 +674,7 @@ export function bsModal(target, options = {}) {
  *
  * @param {BsLoadingOverlayOptions} [options]
  * @returns {LoadingOverlayInstance}
- * @throws {TypeError} On a malformed option.
+ * @throws {TypeError} On a malformed or unknown option.
  * @throws {DomContractError} If there is no document to build in.
  * @throws {PeerMissingError} From `show`/`wrap`, if `Modal` is unreachable.
  */
@@ -679,13 +692,18 @@ export function bsLoadingOverlay(options = {}) {
     html,
     sanitize,
     signal,
+    bootstrap,
+    class: extraClass,
+    document: explicitDocument,
+    ...unknown
   } = options;
+  assertNoUnknownOptions(unknown, api);
 
   if (target !== undefined && !isElement(target)) {
     throw new TypeError(`${api}: options.target must be an Element`);
   }
 
-  const doc = resolveDocument(options, api);
+  const doc = resolveDocument({ document: explicitDocument }, api);
   const owned = target === undefined;
   const element = owned ? buildOverlayElement() : /** @type {Element} */ (target);
 
@@ -696,7 +714,7 @@ export function bsLoadingOverlay(options = {}) {
    */
   function buildOverlayElement() {
     const el = doc.createElement('div');
-    applyClasses(el, ['modal', 'fade'], options.class, api);
+    applyClasses(el, ['modal', 'fade'], extraClass, api);
     el.setAttribute('tabindex', '-1');
     el.setAttribute('aria-hidden', 'true');
 
@@ -727,7 +745,7 @@ export function bsLoadingOverlay(options = {}) {
   function instance() {
     if (resolved === undefined) {
       if (owned && element.parentNode === null) doc.body.append(element);
-      resolved = instantiate(resolveComponent(options, api, 'Modal'), element, {
+      resolved = instantiate(resolveComponent({ bootstrap }, api, 'Modal'), element, {
         backdrop: 'static',
         keyboard: false,
       });

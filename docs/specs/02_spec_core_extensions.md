@@ -105,6 +105,12 @@ Logging — `egl-utils-js/logging`:
   [ADR-0027](../adr/0027-logging-formatter-sink-split.md); the formatter alone is 876 B
   and `LOG_LEVELS` alone is 60 B, so the composition is what costs, not the entry); the
   candidate this clause anticipated, `compileFilter`, needed none (measured 954 B).
+  - **Amended (roadmap 17.7, [ADR-0047](../adr/0047-an-unknown-option-key-is-a-typeerror.md)):** the
+    unknown-option-key contract adds a shared per-entry floor, so the exception figures above are
+    re-baselined on measurement — `comparator` **1.05 → 1.1 kB** (1067 B), `logger` **1.45 → 1.5 kB**
+    (1462 B) — and `compileFilter` now needs the exception it once did not: **1.03 kB** (1010 B, ten
+    bytes over the 1 kB clause, all of it the check). Entry rows move within their clauses: `/text`
+    924 B, `/table` query primitives 1804 B, `/logging` 1475 B, `/storage` 2106 B. No entry clause moved.
 - NFR-09 Filter-grammar totality & input hardening: `compileFilter` never throws for any
   string expression (fast-check property over arbitrary Unicode — NFR-05's style);
   expressions beyond 1,024 code units degrade to plain substring matching; **no RegExp

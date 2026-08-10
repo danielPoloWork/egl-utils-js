@@ -12,6 +12,9 @@
  * when there is none (spec 03 NFR-14, ADR-0028). The DOM-free half of the same
  * feature set lives on `egl-utils-js/table`.
  *
+ * Every options bag on this entry **rejects a key it does not know** with a
+ * `TypeError` naming it: the destructuring is the schema (ADR-0047).
+ *
  * @module egl-utils-js/dom
  */
 

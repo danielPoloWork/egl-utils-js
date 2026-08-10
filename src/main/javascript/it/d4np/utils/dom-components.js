@@ -16,6 +16,7 @@
  */
 
 import { controllerFor, isAbortSignal, isElement, requireDocument } from './dom-helpers.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 
 /** The four semantic kinds. Severity is the caller's vocabulary, not ours. */
 const KINDS = /** @type {const} */ (['success', 'info', 'warning', 'danger']);
@@ -162,7 +163,9 @@ export function inlineAlert(container, options = {}) {
     dismissible = true,
     closeLabel = 'Close',
     signal,
+    ...unknown
   } = options;
+  assertNoUnknownOptions(unknown, 'inlineAlert');
 
   assertPlainObject(classOverrides, 'options.classes');
   assertPlainObject(icons, 'options.icons');
@@ -254,7 +257,13 @@ export function inlineAlert(container, options = {}) {
     if (typeof message !== 'string') {
       throw new TypeError('inlineAlert: message must be a string');
     }
-    const { autoHideMs: showAutoHide = autoHideMs, html = false, sanitize } = showOptions;
+    const {
+      autoHideMs: showAutoHide = autoHideMs,
+      html = false,
+      sanitize,
+      ...unknownShow
+    } = showOptions;
+    assertNoUnknownOptions(unknownShow, 'inlineAlert.show');
     assertAutoHide(showAutoHide, 'options.autoHideMs', true);
 
     parts ??= build();
@@ -474,7 +483,9 @@ export function loadingOverlay(options) {
     minVisibleMs = 400,
     focus = {},
     signal,
+    ...unknown
   } = /** @type {Partial<LoadingOverlayOptions>} */ (options ?? {});
+  assertNoUnknownOptions(unknown, 'loadingOverlay');
 
   if (typeof onShow !== 'function' || typeof onHide !== 'function') {
     throw new TypeError('loadingOverlay: options.onShow and options.onHide must be functions');
@@ -487,7 +498,8 @@ export function loadingOverlay(options) {
   if (focus === null || typeof focus !== 'object') {
     throw new TypeError('loadingOverlay: options.focus must be an object');
   }
-  const { save: saveFocus = false, root: focusRoot } = focus;
+  const { save: saveFocus = false, root: focusRoot, ...unknownFocus } = focus;
+  assertNoUnknownOptions(unknownFocus, 'loadingOverlay.focus');
   if (focusRoot !== undefined && !isElement(focusRoot)) {
     throw new TypeError('loadingOverlay: options.focus.root must be an Element');
   }

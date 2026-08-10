@@ -23,6 +23,7 @@
 
 import { PeerMissingError } from './errors.js';
 import { isElement } from './dom-helpers.js';
+import { assertNoUnknownOptions } from './option-keys.js';
 import { assertPlainObject, assertToken } from './bootstrap-elements.js';
 import { assertSignal, behaviourWrapper } from './bootstrap-behaviors.js';
 
@@ -196,7 +197,11 @@ function popperOverlay(target, options, spec) {
     boundary,
     html = false,
     sanitize,
+    bootstrap,
+    signal,
+    ...unknown
   } = options;
+  assertNoUnknownOptions(unknown, api);
 
   if (placement !== undefined) assertToken(placement, 'options.placement', api);
   if (customClass !== undefined && typeof customClass !== 'string') {
@@ -236,7 +241,7 @@ function popperOverlay(target, options, spec) {
     config.sanitize = false;
   }
 
-  const wrapper = behaviourWrapper(target, options, { api, component, ns, config });
+  const wrapper = behaviourWrapper(target, { bootstrap, signal }, { api, component, ns, config });
 
   /**
    * @param {'enable' | 'disable' | 'toggleEnabled' | 'update'} method
@@ -331,7 +336,7 @@ function popperOverlay(target, options, spec) {
  * @param {Element} target
  * @param {BsTooltipOptions} [options]
  * @returns {PopperOverlayInstance}
- * @throws {TypeError} On a malformed option, or `{html: true}` without `sanitize`.
+ * @throws {TypeError} On a malformed or unknown option, or `{html: true}` without `sanitize`.
  * @throws {PeerMissingError} From the first operation, if `Tooltip` or Popper is unreachable.
  */
 export function bsTooltip(target, options = {}) {
@@ -360,7 +365,7 @@ export function bsTooltip(target, options = {}) {
  * @param {Element} target
  * @param {BsPopoverOptions} [options]
  * @returns {PopperOverlayInstance}
- * @throws {TypeError} On a malformed option, or `{html: true}` without `sanitize`.
+ * @throws {TypeError} On a malformed or unknown option, or `{html: true}` without `sanitize`.
  * @throws {PeerMissingError} From the first operation, if `Popover` or Popper is unreachable.
  */
 export function bsPopover(target, options = {}) {
