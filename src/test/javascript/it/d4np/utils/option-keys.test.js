@@ -203,7 +203,7 @@ describe('every options-taking entry point rejects an unknown key', () => {
     // `autohide` was the option's name until ADR-0048 merged Bootstrap's
     // `{autohide, delay}` pair into one `autoHideMs`; the old key is now exactly
     // the kind of thing this contract exists to name.
-    expect(() => toasts.show('hi', { autohide: false })).toThrow(
+    expect(() => toasts.add('hi', { autohide: false })).toThrow(
       "bsToast.show: unknown option 'autohide'",
     );
   });

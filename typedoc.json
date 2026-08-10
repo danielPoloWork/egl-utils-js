@@ -48,6 +48,7 @@
     "BsListGroupInstance",
     "BsListGroupItem",
     "BsListGroupOptions",
+    "BsLoadingOverlayInstance",
     "BsLoadingOverlayOptions",
     "BsModalInstance",
     "BsModalOptions",

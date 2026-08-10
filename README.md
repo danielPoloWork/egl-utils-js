@@ -503,7 +503,7 @@ const overlay = loadingOverlay({
   focus: { save: true, root: modalElement }, // counted against the overlay's own floor
 });
 
-const release = overlay.show(); // reference counted: two overlapping operations show once
+const release = overlay.acquire(); // reference counted: two overlapping operations show once
 try {
   await save();
 } finally {
@@ -514,7 +514,7 @@ try {
 const user = await overlay.wrap(() => api.get('users/42'));
 await Promise.all([overlay.wrap(loadA()), overlay.wrap(loadB())]); // stays up for both
 
-overlay.isShown(); // true from the first show(), including while still appearing
+overlay.isShown(); // true from the first acquire(), including while still appearing
 overlay.destroy(); // hides now, bypassing the floor, and clears the timer
 ```
 
@@ -866,8 +866,8 @@ import { bsToast, bsModal, bsLoadingOverlay } from 'egl-utils-js/bootstrap';
 // and the info toast after it share no classes. Each disposes and leaves the DOM
 // once hidden.
 const toasts = bsToast(document.querySelector('.toast-container'));
-toasts.show('Saved.');
-toasts.show('Could not save.', { variant: 'danger', title: 'Error', autoHideMs: false });
+toasts.add('Saved.'); // returns the toast element, so one toast can be reached
+toasts.add('Could not save.', { variant: 'danger', title: 'Error', autoHideMs: false });
 
 // A modal wrapper for the lifecycle, not the API: `on` returns an unsubscribe,
 // and destroy() hides first, then disposes — disposing a shown dialog is what

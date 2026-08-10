@@ -230,7 +230,7 @@ describe('the /dom entry with no DOM present', () => {
       minVisibleMs: 0,
     });
 
-    const release = overlay.show();
+    const release = overlay.acquire();
     expect(overlay.isShown()).toBe(true);
     release();
     await new Promise((resolve) => setTimeout(resolve, 5));

@@ -158,6 +158,8 @@ function prepareContent(value, options, name, api) {
  * @property {(event: string, handler: (event: Event) => void) => () => void} on
  * @property {() => BootstrapInstanceLike} instance
  * @property {Element} element
+ * @property {() => boolean} isShown - Whether the tip is up, read from
+ *   Bootstrap's own events (ADR-0049: anything with `show`/`hide` answers this).
  * @property {() => void} destroy
  */
 
@@ -249,7 +251,7 @@ function popperOverlay(target, options, spec) {
    */
   function call(method) {
     withPopperDiagnostic(api, () => {
-      const instance = wrapper.instance();
+      const instance = wrapper.instance(method);
       const fn = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (instance))[method];
       if (typeof fn === 'function') fn.call(instance);
     });
@@ -287,7 +289,7 @@ function popperOverlay(target, options, spec) {
             }),
       };
       withPopperDiagnostic(api, () => {
-        const instance = wrapper.instance();
+        const instance = wrapper.instance('setContent');
         const fn = /** @type {{ setContent?: unknown }} */ (instance).setContent;
         if (typeof fn !== 'function') return;
         const apply = () => fn.call(instance, slots(prepared));
@@ -314,8 +316,9 @@ function popperOverlay(target, options, spec) {
       });
     },
     on: wrapper.on,
-    instance: wrapper.instance,
+    instance: () => wrapper.instance(),
     element: wrapper.element,
+    isShown: wrapper.isShown,
     destroy: wrapper.destroy,
   };
 }

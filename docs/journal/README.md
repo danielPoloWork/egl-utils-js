@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-10 — Commands throw, queries answer (roadmap 17.9)](2026/08/2026-08-10-instance-contract.md)
 - [2026-08-10 — One word, one meaning (roadmap 17.8)](2026/08/2026-08-10-naming-freeze.md)
 - [2026-08-10 — An unknown option key is a TypeError (roadmap 17.7)](2026/08/2026-08-10-strict-option-keys.md)
 - [2026-08-09 — The v1.0.0 readiness review (roadmap 17.1)](2026/08/2026-08-09-v1-readiness-review.md)

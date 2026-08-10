@@ -12,7 +12,27 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- `element` on `bsToast`, `inlineAlert`/`bsAlert` and `bsLoadingOverlay`; `isShown()` on
+  `bsModal`, `bsTooltip`/`bsPopover`, `inlineAlert`/`bsAlert` and `bsToast`; `on()` on
+  `bsToast`, subscribed on the container so one listener sees every toast it builds; and a
+  `document` override on `bsPagination` and `bsTable`, which `bsToast` already had
+  ([ADR-0049](docs/adr/0049-commands-throw-queries-answer.md), roadmap 17.9).
+
 ### Changed
+
+- **BREAKING — the instance lifecycle contract** ([ADR-0049](docs/adr/0049-commands-throw-queries-answer.md), roadmap 17.9). Commands throw, queries answer, `destroy()` is idempotent:
+  - `loadingOverlay(...).show()` → **`acquire()`** and `bsToast(...).show()` → **`add()`**.
+    Everything still called `show`/`hide`/`toggle` now returns `void`, everywhere: one hands
+    back a lease, the other creates a toast and returns its node.
+  - A command on a destroyed instance throws `TypeError: <api>: <method>() was called after
+    destroy()` — **one sentence** replacing three, and naming the method the caller used
+    rather than an internal chokepoint. Four commands that used to be silent now refuse:
+    `bsProgress.setValue`, `bsToast.hide`, `inlineAlert.hide`/`bsAlert.hide`, and
+    `loadingOverlay.wrap`.
+  - `isShown()` after `destroy()` answers `false` instead of throwing, and data properties
+    (`element`, `items`, `triggers`, `pipeline`) stay readable.
+  - `bsAlert` and `bsLoadingOverlay` now report **their own** names in every diagnostic,
+    instead of the engine's (`inlineAlert`, `loadingOverlay`) they compose.
 
 - **BREAKING — the option and method vocabulary v1.0.0 freezes** ([ADR-0048](docs/adr/0048-one-word-one-meaning.md), roadmap 17.8). One word, one meaning:
   - `label` → **`ariaLabel`** on `bsIcon`, `bsButtonGroup`, `bsCloseButton`, `bsSpinner`,

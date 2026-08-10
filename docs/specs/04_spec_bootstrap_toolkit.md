@@ -230,18 +230,26 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   caller's problem — an unreachable capability — is identical. A bundler consumer, having
   no ambient global, passes `{ bootstrap }`
 - F69 bsToast(container, {variant?, autoHideMs?, animation?, labels?, bootstrap?,
-  signal?}) — toast manager: `show(message, {title?, variant?, autoHideMs?})`
+  signal?}) — toast manager: `add(message, {title?, variant?, autoHideMs?})`
   (Bootstrap's `{autohide, delay}` pair became one `autoHideMs` in 17.8,
   [ADR-0048](../adr/0048-one-word-one-meaning.md), translated at the constructor boundary)
   builds the toast node (escaped body/title, F57 close button, `role="alert"`/`"status"`
   by severity, correct `aria-live`/`aria-atomic`), shows it via `bootstrap.Toast`, and
-  removes the node after `hidden.bs.toast`; consecutive `show`s never accumulate stale
-  variant classes; also `hide()`, `destroy()`
+  removes the node after `hidden.bs.toast`; consecutive `add`s never accumulate stale
+  variant classes; also `hide()`, `destroy()`. **Amended in 17.9**
+  ([ADR-0049](../adr/0049-commands-throw-queries-answer.md)): `show`→**`add`** (it creates
+  and returns, and a visibility verb returns nothing here), plus `on(event, handler)`
+  subscribed on the container — toast events bubble, so one listener sees every toast this
+  manager builds — `isShown()` for "is any toast up", and `element`. There is no
+  `instance()`: a Bootstrap Toast exists per node, so the node `add` returns is the door
 - F70 bsModal(target, {bootstrap?, backdrop?, keyboard?, focus?, signal?}) — modal
   wrapper over `bootstrap.Modal.getOrCreateInstance(target)`: `show()`, `hide()`,
   `toggle()`, `on(event, handler)` → unsubscribe for the `*.bs.modal` lifecycle events
   (a name without a dot is qualified for the caller, so `'hidden'` and
-  `'hidden.bs.modal'` are the same subscription); `destroy()` hides if shown,
+  `'hidden.bs.modal'` are the same subscription), `isShown()` — **added in 17.9**
+  ([ADR-0049](../adr/0049-commands-throw-queries-answer.md)): a dialog is the component a
+  caller is most likely to ask, and anything with `show`/`hide` owes the question an
+  answer; `destroy()` hides if shown,
   unsubscribes everything and disposes the instance — and where the dialog **is** shown it
   disposes on `hidden.bs.modal` rather than immediately, since disposing a shown modal
   leaves Bootstrap's backdrop on the page and the body scroll-locked; "shown" is tracked
@@ -255,7 +263,9 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   — the F50 gate (composed, not reimplemented) with its presentation pair pre-wired to a
   static-backdrop, non-dismissable Bootstrap modal holding an F58 spinner and an escaped
   `message`; builds its own modal element when `target` is absent and removes it on
-  `destroy()`; the F50 API (`show` → idempotent release, `wrap`, `isShown`, `destroy`)
+  `destroy()`; the F50 API (`acquire` → idempotent release, `wrap`, `isShown`, `destroy`,
+  renamed in 17.9 per [ADR-0049](../adr/0049-commands-throw-queries-answer.md)) plus
+  `element`, which this wrapper can offer where the bare gate cannot: it owns the modal
   passes through unchanged. **Clarified in 16.1**
   ([ADR-0041](../adr/0041-a-peer-looked-up-not-imported.md)): each hook resolves on the
   matching Bootstrap lifecycle event, so the F50 minimum-visible clock measures a real
@@ -324,7 +334,8 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   `shown`/`hidden` events would be dead API, and `destroy()` disposes immediately rather
   than closing first
 - F80 bsTooltip(target, {title?, placement?, trigger?, html?, sanitize?, bootstrap?,
-  signal?}) — tooltip wrapper: `show/hide/toggle/enable/disable/setContent`; string
+  signal?}) — tooltip wrapper: `show/hide/toggle/enable/disable/setContent`, plus
+  `isShown()` from 17.9 ([ADR-0049](../adr/0049-commands-throw-queries-answer.md)); string
   content is passed with Bootstrap's `html: false` (escaped); `{html: true}` requires
   the F52 `sanitize` pair **before** the content reaches Bootstrap, and the wrapper sets
   Bootstrap's own `sanitize` off only in that already-sanitized path (one sanitizer, the
@@ -368,7 +379,8 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   **813 B**, so about four fifths of the old clause is obligation that
   NFR-19/NFR-20/NFR-21 impose rather than fat, leaving ~200 B for a builder's own markup.
   Five of the eight atoms measure inside 1 kB regardless (813–895 B) and are pinned there;
-  three land just past it (`bsPlaceholder` 1005 B, `bsBadge` 1014 B, `bsProgress` 1101 B).
+  three land just past it (`bsPlaceholder` 1005 B, `bsBadge` 1014 B, `bsProgress` 1101 B —
+  1162 B from 17.9, the ADR-0049 destroyed guard putting it right at the clause).
   **`bsButton` is additionally a named composing row at 1.85 kB** (measured 1688 B): it
   composes `bsIcon`, because F55 accepts an icon *name*, which is the ergonomic point of
   the option — the same exemption this clause already grants `bsTable`, extended
@@ -381,8 +393,11 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   thinnest builder that still resolves a document, validates class tokens and sets an ARIA
   surface, measures 763 B), so no builder of any kind could have met it** — all three by
   [ADR-0038](../adr/0038-composites-compose-and-what-a-frozen-constant-costs.md);
-  `bsAlert` ≤ 2 kB (composes F49; **measured 1521 B, ceiling held**); `bsPagination` ≤
-  1.5 kB (**measured 1406 B, ceiling held**); **`bsTable` ≤
+  `bsAlert` ≤ 2 kB (composes F49; **measured 1521 B, ceiling held — 1681 B from 17.9, still
+  inside**); `bsPagination` ≤ **1.58 kB** (**measured 1406 B against a 1.5 kB ceiling, amended
+  in 17.9 on measuring 1532 B by
+  [ADR-0049](../adr/0049-commands-throw-queries-answer.md): the `document` override that
+  closes 17.8's asymmetry, plus the shared lifecycle guard**); **`bsTable` ≤
   9.5 kB** (a facade over F42 + F51 + F65 measures roughly as the sum of what it
   composes — the NFR-12 lesson, pre-declared; **F66's half measured 5324 B in 15.1,
   3250 B of it the pipeline, and the whole measured 8842 B in 15.2 — amended from
@@ -399,6 +414,12 @@ and `destroy()` disposes it plus every listener the wrapper attached):
   this wave written below its own parts (ADR-0038's `bsBreadcrumb`, ADR-0040's `bsTable`),
   so the rule is now stated rather than rediscovered: a ceiling for a composing symbol is
   derived from the rows of what it composes, never estimated**;
+  `bsToast` ≤ **2.55 kB** and `bsModal` ≤ **1.31 kB** — **both amended in 17.9 by
+  [ADR-0049](../adr/0049-commands-throw-queries-answer.md), and both amendments are members
+  the readiness review found missing rather than growth: `bsToast` gains `on()` (subscribed
+  on the container, so one listener covers toasts that do not exist yet), `isShown()` and
+  `element` for +152 B (2472 B measured); `bsModal` gains the `isShown()` F70 omitted, for
+  +17 B past a 1.25 kB behaviour-wrapper clause (1267 B measured)**;
   `bsCarousel` ≤ **2.5 kB** — **amended in 16.3 from 1.5 kB on measuring 2310 B by
   [ADR-0043](../adr/0043-three-shapes-that-are-not-a-group.md): a builder's cost (slides,
   controls, labelled indicators over the shared F52 floor) rather than a sum of composed

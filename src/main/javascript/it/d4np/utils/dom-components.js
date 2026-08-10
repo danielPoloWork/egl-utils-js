@@ -16,6 +16,7 @@
  */
 
 import { controllerFor, isAbortSignal, isElement, requireDocument } from './dom-helpers.js';
+import { assertAlive } from './lifecycle.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 
 /** The four semantic kinds. Severity is the caller's vocabulary, not ours. */
@@ -98,6 +99,10 @@ const ROLES = /** @type {const} */ ({
  * @typedef {object} InlineAlertInstance
  * @property {(kind: AlertKind, message: string, options?: InlineAlertShowOptions) => void} show
  * @property {() => void} hide
+ * @property {() => boolean} isShown - Whether a message is currently visible.
+ * @property {Element} element - The container this instance was bound to. The
+ *   alert's own nodes are built lazily on first `show`, so the container is what
+ *   the instance can honestly hand back (ADR-0049).
  * @property {() => void} destroy
  */
 
@@ -145,6 +150,10 @@ const ROLES = /** @type {const} */ ({
  *   children are left alone, and `destroy()` removes only what this instance
  *   added.
  * @param {InlineAlertOptions} [options]
+ * @param {string} [api='inlineAlert'] - **Internal.** The public name to report
+ *   in errors, so an entry that composes this engine — `bsAlert` (F64) — names
+ *   itself rather than leaking the engine's name into its own diagnostics
+ *   (ADR-0049). Not part of the documented surface.
  * @returns {InlineAlertInstance}
  * @throws {TypeError} If `container` is not an element, if `classes`/`icons` are
  *   not objects, if `autoHideMs` is not a positive finite number, or if `signal`
@@ -152,9 +161,9 @@ const ROLES = /** @type {const} */ ({
  * @throws {DomContractError} If the container has no owner document and there is
  *   no global one either — there is nowhere to create the alert.
  */
-export function inlineAlert(container, options = {}) {
+export function inlineAlert(container, options = {}, api = 'inlineAlert') {
   if (!isElement(container)) {
-    throw new TypeError('inlineAlert: container must be an Element');
+    throw new TypeError(`${api}: container must be an Element`);
   }
   const {
     classes: classOverrides = {},
@@ -165,21 +174,20 @@ export function inlineAlert(container, options = {}) {
     signal,
     ...unknown
   } = options;
-  assertNoUnknownOptions(unknown, 'inlineAlert');
+  assertNoUnknownOptions(unknown, api);
 
-  assertPlainObject(classOverrides, 'options.classes');
-  assertPlainObject(icons, 'options.icons');
-  assertAutoHide(autoHideMs, 'options.autoHideMs');
+  assertPlainObject(classOverrides, 'options.classes', api);
+  assertPlainObject(icons, 'options.icons', api);
+  assertAutoHide(autoHideMs, 'options.autoHideMs', api);
   if (signal !== undefined && !isAbortSignal(signal)) {
-    throw new TypeError('inlineAlert: options.signal must be an AbortSignal');
+    throw new TypeError(`${api}: options.signal must be an AbortSignal`);
   }
 
   const classes = { ...DEFAULT_CLASSES, ...classOverrides };
   // The container's own document keeps the nodes in the right realm; the global
   // one is only a fallback for a container that has none.
   const doc =
-    /** @type {{ ownerDocument?: Document }} */ (container).ownerDocument ??
-    requireDocument('inlineAlert');
+    /** @type {{ ownerDocument?: Document }} */ (container).ownerDocument ?? requireDocument(api);
 
   const controller = controllerFor(container);
   /** @type {ReturnType<typeof setTimeout> | undefined} */
@@ -196,6 +204,7 @@ export function inlineAlert(container, options = {}) {
   };
 
   const hide = () => {
+    assertAlive(destroyed, api, 'hide');
     clearTimer();
     if (parts !== undefined) parts.root.hidden = true;
   };
@@ -237,7 +246,7 @@ export function inlineAlert(container, options = {}) {
       // icon, and hiding the control for that would remove the only way to
       // dismiss the alert. `dismissible: false` is how a caller asks for no
       // close button; an empty glyph asks for no *glyph* (found by 14.2/F64).
-      renderIcon(close, icons.close ?? '×', 'info', false);
+      renderIcon(close, icons.close ?? '×', 'info', false, api);
       close.addEventListener('click', hide, { signal: controller.signal });
       root.append(close);
     }
@@ -248,14 +257,12 @@ export function inlineAlert(container, options = {}) {
 
   /** @type {InlineAlertInstance['show']} */
   const show = (kind, message, showOptions = {}) => {
-    if (destroyed) {
-      throw new TypeError('inlineAlert: show() was called after destroy()');
-    }
+    assertAlive(destroyed, api, 'show');
     if (!KINDS.includes(/** @type {never} */ (kind))) {
-      throw new TypeError(`inlineAlert: kind must be one of: ${KINDS.join(', ')}`);
+      throw new TypeError(`${api}: kind must be one of: ${KINDS.join(', ')}`);
     }
     if (typeof message !== 'string') {
-      throw new TypeError('inlineAlert: message must be a string');
+      throw new TypeError(`${api}: message must be a string`);
     }
     const {
       autoHideMs: showAutoHide = autoHideMs,
@@ -263,16 +270,16 @@ export function inlineAlert(container, options = {}) {
       sanitize,
       ...unknownShow
     } = showOptions;
-    assertNoUnknownOptions(unknownShow, 'inlineAlert.show');
-    assertAutoHide(showAutoHide, 'options.autoHideMs', true);
+    assertNoUnknownOptions(unknownShow, `${api}.show`);
+    assertAutoHide(showAutoHide, 'options.autoHideMs', api, true);
 
     parts ??= build();
     const { root, icon, message: messageEl } = parts;
 
     root.className = `${classes.base} ${classes[kind]}`;
     root.setAttribute('role', ROLES[kind]);
-    renderIcon(icon, icons[kind], kind);
-    renderMessage(messageEl, message, html, sanitize);
+    renderIcon(icon, icons[kind], kind, true, api);
+    renderMessage(messageEl, message, html, sanitize, api);
     root.hidden = false;
 
     // Always cancel first: an in-flight timer from the previous message would
@@ -286,7 +293,14 @@ export function inlineAlert(container, options = {}) {
   signal?.addEventListener('abort', destroy, { once: true });
   if (signal?.aborted === true) destroy();
 
-  return { show, hide, destroy };
+  return {
+    show,
+    hide,
+    // A query: after destroy the alert is not shown, which is true.
+    isShown: () => parts !== undefined && parts.root.hidden === false,
+    element: container,
+    destroy,
+  };
 }
 
 /**
@@ -297,27 +311,28 @@ export function inlineAlert(container, options = {}) {
  * @param {string} message
  * @param {boolean} html
  * @param {((html: string) => string) | false | undefined} sanitize
+ * @param {string} api - Public name to report, so a composing entry names itself.
  * @returns {void}
  * @throws {TypeError} If `html` is true and `sanitize` is missing or invalid, or
  *   if the sanitizer returns a non-string.
  */
-function renderMessage(target, message, html, sanitize) {
+function renderMessage(target, message, html, sanitize, api) {
   if (html !== true) {
     target.textContent = message;
     return;
   }
   if (sanitize === undefined) {
     throw new TypeError(
-      'inlineAlert: options.sanitize is required with { html: true } — pass a sanitizer ' +
+      `${api}: options.sanitize is required with { html: true } — pass a sanitizer ` +
         '(sanitizeHtml from egl-utils-js/sanitize fits) or false. There is no default.',
     );
   }
   if (sanitize !== false && typeof sanitize !== 'function') {
-    throw new TypeError('inlineAlert: options.sanitize must be a function or false');
+    throw new TypeError(`${api}: options.sanitize must be a function or false`);
   }
   const markup = sanitize === false ? message : sanitize(message);
   if (typeof markup !== 'string') {
-    throw new TypeError('inlineAlert: the sanitizer must return a string');
+    throw new TypeError(`${api}: the sanitizer must return a string`);
   }
   target.innerHTML = markup;
 }
@@ -336,10 +351,11 @@ function renderMessage(target, message, html, sanitize) {
  * @param {boolean} [hideWhenEmpty=true] - Hide the slot when there is nothing to
  *   put in it. True for a decorative icon span, whose empty box would still take
  *   margin; false where the slot is itself the control.
+ * @param {string} [api='inlineAlert'] - Public name to report.
  * @returns {void}
  * @throws {TypeError} If a supplied icon is neither a string nor a cloneable node.
  */
-function renderIcon(target, icon, kind, hideWhenEmpty = true) {
+function renderIcon(target, icon, kind, hideWhenEmpty = true, api = 'inlineAlert') {
   target.replaceChildren();
   const value = typeof icon === 'function' ? icon(kind) : icon;
   if (value === undefined || value === null || value === '') {
@@ -352,7 +368,7 @@ function renderIcon(target, icon, kind, hideWhenEmpty = true) {
     return;
   }
   if (typeof (/** @type {{ cloneNode?: unknown }} */ (value).cloneNode) !== 'function') {
-    throw new TypeError('inlineAlert: an icon must be a string, a Node, or a function');
+    throw new TypeError(`${api}: an icon must be a string, a Node, or a function`);
   }
   target.append(value.cloneNode(true));
 }
@@ -360,11 +376,12 @@ function renderIcon(target, icon, kind, hideWhenEmpty = true) {
 /**
  * @param {unknown} value
  * @param {string} name
+ * @param {string} api - Public name to report.
  * @returns {void}
  */
-function assertPlainObject(value, name) {
+function assertPlainObject(value, name, api) {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
-    throw new TypeError(`inlineAlert: ${name} must be an object`);
+    throw new TypeError(`${api}: ${name} must be an object`);
   }
 }
 
@@ -375,16 +392,17 @@ function assertPlainObject(value, name) {
  *
  * @param {unknown} value
  * @param {string} name
+ * @param {string} api - Public name to report.
  * @param {boolean} [allowPinned=false]
  * @returns {void}
  */
-function assertAutoHide(value, name, allowPinned = false) {
+function assertAutoHide(value, name, api, allowPinned = false) {
   if (value === undefined) return;
   if (typeof value !== 'number' || Number.isNaN(value)) {
-    throw new TypeError(`inlineAlert: ${name} must be a number`);
+    throw new TypeError(`${api}: ${name} must be a number`);
   }
   if (allowPinned ? value < 0 : !(value > 0 && Number.isFinite(value))) {
-    throw new TypeError(`inlineAlert: ${name} must be a positive finite number`);
+    throw new TypeError(`${api}: ${name} must be a positive finite number`);
   }
 }
 
@@ -412,11 +430,17 @@ function assertAutoHide(value, name, allowPinned = false) {
 
 /**
  * @typedef {object} LoadingOverlayInstance
- * @property {() => () => void} show - Acquire the overlay; returns an idempotent
- *   release.
+ * @property {() => () => void} acquire - Take a reference on the overlay; returns
+ *   an idempotent release. `show()` until 17.8: a visibility verb returns nothing
+ *   in this library, and this one hands back a lease (ADR-0048/ADR-0049).
  * @property {<T>(operation: Promise<T> | (() => Promise<T> | T)) => Promise<T>} wrap
  * @property {() => boolean} isShown
  * @property {() => void} destroy
+ *
+ * Deliberately **no `element`**, unlike every other instance in the library: the
+ * gate owns *when* an overlay is visible and nothing about *what* is — the
+ * presentation lives entirely in the caller's `onShow`/`onHide` (ADR-0032). There
+ * is no node here to hand back.
  */
 
 /**
@@ -457,7 +481,7 @@ function assertAutoHide(value, name, allowPinned = false) {
  *   focus: { save: true, root: modalElement },
  * });
  *
- * const release = overlay.show();
+ * const release = overlay.acquire();
  * try { await save(); } finally { release(); }
  *
  * @example
@@ -469,6 +493,9 @@ function assertAutoHide(value, name, allowPinned = false) {
  * await Promise.all([overlay.wrap(loadA()), overlay.wrap(loadB())]);
  *
  * @param {LoadingOverlayOptions} options
+ * @param {string} [api='loadingOverlay'] - **Internal.** The public name to
+ *   report in errors, so an entry that composes this gate — `bsLoadingOverlay`
+ *   (F71) — names itself (ADR-0049). Not part of the documented surface.
  * @returns {LoadingOverlayInstance}
  * @throws {TypeError} If `onShow`/`onHide` are not functions, if `minVisibleMs`
  *   is not a non-negative finite number, if `focus`/`focus.root` are of the wrong
@@ -476,7 +503,7 @@ function assertAutoHide(value, name, allowPinned = false) {
  * @throws {DomContractError} If `focus.save` is set and there is no document to
  *   read the active element from.
  */
-export function loadingOverlay(options) {
+export function loadingOverlay(options, api = 'loadingOverlay') {
   const {
     onShow,
     onHide,
@@ -485,35 +512,31 @@ export function loadingOverlay(options) {
     signal,
     ...unknown
   } = /** @type {Partial<LoadingOverlayOptions>} */ (options ?? {});
-  assertNoUnknownOptions(unknown, 'loadingOverlay');
+  assertNoUnknownOptions(unknown, api);
 
   if (typeof onShow !== 'function' || typeof onHide !== 'function') {
-    throw new TypeError('loadingOverlay: options.onShow and options.onHide must be functions');
+    throw new TypeError(`${api}: options.onShow and options.onHide must be functions`);
   }
   if (typeof minVisibleMs !== 'number' || !(minVisibleMs >= 0) || !Number.isFinite(minVisibleMs)) {
-    throw new TypeError(
-      'loadingOverlay: options.minVisibleMs must be a non-negative finite number',
-    );
+    throw new TypeError(`${api}: options.minVisibleMs must be a non-negative finite number`);
   }
   if (focus === null || typeof focus !== 'object') {
-    throw new TypeError('loadingOverlay: options.focus must be an object');
+    throw new TypeError(`${api}: options.focus must be an object`);
   }
   const { save: saveFocus = false, root: focusRoot, ...unknownFocus } = focus;
-  assertNoUnknownOptions(unknownFocus, 'loadingOverlay.focus');
+  assertNoUnknownOptions(unknownFocus, `${api}.focus`);
   if (focusRoot !== undefined && !isElement(focusRoot)) {
-    throw new TypeError('loadingOverlay: options.focus.root must be an Element');
+    throw new TypeError(`${api}: options.focus.root must be an Element`);
   }
   if (signal !== undefined && !isAbortSignal(signal)) {
-    throw new TypeError('loadingOverlay: options.signal must be an AbortSignal');
+    throw new TypeError(`${api}: options.signal must be an AbortSignal`);
   }
 
   // Resolved once, and only when focus handling is actually requested — the gate
   // is otherwise usable with no DOM at all, which is what makes its timing
   // logic testable in Node (NFR-14 as amended in 11.2).
   /** @type {Document | undefined} */
-  const doc = saveFocus
-    ? (focusRoot?.ownerDocument ?? requireDocument('loadingOverlay'))
-    : undefined;
+  const doc = saveFocus ? (focusRoot?.ownerDocument ?? requireDocument(api)) : undefined;
 
   /** @type {'hidden' | 'appearing' | 'shown'} */
   let state = 'hidden';
@@ -603,11 +626,9 @@ export function loadingOverlay(options) {
     if (state === 'shown' && floorElapsed) performHide();
   };
 
-  /** @type {LoadingOverlayInstance['show']} */
-  const show = () => {
-    if (destroyed) {
-      throw new TypeError('loadingOverlay: show() was called after destroy()');
-    }
+  /** @type {LoadingOverlayInstance['acquire']} */
+  const acquire = () => {
+    assertAlive(destroyed, api, 'acquire');
     refCount += 1;
     // A new owner cancels a hide that has not happened yet, so show/release/show
     // in the same tick does not blink.
@@ -627,7 +648,11 @@ export function loadingOverlay(options) {
 
   /** @type {LoadingOverlayInstance['wrap']} */
   const wrap = async (operation) => {
-    const release = show();
+    // The guard lives in `acquire`, which this composes — so a destroyed gate
+    // refuses `wrap` with the same sentence, naming the method the caller used
+    // once `acquire` re-throws under its own name.
+    assertAlive(destroyed, api, 'wrap');
+    const release = acquire();
     try {
       return await (typeof operation === 'function' ? operation() : operation);
     } finally {
@@ -650,5 +675,5 @@ export function loadingOverlay(options) {
   signal?.addEventListener('abort', destroy, { once: true });
   if (signal?.aborted === true) destroy();
 
-  return { show, wrap, isShown: () => state !== 'hidden', destroy };
+  return { acquire, wrap, isShown: () => state !== 'hidden', destroy };
 }

@@ -45,6 +45,7 @@ import {
   assertPlainObject,
   assertToken,
   closestWithin,
+  documentOf,
   isNode,
 } from './bootstrap-elements.js';
 
@@ -126,6 +127,8 @@ import {
  * @property {string} [variant] - A `table-<variant>` colour, e.g. `'dark'`.
  * @property {boolean | string} [responsive=false] - Wrap in
  *   `table-responsive`, or `table-responsive-<breakpoint>` for a string.
+ * @property {Document} [document] - Where the table is built, when it is not the
+ *   container's own (F52).
  * @property {ClassOption} [class] - Extra classes for the `<table>`.
  * @property {boolean} [html] - Table-level markup opt-in; per column overrides.
  * @property {((html: string) => string) | false} [sanitize] - Table-level
@@ -288,6 +291,7 @@ export function bsTable(container, options) {
     html,
     sanitize,
     class: extraClass,
+    document: explicitDocument,
     ...unknown
   } = options;
   assertNoUnknownOptions(unknown, api);
@@ -340,7 +344,8 @@ export function bsTable(container, options) {
 
   // The container supplies the realm, so no `document` option is needed here:
   // an Element always has an ownerDocument (F65's reasoning).
-  const doc = /** @type {Document} */ (container.ownerDocument);
+  // Container-first, `document` as an override (ADR-0049).
+  const doc = documentOf(container, { document: explicitDocument }, api);
 
   const pipeline =
     injected ??

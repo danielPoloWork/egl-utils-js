@@ -160,10 +160,10 @@
     "limit": "1 kB"
   },
   {
-    "name": "single: inlineAlert (NFR-12 component row: measured 1489 B, clause 1.5 kB per ADR-0031; +107 B for the ADR-0047 option-key contract, inside the clause)",
+    "name": "single: inlineAlert (1.58 kB - NFR-12 clause amended from 1.5 kB by ADR-0049: measured 1533 B, the price of isShown + element + the injectable api name)",
     "path": "dist/esm/dom.js",
     "import": "{ inlineAlert }",
-    "limit": "1.51 kB"
+    "limit": "1.58 kB"
   },
   {
     "name": "single: bindTableControls (2.2 kB - documented NFR-12 composing-facade row, ADR-0035; measured 2093 B)",
@@ -172,10 +172,10 @@
     "limit": "2.2 kB"
   },
   {
-    "name": "single: loadingOverlay (NFR-12 component row: measured 958 B, clause 1.25 kB)",
+    "name": "single: loadingOverlay (NFR-12 component row: measured 1063 B, clause 1.25 kB; +105 B for the ADR-0049 guards and the injectable api name)",
     "path": "dist/esm/dom.js",
     "import": "{ loadingOverlay }",
-    "limit": "1.03 kB"
+    "limit": "1.1 kB"
   },
   {
     "name": "/bootstrap - full import (NFR-17: the COMPLETE Bootstrap 5 catalogue - 27 managers + both presets - measured 19163 B; entry clause 25 kB per ADR-0041, never moved across all of M14-M16)",
@@ -225,10 +225,10 @@
     "limit": "0.87 kB"
   },
   {
-    "name": "single: bsProgress (NFR-17 <= 1.2 kB per ADR-0037; measured 1051 B)",
+    "name": "single: bsProgress (NFR-17 <= 1.2 kB per ADR-0037; measured 1162 B - the destroyed guard ADR-0049 required, right at the clause)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsProgress }",
-    "limit": "1.13 kB"
+    "limit": "1.2 kB"
   },
   {
     "name": "single: bsPlaceholder (NFR-17 <= 1.2 kB per ADR-0037; measured 1026 B incl. the ADR-0047 option-key contract)",
@@ -255,16 +255,16 @@
     "limit": "1.31 kB"
   },
   {
-    "name": "single: bsAlert (NFR-17 <= 2 kB composing row: the F49 engine in a costume; measured 1521 B)",
+    "name": "single: bsAlert (NFR-17 <= 2 kB composing row: the F49 engine in a costume; measured 1681 B incl. the ADR-0049 contract)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsAlert }",
-    "limit": "1.63 kB"
+    "limit": "1.73 kB"
   },
   {
-    "name": "single: bsPagination (NFR-17 <= 1.5 kB composing row; measured 1406 B)",
+    "name": "single: bsPagination (1.58 kB - NFR-17 composing row amended from 1.5 kB by ADR-0049: measured 1532 B, incl. the document override that closes 17.8)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsPagination }",
-    "limit": "1.51 kB"
+    "limit": "1.58 kB"
   },
   {
     "name": "single: bsTable (9.5 kB - documented NFR-17 composing-facade row, ADR-0040; measured 8842 B. The clause it replaces asked 6.5 kB of a facade over F42+F51+F65, whose own rows already sum to 6774 B; the controls added 3518 B against 3499 B of composed parts, i.e. 19 B of glue)",
@@ -273,16 +273,16 @@
     "limit": "9.5 kB"
   },
   {
-    "name": "single: bsToast (2.32 kB - documented NFR-17 composing row, ADR-0041: it composes bsCloseButton and builds a node, unlike a wrapper that only wraps; measured 2170 B)",
+    "name": "single: bsToast (2.55 kB - NFR-17 composing row amended from 2.32 kB by ADR-0049: measured 2472 B, +152 B for on() + isShown() + element, the members the readiness review found missing)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsToast }",
-    "limit": "2.32 kB"
+    "limit": "2.55 kB"
   },
   {
-    "name": "single: bsModal (NFR-17 <= 1.25 kB behaviour-wrapper row; measured 1180 B - 52 B more than in 16.1, the price of the shared lifecycle helper that replaced five copies of it, ADR-0042; still inside the clause)",
+    "name": "single: bsModal (1.31 kB - NFR-17 behaviour-wrapper clause amended from 1.25 kB by ADR-0049: measured 1267 B, the isShown() F70 omitted)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsModal }",
-    "limit": "1.25 kB"
+    "limit": "1.31 kB"
   },
   {
     "name": "single: bsLoadingOverlay (2.73 kB - NFR-17 composing row amended from 1.75 kB by ADR-0041; measured 2550 B, of which loadingOverlay 958 B + bsSpinner 778 B are composed parts)",

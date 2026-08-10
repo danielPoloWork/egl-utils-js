@@ -22,6 +22,7 @@
  */
 
 import { isElement } from './dom-helpers.js';
+import { assertAlive } from './lifecycle.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 import {
   applyClasses,
@@ -347,8 +348,8 @@ export function bsCarousel(container, options = {}) {
   const subscriptions = [];
   let destroyed = false;
 
-  function instance() {
-    if (destroyed) throw new TypeError(`${api}: this manager has been destroyed`);
+  function instance(method = 'instance') {
+    assertAlive(destroyed, api, method);
     if (resolved === undefined) {
       resolved = instantiate(resolveComponent({ bootstrap }, api, 'Carousel'), root, config);
     }
@@ -360,7 +361,7 @@ export function bsCarousel(container, options = {}) {
    * @returns {void}
    */
   function call(method) {
-    const current = instance();
+    const current = instance(method);
     const fn = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (current))[method];
     if (typeof fn === 'function') fn.call(current);
   }
@@ -371,7 +372,7 @@ export function bsCarousel(container, options = {}) {
    * @returns {() => void}
    */
   function on(event, handler) {
-    if (destroyed) throw new TypeError(`${api}: this manager has been destroyed`);
+    assertAlive(destroyed, api, 'on');
     if (typeof handler !== 'function') {
       throw new TypeError(`${api}: handler must be a function`);
     }
@@ -494,8 +495,8 @@ export function bsScrollspy(target, options = {}) {
   const subscriptions = [];
   let destroyed = false;
 
-  function instance() {
-    if (destroyed) throw new TypeError(`${api}: this wrapper has been destroyed`);
+  function instance(method = 'instance') {
+    assertAlive(destroyed, api, method);
     if (resolved === undefined) {
       resolved = instantiate(resolveComponent({ bootstrap }, api, 'ScrollSpy'), target, config);
     }
@@ -508,7 +509,7 @@ export function bsScrollspy(target, options = {}) {
    * @returns {() => void}
    */
   function on(event, handler) {
-    if (destroyed) throw new TypeError(`${api}: this wrapper has been destroyed`);
+    assertAlive(destroyed, api, 'on');
     if (typeof handler !== 'function') {
       throw new TypeError(`${api}: handler must be a function`);
     }
@@ -541,7 +542,7 @@ export function bsScrollspy(target, options = {}) {
 
   return {
     refresh: () => {
-      const current = instance();
+      const current = instance('refresh');
       const fn = /** @type {{ refresh?: unknown }} */ (current).refresh;
       if (typeof fn === 'function') fn.call(current);
     },
