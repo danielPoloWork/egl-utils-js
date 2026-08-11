@@ -10,6 +10,24 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ## [Unreleased]
 
+### Security
+
+- **BREAKING — the `dompurify` peer range is now `^3.4.13`**, raised from `^3`
+  ([ADR-0051](docs/adr/0051-the-sanitizer-s-peer-range.md), roadmap 17.11). 3.4.13 is the first
+  release without [GHSA-55q2-fjhq-7xh7](https://github.com/advisories/GHSA-55q2-fjhq-7xh7), so
+  the range no longer admits a version known vulnerable when 1.0 freezes it. `sanitizeHtml` was
+  never exposed by that advisory — it pins `IN_PLACE: false` — but the range is what the package
+  *claims*. A consumer pinned below 3.4.13 now gets a peer-range warning, pointing at the patch
+  release that fixes a real advisory.
+  - The range is a **compatibility** statement, not a security mechanism: raising a peer floor
+    is breaking, so advisories published after 1.0 are yours to patch — and you can, because
+    you own the dependency. `SECURITY.md` now says so where a consumer reads it.
+- The CI audit gate moves from `--audit-level high` to **`moderate`**, because a DOMPurify
+  advisory is the one finding in this tree that can require a change to `sanitizeHtml`'s own
+  configuration. The two dev-only advisories that threshold surfaces are **fixed** with pnpm
+  overrides rather than excepted (postcss → 8.5.26, esbuild → 0.28.1), so
+  `pnpm.auditConfig.ignoreGhsas` stays empty.
+
 ### Removed
 
 - **BREAKING — the supported-runtime floor for the 1.x line is now Node >= 22 and

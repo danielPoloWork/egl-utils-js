@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-11 — The sanitizer's peer range (roadmap 17.11)](2026/08/2026-08-11-dompurify-peer-floor.md)
 - [2026-08-11 — The 1.x runtime floor (roadmap 17.2)](2026/08/2026-08-11-runtime-floor.md)
 - [2026-08-10 — Commands throw, queries answer (roadmap 17.9)](2026/08/2026-08-10-instance-contract.md)
 - [2026-08-10 — One word, one meaning (roadmap 17.8)](2026/08/2026-08-10-naming-freeze.md)

@@ -191,11 +191,13 @@ jobs:
   #  - `--frozen-lockfile` proves the lockfile is complete and unchanged, so
   #    every job in this workflow builds the dependency tree that was reviewed
   #    rather than one resolved fresh at install time;
-  #  - `pnpm audit --audit-level high` fails on a high or critical advisory.
-  # One advisory is explicitly excepted in package.json `pnpm.auditConfig`
-  # with its justification (ADR-0016) — the exception is per-GHSA, so anything
-  # else still fails. Note this job can go red because the world changed, not
-  # because a PR did; that is the point of a supply-chain gate.
+  #  - `pnpm audit --audit-level moderate` fails on a moderate advisory or worse.
+  # Lowered from `high` in 17.11 (ADR-0051): the threshold has to see a moderate
+  # advisory on the sanitizer's peer, which is the one dependency where a finding
+  # can change this library's own code. Dev-only noise is fixed with a pnpm
+  # override rather than excepted, the ADR-0026 precedent; `pnpm.auditConfig`
+  # holds no exception today. Note this job can go red because the world changed,
+  # not because a PR did; that is the point of a supply-chain gate.
   supply-chain:
     name: supply-chain / lockfile + audit
     runs-on: ubuntu-24.04
@@ -210,8 +212,8 @@ jobs:
           cache: pnpm
       - name: Install from the lockfile only (fails if it is stale or incomplete)
         run: pnpm install --frozen-lockfile
-      - name: Audit for high and critical advisories
-        run: pnpm audit --audit-level high
+      - name: Audit for moderate advisories and worse
+        run: pnpm audit --audit-level moderate
 
   # Real-browser verification for the browser-leaning entries (roadmap 6.4,
   # spec §6). Its own job rather than a matrix cell: the browser download makes

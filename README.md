@@ -652,9 +652,15 @@ pageSessionId(); // a v4 UUID that survives reloads, dies with the tab, differs 
 
 ### Sanitize (`egl-utils-js/sanitize`)
 
-Delegates to DOMPurify (optional peer dependency — install it yourself) behind a curated
-deny-by-default allowlist (ADR-0012). Zero bytes and zero audit surface if you never
-import this subpath.
+Delegates to DOMPurify (optional peer dependency — install it yourself, `^3.4.13` or newer)
+behind a curated deny-by-default allowlist (ADR-0012). Zero bytes and zero audit surface if
+you never import this subpath.
+
+The floor is not decoration: 3.4.13 is the first release without
+[GHSA-55q2-fjhq-7xh7](https://github.com/advisories/GHSA-55q2-fjhq-7xh7). Keeping the peer
+current afterwards is yours — the range says what this library is compatible with, not what is
+safe forever ([ADR-0051](docs/adr/0051-the-sanitizer-s-peer-range.md),
+[SECURITY.md](SECURITY.md)).
 
 ```js
 import { sanitizeHtml } from 'egl-utils-js/sanitize';
