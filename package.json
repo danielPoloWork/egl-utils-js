@@ -194,7 +194,7 @@
     "@arethetypeswrong/cli": "^0.18.5",
     "@changesets/cli": "^2.31.1",
     "@eslint/js": "^9.39.5",
-    "@mdn/browser-compat-data": "^8.0.8",
+    "@mdn/browser-compat-data": "^8.0.10",
     "@playwright/test": "^1.62.0",
     "@size-limit/preset-small-lib": "^12.1.0",
     "@types/node": "^22.19.1",
