@@ -24,9 +24,13 @@ function expectStorageError(fn) {
 }
 
 // Example tests (roadmap 6.1, spec §2 items 21–22). Under vitest/Node the
-// real Web Storage globals are absent, so the exported singletons resolve to
-// the in-memory fallback; the real-storage, quota, and parse-error paths use
-// a stubbed global plus a fresh module import (the #webcrypto-matrix pattern).
+// exported singletons resolve to whatever the runtime offers: the in-memory
+// fallback where Web Storage is absent, and the real thing where it is not —
+// Node exposes `sessionStorage` on the newer lines of the 17.2 matrix, which is
+// what the 22/24/26 cells surfaced. Either way the *contract* is identical,
+// which is what these assert; the real-storage, quota, and parse-error paths use
+// a stubbed global plus a fresh module import (the #webcrypto-matrix pattern),
+// and the fallback is pinned explicitly by removing the global.
 
 const STORAGE_MODULE = '../../../../../main/javascript/it/d4np/utils/storage.js';
 // Mirrors the private constant in storage.js — the wrapper writes+removes
@@ -45,13 +49,21 @@ function fakeStorage() {
   };
 }
 
-describe('storage wrapper — in-memory fallback (Node default)', () => {
+describe('storage wrapper — the exported singletons, on whatever the runtime offers', () => {
   beforeEach(() => {
     localStorageWrapper.clear();
   });
 
-  it('reports it is not persistent when no real storage exists', () => {
-    expect(localStorageWrapper.isPersistent()).toBe(false);
+  it('works out of the box, whichever backend answered', () => {
+    // Deliberately a contract claim, not a runtime one. `isPersistent()` used to
+    // be asserted `false` here because Node had no Web Storage; that fact has an
+    // expiry date (Node ships `sessionStorage` on the newer 17.2 matrix lines),
+    // and a test that encodes it fails for the wrong reason. The persistence
+    // claim is made where it can be made deterministically: with the global
+    // removed, below.
+    localStorageWrapper.set('probe', { ok: true });
+    expect(localStorageWrapper.get('probe')).toEqual({ ok: true });
+    expect(typeof localStorageWrapper.isPersistent()).toBe('boolean');
   });
 
   it('round-trips JSON-serializable values', () => {
@@ -115,9 +127,27 @@ describe('storage wrapper — in-memory fallback (Node default)', () => {
     sessionStorageWrapper.clear();
     sessionStorageWrapper.set('k', 'session');
     expect(sessionStorageWrapper.get('k')).toBe('session');
-    expect(sessionStorageWrapper.isPersistent()).toBe(false);
+    // Deliberately NOT asserting `isPersistent()` here. It used to assert
+    // `false`, on the assumption that Node has no Web Storage — an environment
+    // fact that expired: Node exposes `sessionStorage` on the newer lines of the
+    // 17.2 matrix, so the probe finds a real store and answers `true`. The
+    // wrapper is right either way; the test was asserting the runtime, not the
+    // contract. The fallback itself is pinned below, with the global removed.
     // Independent backing store from localStorage.
     expect(localStorageWrapper.has('k')).toBe(false);
+  });
+
+  it('reports the in-memory fallback as non-persistent when there is no store', async () => {
+    // The claim the assertion above used to make, made properly: no global, so
+    // the write+remove probe fails and the wrapper falls back (ADR-0010).
+    vi.stubGlobal('sessionStorage', undefined);
+    vi.resetModules();
+    const fresh = await import('../../../../../main/javascript/it/d4np/utils/storage.js');
+    fresh.sessionStorageWrapper.set('k', 'v');
+    expect(fresh.sessionStorageWrapper.get('k')).toBe('v');
+    expect(fresh.sessionStorageWrapper.isPersistent()).toBe(false);
+    vi.unstubAllGlobals();
+    vi.resetModules();
   });
 });
 

@@ -11,7 +11,7 @@ releases.
 
 ## What it is
 
-A universal JavaScript utilities library (Node.js >= 18 and modern evergreen browsers)
+A universal JavaScript utilities library (Node.js >= 22 and modern evergreen browsers)
 providing async combinators with first-class AbortSignal cancellation, pure data-manipulation
 functions, typed event helpers, and web/crypto/storage utilities — published on npm as
 egl-utils-js with named exports only, dual ESM/CJS via an exports map, zero runtime
@@ -32,7 +32,9 @@ pnpm test
 ```
 
 - **Toolchain:** tsup (esbuild) — dual ESM/CJS + .d.ts generated from JSDoc types (ADR-001), Vitest (+ fast-check property tests; Playwright browser smoke from M6), Prettier, ESLint (flat config) + tsc --noEmit with checkJs (JSDoc type-check).
-- **Supported platforms:** Linux (Node.js 18, 20, 22).
+- **Supported platforms:** Linux (Node.js 22, 24, 26) — the oldest maintained LTS, the Active
+  LTS, and Current. Browsers: last 2 evergreen Chromium/Firefox/Edge and Safari >= 16.4
+  ([ADR-0050](docs/adr/0050-the-1x-runtime-floor.md)).
 - Consumers import the public surface via: `import { parallelLimit, retry } from 'egl-utils-js';`.
 
 See [`docs/development/local-build.md`](docs/development/local-build.md) for the full local

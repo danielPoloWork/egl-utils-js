@@ -10,6 +10,21 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ## [Unreleased]
 
+### Removed
+
+- **BREAKING — the supported-runtime floor for the 1.x line is now Node >= 22 and
+  Safari >= 16.4** ([ADR-0050](docs/adr/0050-the-1x-runtime-floor.md), roadmap 17.2). Node 18
+  left maintenance in April 2025 and Node 20 in April 2026, so the old `>= 18` floor promised
+  two runtimes nobody patches. The CI matrix is now 22 / 24 / 26 — oldest maintained LTS,
+  Active LTS, Current — and `engines` states the floor, so installs warn rather than failing
+  mysteriously. The Safari figure moved for a different reason: at 15.4 the claim was
+  four-and-a-half years wide and untestable, since Playwright ships one recent WebKit build.
+- The internal `AbortSignal.timeout` fallback is **deleted**: the static is native across the
+  new floor (Safari 16.0, Node 17.3), so `timeout` — and `retry`/`httpClient`, which compose
+  it — call the platform directly. The root entry loses 50 B and `httpClient`'s documented
+  budget exception returns to its original 1.35 kB. `AbortSignal.any` stays reimplemented:
+  Safari added it only in 17.4.
+
 ### Added
 
 - `element` on `bsToast`, `inlineAlert`/`bsAlert` and `bsLoadingOverlay`; `isShown()` on

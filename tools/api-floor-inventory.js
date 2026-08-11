@@ -18,8 +18,8 @@
  *
  * SCOPE. This covers **Web platform APIs**, which is where the version risk
  * lives. ES language features are governed by `tsconfig`'s `target`/`lib` and
- * by esbuild's `target: es2022`; Safari 15.4 supports ES2022, so they are not
- * re-checked here.
+ * by esbuild's `target: es2022`; Safari 16.4 — the 1.x floor (ADR-0050) — supports
+ * ES2022, so they are not re-checked here.
  *
  * @module tools/api-floor-inventory
  */
@@ -74,7 +74,7 @@ export const GLOBALS = {
     guardReason: 'context',
     bcd: 'api.crypto',
     guarded:
-      'the #webcrypto shims resolve globalThis.crypto and fall back to node:crypto webcrypto on the Node 18 floor (ADR-0008)',
+      'the #webcrypto shims resolve globalThis.crypto, with the node shim falling back to node:crypto webcrypto (ADR-0008). The global landed in Node 19, so that fallback now covers only runtimes below the 1.x floor — kept as graceful behaviour rather than deleted, and collapsing the shim is roadmap 17.14',
   },
   document: {
     guardReason: 'context',
@@ -121,16 +121,14 @@ export const GLOBALS = {
  */
 export const MEMBERS = {
   'AbortSignal.timeout': {
-    guardReason: 'version',
     bcd: 'api.AbortSignal.timeout_static',
-    guarded:
-      'async.js `timeoutSignalFor` falls back to AbortController + setTimeout when the static is absent (found by the roadmap 7.6 review; Safari added it in 16.0)',
+    why: 'unguarded since 17.2 (ADR-0050): Safari added it in 16.0 and Node in 17.3, both below the 1.x floor, so the hand-rolled fallback the 7.6 review added is deleted rather than left as a branch no supported runtime takes',
   },
   'AbortSignal.any': {
     guardReason: 'version',
     bcd: 'api.AbortSignal.any_static',
     guarded:
-      'async.js `anySignal` never calls the static — it is a full reimplementation, kept because the Node 18 floor lacks it (ADR-0004)',
+      'async.js `anySignal` never calls the static — it is a full reimplementation, kept because Safari added it only in 17.4, above the 16.4 floor (ADR-0004; the Node reason lapsed with the 17.2 floor raise, the Safari one did not)',
   },
   'crypto.randomUUID': {
     guardReason: 'context',
@@ -155,9 +153,10 @@ export const MEMBERS = {
   // where a hand-written declaration earns its keep.
   //
   // Checked rather than assumed: Safari 15 and Node 15.4, both **below** the
-  // 15.4/18 matrix, so it needs no guard. The first draft of this entry claimed
-  // Safari added it in exactly 15.4 — wrong, and the kind of hand-typed version
-  // claim this file exists to stop.
+  // matrix (15.4/18 when this was written, 16.4/22 since ADR-0050), so it needs
+  // no guard. The first draft of this entry claimed Safari added it in exactly
+  // 15.4 — wrong, and the kind of hand-typed version claim this file exists to
+  // stop.
   'EventTarget.addEventListener': {
     bcd: 'api.EventTarget.addEventListener.options_parameter.options_signal_parameter',
     why: 'delegate() registers with an internal AbortController signal, so unsubscribe is one abort() and cannot leak a retained handler reference',
@@ -188,8 +187,12 @@ export const MEMBERS = {
  * `chrome`/`firefox` are intentionally absent: NFR-07 asks only for the last
  * two evergreen versions there, which no API in this library approaches. Safari
  * is the binding constraint, and Node is the runtime floor.
+ *
+ * Raised for the 1.x line in 17.2 ([ADR-0050](../docs/adr/0050-the-1x-runtime-floor.md))
+ * from `nodejs 18.0.0` / `safari 15.4`: both Node lines below 22 left maintenance
+ * before this floor was set, and after 1.0 raising either costs a major.
  */
 export const SUPPORT_MATRIX = {
-  safari: '15.4',
-  nodejs: '18.0.0',
+  safari: '16.4',
+  nodejs: '22.0.0',
 };

@@ -35,7 +35,7 @@ describe('webcrypto-node shim (node condition)', () => {
     expect(mod.cryptoSurface).toBe(fake);
   });
 
-  it('falls back to node:crypto webcrypto when the global is absent (Node 18 floor)', async () => {
+  it('falls back to node:crypto webcrypto when the global is absent', async () => {
     vi.stubGlobal('crypto', undefined);
     vi.resetModules();
     const mod = await import('../../../../../main/javascript/it/d4np/utils/webcrypto-node.js');

@@ -17,7 +17,7 @@ You are a **senior project architect with 20+ years of professional JavaScript (
 experience**, accustomed to enterprise codebases where every artifact is reviewed under
 strict quality gates. Apply that perspective to every change:
 
-- Default to **standards-compliant ES2023, ESM; Node.js >= 18 LTS runtime floor (spec §1.1)**. Avoid non-standard extensions
+- Default to **standards-compliant ES2023, ESM; Node.js >= 22 LTS runtime floor (spec §1.1, ADR-0050)**. Avoid non-standard extensions
   unless explicitly justified in an ADR.
 - Think in terms of **ownership, lifetime, interfaces, compatibility, and failure modes**
   before reaching for features.
@@ -220,7 +220,7 @@ value. Therefore:
 
 ## 9. Coding Conventions
 
-- **Language standard:** ES2023, ESM; Node.js >= 18 LTS runtime floor (spec §1.1).
+- **Language standard:** ES2023, ESM; Node.js >= 22 LTS runtime floor (spec §1.1, ADR-0050).
 - **Namespace / package:** `egl-utils-js`.
 - **Formatting:** enforced by `Prettier` (config at the repo root).
 - **Static analysis:** enforced by `ESLint (flat config) + tsc --noEmit with checkJs (JSDoc type-check)`; warnings-as-errors on the diff at CI.
@@ -235,7 +235,7 @@ Every PR must clear, at minimum:
 
 | Gate | Requirement |
 |---|---|
-| Build matrix | Linux (Node.js 18, 20, 22) — every CI cell green |
+| Build matrix | Linux (Node.js 22, 24, 26) — every CI cell green |
 | Warnings | zero, treated as errors on the diff |
 | Lint | `ESLint (flat config) + tsc --noEmit with checkJs (JSDoc type-check)` clean on the diff; no broad disables |
 | Format | `Prettier` clean |

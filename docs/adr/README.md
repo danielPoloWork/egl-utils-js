@@ -65,3 +65,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0047](0047-an-unknown-option-key-is-a-typeerror.md) | An unknown option key is a `TypeError` — and the destructuring is the schema | Accepted |
 | [0048](0048-one-word-one-meaning.md) | One word, one meaning — the vocabulary v1.0.0 freezes | Accepted |
 | [0049](0049-commands-throw-queries-answer.md) | Commands throw, queries answer — the instance contract | Accepted |
+| [0050](0050-the-1x-runtime-floor.md) | The 1.x runtime floor — Node 22, Safari 16.4 | Accepted |
