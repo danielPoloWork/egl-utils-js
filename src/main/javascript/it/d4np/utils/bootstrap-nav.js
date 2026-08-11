@@ -25,6 +25,7 @@
  */
 
 import { isElement } from './dom-helpers.js';
+import { assertAlive } from './lifecycle.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 import {
   appendContent,
@@ -322,8 +323,8 @@ export function bsAccordion(container, options = {}) {
    * @param {number} index
    * @returns {BehaviourWrapper}
    */
-  function at(index) {
-    if (destroyed) throw new TypeError(`${api}: this manager has been destroyed`);
+  function at(index, method = 'at') {
+    assertAlive(destroyed, api, method);
     const wrapper = wrappers[index];
     if (wrapper === undefined) {
       throw new TypeError(`${api}: no item at index ${index} (${wrappers.length} present)`);
@@ -337,7 +338,7 @@ export function bsAccordion(container, options = {}) {
    * @returns {() => void}
    */
   function on(event, handler) {
-    if (destroyed) throw new TypeError(`${api}: this manager has been destroyed`);
+    assertAlive(destroyed, api, 'on');
     if (typeof handler !== 'function') {
       throw new TypeError(`${api}: handler must be a function`);
     }
@@ -370,9 +371,9 @@ export function bsAccordion(container, options = {}) {
   }
 
   return {
-    open: (index) => at(index).show(),
-    close: (index) => at(index).hide(),
-    toggle: (index) => at(index).toggle(),
+    open: (index) => at(index, 'open').show(),
+    close: (index) => at(index, 'close').hide(),
+    toggle: (index) => at(index, 'toggle').toggle(),
     on,
     element: root,
     items: wrappers,
@@ -624,7 +625,7 @@ export function bsTabs(container, options = {}) {
    * @returns {void}
    */
   function select(index) {
-    if (destroyed) throw new TypeError(`${api}: this manager has been destroyed`);
+    assertAlive(destroyed, api, 'select');
     const trigger = triggers[index];
     if (trigger === undefined) {
       throw new TypeError(`${api}: no tab at index ${index} (${triggers.length} present)`);
@@ -640,7 +641,7 @@ export function bsTabs(container, options = {}) {
    * @returns {() => void}
    */
   function on(event, handler) {
-    if (destroyed) throw new TypeError(`${api}: this manager has been destroyed`);
+    assertAlive(destroyed, api, 'on');
     if (typeof handler !== 'function') {
       throw new TypeError(`${api}: handler must be a function`);
     }

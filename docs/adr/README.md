@@ -64,3 +64,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0046](0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md) | One proposal triaged — and the no-bundler wave adopted | Accepted |
 | [0047](0047-an-unknown-option-key-is-a-typeerror.md) | An unknown option key is a `TypeError` — and the destructuring is the schema | Accepted |
 | [0048](0048-one-word-one-meaning.md) | One word, one meaning — the vocabulary v1.0.0 freezes | Accepted |
+| [0049](0049-commands-throw-queries-answer.md) | Commands throw, queries answer — the instance contract | Accepted |

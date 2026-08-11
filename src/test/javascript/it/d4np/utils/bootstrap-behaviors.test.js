@@ -208,7 +208,7 @@ describe('F69 — bsToast', () => {
     const host = container();
     const toasts = bsToast(host, { bootstrap: namespace });
 
-    const el = toasts.show('<img src=x onerror=alert(1)>', { title: 'Saved' });
+    const el = toasts.add('<img src=x onerror=alert(1)>', { title: 'Saved' });
 
     expect(el.classList.contains('toast')).toBe(true);
     expect(el.querySelector('.toast-body')?.textContent).toBe('<img src=x onerror=alert(1)>');
@@ -221,8 +221,8 @@ describe('F69 — bsToast', () => {
     const { namespace } = makeBootstrap();
     const toasts = bsToast(container(), { bootstrap: namespace });
 
-    const info = toasts.show('done');
-    const danger = toasts.show('failed', { variant: 'danger' });
+    const info = toasts.add('done');
+    const danger = toasts.add('failed', { variant: 'danger' });
 
     expect(info.getAttribute('role')).toBe('status');
     expect(info.getAttribute('aria-live')).toBe('polite');
@@ -236,8 +236,8 @@ describe('F69 — bsToast', () => {
     const { namespace } = makeBootstrap({ async: true });
     const toasts = bsToast(container(), { bootstrap: namespace });
 
-    const danger = toasts.show('failed', { variant: 'danger' });
-    const info = toasts.show('fine', { variant: 'info' });
+    const danger = toasts.add('failed', { variant: 'danger' });
+    const info = toasts.add('fine', { variant: 'info' });
 
     expect([...info.classList]).not.toContain('text-bg-danger');
     expect([...danger.classList]).not.toContain('text-bg-info');
@@ -250,7 +250,7 @@ describe('F69 — bsToast', () => {
 
     // The fake fires hidden synchronously from hide(), which is the event the
     // removal hangs off.
-    toasts.show('gone');
+    toasts.add('gone');
     expect(host.children).toHaveLength(1);
 
     toasts.hide();
@@ -263,7 +263,7 @@ describe('F69 — bsToast', () => {
     const { namespace } = makeBootstrap();
     const toasts = bsToast(container(), { bootstrap: namespace, closeLabel: 'Chiudi' });
 
-    const el = toasts.show('ciao');
+    const el = toasts.add('ciao');
     const close = el.querySelector('.btn-close');
 
     expect(close?.getAttribute('aria-label')).toBe('Chiudi');
@@ -274,14 +274,14 @@ describe('F69 — bsToast', () => {
     const { namespace, created } = makeBootstrap({ async: true });
     const host = container();
     const toasts = bsToast(host, { bootstrap: namespace });
-    toasts.show('one');
-    toasts.show('two');
+    toasts.add('one');
+    toasts.add('two');
 
     toasts.destroy();
 
     expect(host.children).toHaveLength(0);
     expect(created.every((instance) => instance.disposed)).toBe(true);
-    expect(() => toasts.show('three')).toThrow(TypeError);
+    expect(() => toasts.add('three')).toThrow(TypeError);
     // Idempotent, as every destroy in this library is.
     expect(() => toasts.destroy()).not.toThrow();
   });
@@ -291,7 +291,7 @@ describe('F69 — bsToast', () => {
     const controller = new AbortController();
     const host = container();
     const toasts = bsToast(host, { bootstrap: namespace, signal: controller.signal });
-    toasts.show('one');
+    toasts.add('one');
 
     controller.abort();
 
@@ -303,8 +303,8 @@ describe('F69 — bsToast', () => {
     const { namespace } = makeBootstrap();
     const toasts = bsToast(container(), { bootstrap: namespace });
 
-    expect(() => toasts.show('<b>hi</b>', { html: true })).toThrow(TypeError);
-    const el = toasts.show('<b>hi</b>', { html: true, sanitize: (value) => value });
+    expect(() => toasts.add('<b>hi</b>', { html: true })).toThrow(TypeError);
+    const el = toasts.add('<b>hi</b>', { html: true, sanitize: (value) => value });
     expect(el.querySelector('.toast-body b')?.textContent).toBe('hi');
   });
 
@@ -319,7 +319,7 @@ describe('F69 — bsToast', () => {
     const inFrame = foreign.createElement('div');
     foreign.body.append(inFrame);
 
-    const implicit = bsToast(inFrame, { bootstrap: namespace }).show('hi');
+    const implicit = bsToast(inFrame, { bootstrap: namespace }).add('hi');
     expect(implicit.ownerDocument).toBe(foreign);
 
     // Naming the container's own document is the same thing, explicitly. Naming
@@ -329,10 +329,61 @@ describe('F69 — bsToast', () => {
     const explicit = bsToast(inFrame, {
       bootstrap: namespace,
       document: foreign,
-    }).show('hi');
+    }).add('hi');
     expect(explicit.ownerDocument).toBe(foreign);
 
     expect(() => bsToast(container(), { document: 'nope' })).toThrow(TypeError);
+  });
+
+  it('subscribes on the container, so one listener sees every toast', () => {
+    // Bootstrap's toast events bubble, which is what makes a container-level
+    // subscription cover toasts that do not exist yet (ADR-0049). Before 17.9 the
+    // only way to observe one was to capture each node `add` returned.
+    const { namespace } = makeBootstrap();
+    const host = container();
+    const toasts = bsToast(host, { bootstrap: namespace });
+    const seen = [];
+    const off = toasts.on('hidden', () => seen.push('hidden'));
+
+    const first = toasts.add('one');
+    expect(toasts.isShown()).toBe(true);
+    expect(toasts.element).toBe(host);
+
+    first.dispatchEvent(new Event('hidden.bs.toast', { bubbles: true }));
+    expect(seen).toEqual(['hidden']);
+    expect(toasts.isShown()).toBe(false);
+
+    // A second toast, created after the subscription, is covered by the same one.
+    const second = toasts.add('two');
+    second.dispatchEvent(new Event('hidden.bs.toast', { bubbles: true }));
+    expect(seen).toEqual(['hidden', 'hidden']);
+
+    // The unsubscribe is idempotent, like every other one in the library.
+    off();
+    off();
+    toasts.add('three').dispatchEvent(new Event('hidden.bs.toast', { bubbles: true }));
+    expect(seen).toEqual(['hidden', 'hidden']);
+  });
+
+  it('qualifies a bare event name and refuses a non-function handler', () => {
+    const toasts = bsToast(container(), { bootstrap: {} });
+    expect(() => toasts.on('hidden', /** @type {never} */ (7))).toThrow(
+      /handler must be a function/,
+    );
+    toasts.destroy();
+    expect(() => toasts.on('hidden', () => {})).toThrow('bsToast: on() was called after destroy()');
+  });
+
+  it('drops its own subscriptions on destroy, not only the toasts', () => {
+    const { namespace } = makeBootstrap();
+    const host = container();
+    const toasts = bsToast(host, { bootstrap: namespace });
+    const seen = [];
+    toasts.on('hidden', () => seen.push('hidden'));
+    toasts.destroy();
+
+    host.dispatchEvent(new Event('hidden.bs.toast', { bubbles: true }));
+    expect(seen).toEqual([]);
   });
 
   it('rejects a non-Element container and malformed timing options', () => {
@@ -352,13 +403,13 @@ describe('F69 — bsToast', () => {
     const { namespace, created } = makeBootstrap();
     const toasts = bsToast(container(), { bootstrap: namespace });
 
-    toasts.show('default');
+    toasts.add('default');
     expect(created.at(-1)?.options).toMatchObject({ autohide: true, delay: 5000 });
 
-    toasts.show('override', { autoHideMs: 1500 });
+    toasts.add('override', { autoHideMs: 1500 });
     expect(created.at(-1)?.options).toMatchObject({ autohide: true, delay: 1500 });
 
-    toasts.show('sticky', { autoHideMs: false });
+    toasts.add('sticky', { autoHideMs: false });
     // `false` means "stay up": Bootstrap wants `autohide: false` and no `delay`,
     // because a delay beside it reads as a timing that will never fire.
     expect(created.at(-1)?.options).toMatchObject({ autohide: false });
@@ -369,10 +420,10 @@ describe('F69 — bsToast', () => {
     const { namespace, created } = makeBootstrap();
     const toasts = bsToast(container(), { bootstrap: namespace, autoHideMs: false });
 
-    toasts.show('inherits the manager default');
+    toasts.add('inherits the manager default');
     expect(created.at(-1)?.options).toMatchObject({ autohide: false });
 
-    toasts.show('overrides it back on', { autoHideMs: 200 });
+    toasts.add('overrides it back on', { autoHideMs: 200 });
     expect(created.at(-1)?.options).toMatchObject({ autohide: true, delay: 200 });
   });
 });
@@ -523,7 +574,7 @@ describe('F71 — bsLoadingOverlay', () => {
     const { namespace, created } = makeBootstrap();
     const overlay = bsLoadingOverlay({ bootstrap: namespace, message: 'Caricamento…' });
 
-    overlay.show();
+    overlay.acquire();
 
     const el = document.querySelector('.modal');
     expect(el).not.toBeNull();
@@ -536,7 +587,7 @@ describe('F71 — bsLoadingOverlay', () => {
     const { namespace } = makeBootstrap({ async: true });
     const overlay = bsLoadingOverlay({ bootstrap: namespace, minVisibleMs: 100 });
 
-    const release = overlay.show();
+    const release = overlay.acquire();
     await vi.advanceTimersByTimeAsync(0); // the appearance settles here
     release();
 
@@ -554,7 +605,7 @@ describe('F71 — bsLoadingOverlay', () => {
     const overlay = bsLoadingOverlay();
     let caught;
     try {
-      overlay.show();
+      overlay.acquire();
     } catch (error) {
       caught = error;
     }
@@ -575,7 +626,7 @@ describe('F71 — bsLoadingOverlay', () => {
   it('removes the modal it built and disposes on destroy (NFR-15)', () => {
     const { namespace, created } = makeBootstrap();
     const overlay = bsLoadingOverlay({ bootstrap: namespace });
-    overlay.show();
+    overlay.acquire();
 
     overlay.destroy();
 
@@ -594,7 +645,7 @@ describe('F71 — bsLoadingOverlay', () => {
       focus: { save: true, root },
     });
 
-    overlay.show();
+    overlay.acquire();
     overlay.destroy();
 
     expect(target.isConnected).toBe(true);
@@ -616,7 +667,7 @@ describe('F71 — bsLoadingOverlay', () => {
     const { namespace, created } = makeBootstrap();
     const controller = new AbortController();
     const overlay = bsLoadingOverlay({ bootstrap: namespace, signal: controller.signal });
-    overlay.show();
+    overlay.acquire();
 
     controller.abort();
 

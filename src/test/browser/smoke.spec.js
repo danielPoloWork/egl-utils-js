@@ -770,7 +770,7 @@ test.describe('/dom — loadingOverlay focus restoration (roadmap 12.2, F50)', (
       trigger.focus();
       const before = document.activeElement.id;
 
-      const release = gate.show();
+      const release = gate.acquire();
       const during = document.activeElement.id;
 
       release();
@@ -1060,7 +1060,7 @@ test.describe('the Bootstrap behaviour wrappers (roadmap 16.1)', () => {
       const host = document.getElementById('host');
       host.innerHTML = '<div class="toast-container"></div>';
       window.eglToasts = bsToast(host.querySelector('.toast-container'));
-      window.eglToasts.show('Saved.', { title: 'Done' });
+      window.eglToasts.add('Saved.', { title: 'Done' });
     });
 
     // Bootstrap's own class, applied by its own transition.

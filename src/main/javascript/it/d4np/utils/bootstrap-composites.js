@@ -31,6 +31,7 @@ import {
   bsBadge,
   closestWithin,
   commonOptions,
+  documentOf,
   isNode,
   renderContent,
   resolveDocument,
@@ -662,17 +663,24 @@ export function bsAlert(container, options = {}) {
   assertPlainObject(classes, 'options.classes', 'bsAlert');
   assertPlainObject(icons, 'options.icons', 'bsAlert');
 
-  return inlineAlert(container, {
-    autoHideMs,
-    dismissible,
-    closeLabel,
-    signal,
-    classes: { ...BOOTSTRAP_ALERT_CLASSES, ...classes },
-    // `''` leaves the button visible with no glyph of ours — `.btn-close`
-    // supplies one through CSS. That an empty icon no longer hides the control
-    // is the F49 fix this component needed (ADR-0038).
-    icons: { close: '', ...icons },
-  });
+  return inlineAlert(
+    container,
+    {
+      autoHideMs,
+      dismissible,
+      closeLabel,
+      signal,
+      classes: { ...BOOTSTRAP_ALERT_CLASSES, ...classes },
+      // `''` leaves the button visible with no glyph of ours — `.btn-close`
+      // supplies one through CSS. That an empty icon no longer hides the control
+      // is the F49 fix this component needed (ADR-0038).
+      icons: { close: '', ...icons },
+    },
+    // Third argument: the engine reports *this* function's name, so a caller of
+    // `bsAlert` never reads a diagnostic about a function they did not call
+    // (ADR-0049).
+    'bsAlert',
+  );
 }
 
 /**
@@ -692,6 +700,8 @@ export function bsAlert(container, options = {}) {
  * @property {number} [siblingCount=1] - Pages shown either side of the current one.
  * @property {number} [boundaryCount=1] - Pages always shown at each end.
  * @property {string} [size] - `pagination-<size>`.
+ * @property {Document} [document] - Where the bar is built, when it is not the
+ *   container's own (F52).
  * @property {BsPaginationLabels} [labels]
  * @property {AbortSignal} [signal]
  * @property {ClassOption} [class]
@@ -752,6 +762,7 @@ export function bsPagination(container, options) {
     labels = {},
     signal,
     class: extraClass,
+    document: explicitDocument,
     ...unknown
   } = options;
   assertNoUnknownOptions(unknown, api);
@@ -787,7 +798,10 @@ export function bsPagination(container, options) {
   // The container supplies the realm, so this builder needs no `document`
   // option: an Element always has an `ownerDocument` (only a Document's own is
   // null, and `isElement` has already excluded that).
-  const doc = /** @type {Document} */ (container.ownerDocument);
+  // The container's own document, with `document` as an override — the same rule
+  // `bsToast` has always had, extended here in 17.8 so all three container-taking
+  // managers behave alike (ADR-0049).
+  const doc = documentOf(container, { document: explicitDocument }, api);
   const navEl = doc.createElement('nav');
   navEl.setAttribute('aria-label', nav);
   const list = doc.createElement('ul');

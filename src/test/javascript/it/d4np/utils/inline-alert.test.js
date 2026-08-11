@@ -340,11 +340,15 @@ describe('inlineAlert — teardown (NFR-15)', () => {
     expect(() => alerts.show('info', 'x')).toThrow(TypeError);
   });
 
-  it('hide() after destroy() is harmless', () => {
+  it('hide() after destroy() throws, like every other command', () => {
+    // Changed in 17.8 (ADR-0049). It used to be "harmless", which made the
+    // component inconsistent with itself: `show()` already threw. A command on a
+    // destroyed instance that silently does nothing is the failure mode this
+    // library refuses everywhere else.
     const alerts = inlineAlert(host);
     alerts.show('info', 'x');
     alerts.destroy();
-    expect(() => alerts.hide()).not.toThrow();
+    expect(() => alerts.hide()).toThrow('inlineAlert: hide() was called after destroy()');
   });
 });
 

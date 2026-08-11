@@ -26,6 +26,7 @@
 
 import { PeerMissingError } from './errors.js';
 import { isAbortSignal, isElement } from './dom-helpers.js';
+import { assertAlive } from './lifecycle.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 import { loadingOverlay } from './dom-components.js';
 import {
@@ -220,7 +221,10 @@ export function assertSignal(options, api) {
  * @property {() => void} hide
  * @property {() => void} toggle
  * @property {(event: string, handler: (event: Event) => void) => () => void} on
- * @property {() => BootstrapInstanceLike} instance
+ * @property {(method?: string) => BootstrapInstanceLike} instance - The Bootstrap
+ *   object, resolved on first access. The optional argument is **internal**: a
+ *   composing wrapper passes the method it is serving so a refusal after
+ *   `destroy()` names the caller's method rather than this chokepoint (ADR-0049).
  * @property {Element} element
  * @property {() => boolean} isShown
  * @property {() => void} destroy
@@ -261,8 +265,14 @@ export function behaviourWrapper(target, options, spec) {
   let shown = false;
   const { signal } = options;
 
-  function instance() {
-    if (destroyed) throw new TypeError(`${api}: this wrapper has been destroyed`);
+  /**
+   * @param {string} [method='instance'] - The command on whose behalf the
+   *   Bootstrap object is being resolved, so a refusal names the caller's method
+   *   rather than this chokepoint (ADR-0049).
+   * @returns {BootstrapInstanceLike}
+   */
+  function instance(method = 'instance') {
+    assertAlive(destroyed, api, method);
     if (resolved === undefined) {
       resolved = instantiate(resolveComponent(options, api, component), target, config);
     }
@@ -284,7 +294,7 @@ export function behaviourWrapper(target, options, spec) {
    * @returns {() => void}
    */
   function on(event, handler) {
-    if (destroyed) throw new TypeError(`${api}: this wrapper has been destroyed`);
+    assertAlive(destroyed, api, 'on');
     if (typeof handler !== 'function') {
       throw new TypeError(`${api}: handler must be a function`);
     }
@@ -329,16 +339,29 @@ export function behaviourWrapper(target, options, spec) {
   }
 
   return {
-    show: () => invoke(instance(), 'show'),
-    hide: () => invoke(instance(), 'hide'),
-    toggle: () => invoke(instance(), 'toggle'),
+    show: () => invoke(instance('show'), 'show'),
+    hide: () => invoke(instance('hide'), 'hide'),
+    toggle: () => invoke(instance('toggle'), 'toggle'),
     on,
     instance,
     element: target,
+    // A query, not a command: a destroyed component is not shown, which is the
+    // truth rather than a convenience (ADR-0049).
     isShown: () => shown,
     destroy,
   };
 }
+
+/**
+ * The F50 gate plus the node this wrapper owns.
+ *
+ * The gate itself has none by design — it owns *when* an overlay is visible and
+ * nothing about *what* is (ADR-0032). A Bootstrap modal driving it is a real
+ * element, so this wrapper can keep the library-wide `element` promise
+ * (ADR-0049).
+ *
+ * @typedef {LoadingOverlayInstance & { element: Element }} BsLoadingOverlayInstance
+ */
 
 /**
  * @typedef {object} BsToastOptions
@@ -373,8 +396,18 @@ export function behaviourWrapper(target, options, spec) {
 
 /**
  * @typedef {object} BsToastInstance
- * @property {(message: Content, options?: BsToastShowOptions) => Element} show
+ * @property {(message: Content, options?: BsToastShowOptions) => Element} add
+ *   Builds a toast, shows it, and returns its element — `show()` until 17.8,
+ *   renamed because a visibility verb returns nothing in this library and this
+ *   one creates (ADR-0048/ADR-0049). The element is how a caller reaches one
+ *   toast: its Bootstrap instance is per-node, so the manager has no single
+ *   `instance()` to offer.
  * @property {() => void} hide - Hides every toast currently up.
+ * @property {(event: string, handler: (event: Event) => void) => () => void} on
+ *   Subscribes on the container. Bootstrap's toast events bubble, so one
+ *   listener sees every toast this manager builds, present and future.
+ * @property {() => boolean} isShown - Whether any toast is currently up.
+ * @property {Element} element - The container this manager was given.
  * @property {() => void} destroy
  */
 
@@ -390,8 +423,8 @@ export function behaviourWrapper(target, options, spec) {
  *
  * @example
  * const toasts = bsToast(document.querySelector('.toast-container'));
- * toasts.show('Saved.');
- * toasts.show('Could not save.', { variant: 'danger', title: 'Error', autoHideMs: false });
+ * toasts.add('Saved.');
+ * toasts.add('Could not save.', { variant: 'danger', title: 'Error', autoHideMs: false });
  *
  * @param {Element} container - Where toasts are appended. A
  *   `.toast-container` positions them; this wrapper does not position anything.
@@ -442,9 +475,9 @@ export function bsToast(container, options = {}) {
    * @param {BsToastShowOptions} [showOptions]
    * @returns {Element}
    */
-  function show(message, showOptions = {}) {
-    if (destroyed) throw new TypeError(`${api}: this manager has been destroyed`);
-    assertPlainObject(showOptions, 'options', `${api}.show`);
+  function add(message, showOptions = {}) {
+    assertAlive(destroyed, api, 'add');
+    assertPlainObject(showOptions, 'options', `${api}.add`);
 
     const {
       title,
@@ -545,14 +578,41 @@ export function bsToast(container, options = {}) {
   }
 
   function hide() {
+    assertAlive(destroyed, api, 'hide');
     // A copy: hiding may complete synchronously in a test double, and that
     // mutates `live` through the hidden handler while we are iterating it.
     for (const record of [...live]) invoke(record.instance, 'hide');
   }
 
+  /** @type {Array<() => void>} */
+  const subscriptions = [];
+
+  /**
+   * @param {string} event
+   * @param {(event: Event) => void} handler
+   * @returns {() => void}
+   */
+  function on(event, handler) {
+    assertAlive(destroyed, api, 'on');
+    if (typeof handler !== 'function') {
+      throw new TypeError(`${api}: handler must be a function`);
+    }
+    const name = qualifyEvent(event, 'bs.toast', api);
+    container.addEventListener(name, handler);
+    let off = () => {
+      container.removeEventListener(name, handler);
+      off = () => {};
+    };
+    const unsubscribe = () => off();
+    subscriptions.push(unsubscribe);
+    return unsubscribe;
+  }
+
   function destroy() {
     if (destroyed) return;
     destroyed = true;
+    for (const unsubscribe of subscriptions) unsubscribe();
+    subscriptions.length = 0;
     for (const record of [...live]) {
       record.cleanup();
       invoke(record.instance, 'dispose');
@@ -567,7 +627,7 @@ export function bsToast(container, options = {}) {
     else signal.addEventListener('abort', destroy);
   }
 
-  return { show, hide, destroy };
+  return { add, hide, on, isShown: () => live.size > 0, element: container, destroy };
 }
 
 /**
@@ -588,6 +648,9 @@ export function bsToast(container, options = {}) {
  * @property {() => BootstrapInstanceLike} instance - The Bootstrap instance,
  *   resolved on first access. The door out of the wrapper (ADR-0039's rule).
  * @property {Element} element
+ * @property {() => boolean} isShown - Whether the dialog is open, read from
+ *   Bootstrap's own events rather than from our calls, so Escape and a data-API
+ *   dismiss are seen too.
  * @property {() => void} destroy
  */
 
@@ -638,8 +701,8 @@ export function bsModal(target, options = {}) {
       config,
     },
   );
-  // Spelled out rather than spread: F70 froze this surface, and `isShown` — which
-  // the shared helper also offers — is not part of it.
+  // Spelled out rather than spread: the surface is the frozen one, not whatever
+  // the shared helper happens to return.
   return {
     show: wrapper.show,
     hide: wrapper.hide,
@@ -647,6 +710,10 @@ export function bsModal(target, options = {}) {
     on: wrapper.on,
     instance: wrapper.instance,
     element: wrapper.element,
+    // F70 omitted this until 17.8; a dialog is the component a caller is most
+    // likely to ask, and anything with show/hide owes the question an answer
+    // (ADR-0049).
+    isShown: wrapper.isShown,
     destroy: wrapper.destroy,
   };
 }
@@ -693,7 +760,7 @@ export function bsModal(target, options = {}) {
  * await overlay.wrap(() => api.get('/slow'));
  *
  * @param {BsLoadingOverlayOptions} [options]
- * @returns {LoadingOverlayInstance}
+ * @returns {BsLoadingOverlayInstance}
  * @throws {TypeError} On a malformed or unknown option.
  * @throws {DomContractError} If there is no document to build in.
  * @throws {PeerMissingError} From `show`/`wrap`, if `Modal` is unreachable.
@@ -791,12 +858,17 @@ export function bsLoadingOverlay(options = {}) {
     });
   }
 
-  const gate = loadingOverlay({
-    onShow: () => transition('show', 'shown.bs.modal'),
-    onHide: () => transition('hide', 'hidden.bs.modal'),
-    ...(minVisibleMs === undefined ? {} : { minVisibleMs }),
-    focus: { ...focus, root: focus?.root ?? element },
-  });
+  const gate = loadingOverlay(
+    {
+      onShow: () => transition('show', 'shown.bs.modal'),
+      onHide: () => transition('hide', 'hidden.bs.modal'),
+      ...(minVisibleMs === undefined ? {} : { minVisibleMs }),
+      focus: { ...focus, root: focus?.root ?? element },
+    },
+    // As with `bsAlert` over the F49 engine: the composing entry owns the name a
+    // caller sees in a diagnostic (ADR-0049).
+    api,
+  );
 
   function destroy() {
     gate.destroy();
@@ -813,16 +885,19 @@ export function bsLoadingOverlay(options = {}) {
   }
 
   return {
-    show: () => {
+    acquire: () => {
       // Ahead of the gate: see the note on containment above.
       instance();
-      return gate.show();
+      return gate.acquire();
     },
     wrap: (operation) => {
       instance();
       return gate.wrap(operation);
     },
     isShown: gate.isShown,
+    // The gate itself owns no node (ADR-0032); this wrapper does, so it can hand
+    // one back — the `.modal` it built, or the `target` it was given.
+    element,
     destroy,
   };
 }

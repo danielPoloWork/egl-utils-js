@@ -65,7 +65,7 @@ describe('`ariaLabel` is the accessible name; `label` is what the user sees', ()
     // `.btn-close` draws its glyph in CSS, so a toast's close control has no
     // visible text for `closeLabel` to be confused with (ADR-0048).
     const toasts = bootstrap.bsToast(host(), { closeLabel: 'Chiudi', bootstrap: {} });
-    expect(toasts).toHaveProperty('show');
+    expect(toasts).toHaveProperty('add');
   });
 });
 

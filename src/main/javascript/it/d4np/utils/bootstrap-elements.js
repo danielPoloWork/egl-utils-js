@@ -27,6 +27,7 @@
  */
 
 import { isAbortSignal, isElement, requireDocument } from './dom-helpers.js';
+import { assertAlive } from './lifecycle.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 
 /**
@@ -1003,8 +1004,10 @@ export function bsProgress(options = {}) {
   );
   track.append(bar);
 
+  let destroyed = false;
   /** @param {number} next */
   const setValue = (next) => {
+    assertAlive(destroyed, api, 'setValue');
     if (typeof next !== 'number' || Number.isNaN(next)) {
       throw new TypeError(`${api}: setValue(value) requires a number`);
     }
@@ -1019,7 +1022,17 @@ export function bsProgress(options = {}) {
 
   setValue(value);
 
-  return { element: track, setValue, destroy: () => track.remove() };
+  return {
+    element: track,
+    setValue,
+    destroy: () => {
+      // Idempotent, and it flips the flag: a bar that keeps accepting values
+      // after teardown is the classic "the UI stopped moving and nothing was
+      // logged" bug (ADR-0049).
+      destroyed = true;
+      track.remove();
+    },
+  };
 }
 
 /**

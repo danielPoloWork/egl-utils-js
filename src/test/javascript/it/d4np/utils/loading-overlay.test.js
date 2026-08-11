@@ -48,8 +48,8 @@ describe('loadingOverlay — the reference count', () => {
     const { onShow, onHide } = makeHooks();
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 0 });
 
-    const releaseA = overlay.show();
-    const releaseB = overlay.show();
+    const releaseA = overlay.acquire();
+    const releaseB = overlay.acquire();
     await settle();
     expect(onShow).toHaveBeenCalledTimes(1);
 
@@ -69,8 +69,8 @@ describe('loadingOverlay — the reference count', () => {
     const { onShow, onHide } = makeHooks();
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 0 });
 
-    const releaseA = overlay.show();
-    overlay.show();
+    const releaseA = overlay.acquire();
+    overlay.acquire();
     await settle();
 
     releaseA();
@@ -87,11 +87,11 @@ describe('loadingOverlay — the reference count', () => {
     const { onShow, onHide } = makeHooks();
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 0 });
 
-    overlay.show()();
+    overlay.acquire()();
     await vi.advanceTimersByTimeAsync(10);
     expect(onHide).toHaveBeenCalledTimes(1);
 
-    overlay.show();
+    overlay.acquire();
     await settle();
     expect(onShow).toHaveBeenCalledTimes(2);
     expect(overlay.isShown()).toBe(true);
@@ -101,9 +101,9 @@ describe('loadingOverlay — the reference count', () => {
     const { onShow, onHide } = makeHooks();
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 500 });
 
-    overlay.show()();
+    overlay.acquire()();
     // Inside the floor: the hide is owed but has not happened.
-    overlay.show();
+    overlay.acquire();
     await vi.advanceTimersByTimeAsync(1_000);
 
     expect(onHide).not.toHaveBeenCalled();
@@ -117,7 +117,7 @@ describe('loadingOverlay — the minimum-visible floor', () => {
     const { onShow, onHide } = makeHooks();
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 400 });
 
-    const release = overlay.show();
+    const release = overlay.acquire();
     await settle();
     release(); // the "response" arrived in ~0 ms
 
@@ -135,7 +135,7 @@ describe('loadingOverlay — the minimum-visible floor', () => {
     const { onShow, onHide } = hooks;
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 400 });
 
-    const release = overlay.show();
+    const release = overlay.acquire();
     await vi.advanceTimersByTimeAsync(300); // still appearing
     hooks.gate.resolve?.();
     await settle();
@@ -154,7 +154,7 @@ describe('loadingOverlay — the minimum-visible floor', () => {
     const { onShow, onHide } = hooks;
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 100 });
 
-    const release = overlay.show();
+    const release = overlay.acquire();
     release(); // released before the presentation even finished
 
     expect(hooks.onHide).not.toHaveBeenCalled();
@@ -171,7 +171,7 @@ describe('loadingOverlay — the minimum-visible floor', () => {
     const { onShow, onHide } = makeHooks();
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 0 });
 
-    overlay.show()();
+    overlay.acquire()();
     await settle();
     await vi.advanceTimersByTimeAsync(0);
     expect(onHide).toHaveBeenCalledTimes(1);
@@ -181,7 +181,7 @@ describe('loadingOverlay — the minimum-visible floor', () => {
     const { onShow, onHide } = makeHooks();
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 400 });
 
-    const release = overlay.show();
+    const release = overlay.acquire();
     await vi.advanceTimersByTimeAsync(5_000); // the floor elapsed long ago
     release();
     await settle();
@@ -289,7 +289,7 @@ describe('loadingOverlay — focus', () => {
     trigger.focus();
     expect(document.activeElement).toBe(trigger);
 
-    const release = overlay.show();
+    const release = overlay.acquire();
     await settle();
     /** @type {HTMLElement} */ (document.getElementById('inside')).focus();
 
@@ -311,14 +311,14 @@ describe('loadingOverlay — focus', () => {
       focus: { save: true, root: overlayRoot },
     });
 
-    overlay.show();
+    overlay.acquire();
     await settle();
     /** @type {HTMLElement} */ (document.getElementById('inside')).focus();
-    overlay.show()(); // extra acquire/release pair, count still 1
+    overlay.acquire()(); // extra acquire/release pair, count still 1
     expect(document.activeElement?.id).toBe('inside');
 
     // Release the remaining owner.
-    const release = overlay.show();
+    const release = overlay.acquire();
     release();
     release();
     await vi.advanceTimersByTimeAsync(10);
@@ -334,7 +334,7 @@ describe('loadingOverlay — focus', () => {
     });
 
     trigger.focus();
-    const release = overlay.show();
+    const release = overlay.acquire();
     await settle();
     trigger.remove(); // the operation re-rendered and the button is gone
 
@@ -348,7 +348,7 @@ describe('loadingOverlay — focus', () => {
     // The gate's timing logic is pure: only focus handling makes it browser-only.
     const { onShow, onHide } = makeHooks();
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 0 });
-    overlay.show()();
+    overlay.acquire()();
     await vi.advanceTimersByTimeAsync(10);
     expect(onHide).toHaveBeenCalledTimes(1);
   });
@@ -362,14 +362,14 @@ describe('loadingOverlay — contained presentation failures', () => {
     const onHide = vi.fn();
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 0 });
 
-    const release = overlay.show();
+    const release = overlay.acquire();
     await settle();
     release();
     await vi.advanceTimersByTimeAsync(10);
 
     // The failure never reached the caller, and the gate can be reused.
     expect(overlay.isShown()).toBe(false);
-    expect(() => overlay.show()).not.toThrow();
+    expect(() => overlay.acquire()).not.toThrow();
   });
 
   it('a throwing onShow does not propagate out of show()', async () => {
@@ -381,7 +381,7 @@ describe('loadingOverlay — contained presentation failures', () => {
       minVisibleMs: 0,
     });
 
-    expect(() => overlay.show()).not.toThrow();
+    expect(() => overlay.acquire()).not.toThrow();
     await settle();
   });
 
@@ -399,7 +399,7 @@ describe('loadingOverlay — contained presentation failures', () => {
       focus: { save: true },
     });
 
-    const release = overlay.show();
+    const release = overlay.acquire();
     await settle();
     /** @type {HTMLElement} */ (document.body).focus();
     release();
@@ -415,7 +415,7 @@ describe('loadingOverlay — teardown (NFR-15)', () => {
     const { onShow, onHide } = makeHooks();
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 10_000 });
 
-    overlay.show();
+    overlay.acquire();
     await settle();
     overlay.destroy();
     await settle();
@@ -434,7 +434,7 @@ describe('loadingOverlay — teardown (NFR-15)', () => {
     const { onShow, onHide } = hooks;
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 10_000 });
 
-    overlay.show();
+    overlay.acquire();
     overlay.destroy();
     hooks.gate.resolve?.();
     await settle();
@@ -464,7 +464,7 @@ describe('loadingOverlay — teardown (NFR-15)', () => {
       signal: controller.signal,
     });
 
-    overlay.show();
+    overlay.acquire();
     await settle();
     controller.abort();
     await settle();
@@ -477,7 +477,7 @@ describe('loadingOverlay — teardown (NFR-15)', () => {
     const { onShow, onHide } = makeHooks();
     const overlay = loadingOverlay({ onShow, onHide, signal: AbortSignal.abort() });
 
-    expect(() => overlay.show()).toThrow(/after destroy/);
+    expect(() => overlay.acquire()).toThrow(/after destroy/);
     expect(onShow).not.toHaveBeenCalled();
   });
 
@@ -486,14 +486,14 @@ describe('loadingOverlay — teardown (NFR-15)', () => {
     const overlay = loadingOverlay({ onShow, onHide });
     overlay.destroy();
 
-    expect(() => overlay.show()).toThrow(TypeError);
+    expect(() => overlay.acquire()).toThrow(TypeError);
   });
 
   it('a release held across destroy() cannot hide a second time', async () => {
     const { onShow, onHide } = makeHooks();
     const overlay = loadingOverlay({ onShow, onHide, minVisibleMs: 0 });
 
-    const release = overlay.show();
+    const release = overlay.acquire();
     await settle();
     overlay.destroy();
     await settle();
