@@ -95,11 +95,17 @@ describe('pageSessionId — degradation (never throws)', () => {
     expect(pageSessionId({ storage })).not.toBe(id);
   });
 
-  it('works against the real default wrapper (in-memory fallback under Node)', () => {
+  it('works against the real default wrapper, whatever backs it', () => {
+    // Backend-agnostic on purpose. This used to assert `isPersistent() === false`
+    // on the assumption that Node has no Web Storage; Node exposes
+    // `sessionStorage` on the newer lines of the 17.2 matrix, so that assertion
+    // was about the runtime rather than about `pageSessionId`. What matters is
+    // the id: shaped like a UUID, and stable across calls within the page (or
+    // process) — which holds on either backend.
+    sessionStorageWrapper.remove('egl.pageSessionId');
     const first = pageSessionId();
     expect(first).toMatch(/^[0-9a-f]{8}-/);
     expect(pageSessionId()).toBe(first);
-    expect(sessionStorageWrapper.isPersistent()).toBe(false);
     sessionStorageWrapper.remove('egl.pageSessionId');
   });
 });
