@@ -47,7 +47,7 @@ jobs:
         with:
           # Node 20 ships npm >= 10, comfortably past the npm >= 9.5 provenance
           # requires.
-          node-version: '20'
+          node-version: '24'
           cache: pnpm
           registry-url: 'https://registry.npmjs.org'
 

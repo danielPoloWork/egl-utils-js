@@ -107,9 +107,9 @@ describe('hashString — digest laws (spec §2 item 19)', () => {
   it('matches a direct subtle.digest oracle for any unicode string', async () => {
     await fc.assert(
       fc.asyncProperty(fc.string({ unit: 'binary' }), async (input) => {
-        // Oracle over the node shim's surface — globalThis.crypto does not
-        // exist on the Node 18 CI cell, and the module under test resolves
-        // #webcrypto to this same shim there.
+        // Oracle over the node shim's surface, which is what the module under
+        // test resolves `#webcrypto` to on Node. (Until 17.2 this also covered
+        // the Node 18 cell, where `globalThis.crypto` did not exist at all.)
         const digest = await cryptoSurface.subtle.digest(
           'SHA-256',
           new TextEncoder().encode(input),

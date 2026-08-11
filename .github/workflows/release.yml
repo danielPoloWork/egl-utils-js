@@ -36,7 +36,7 @@ jobs:
           # This job has no matrix; the expression it used to carry referenced a
           # non-existent `matrix.toolchain` and only worked by falling through to
           # its default. Same defect the benchmark job had in M1.4, missed here.
-          node-version: '20'
+          node-version: '24'
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

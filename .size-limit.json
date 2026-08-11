@@ -1,8 +1,8 @@
 [
   {
-    "name": "root - full import (NFR-01: measured 5914 B, ceiling 6 kB; +108 B for the ADR-0047 option-key contract, still inside the ceiling)",
+    "name": "root - full import (NFR-01: measured 5864 B, ceiling 6 kB; -50 B in 17.2 from deleting the AbortSignal.timeout fallback the raised floor made dead, ADR-0050)",
     "path": "dist/esm/index.js",
-    "limit": "5.95 kB"
+    "limit": "5.9 kB"
   },
   {
     "name": "/storage - full import (2.15 kB - documented NFR-01 divergence, ADR-0024, amended by ADR-0047: measured 2106 B)",
@@ -572,9 +572,9 @@
     "limit": "1 kB"
   },
   {
-    "name": "single: httpClient (1.4 kB - documented NFR-01 exception, ADR-0015, amended by ADR-0047: measured 1371 B)",
+    "name": "single: httpClient (1.35 kB - documented NFR-01 exception, ADR-0015: measured 1309 B. Amended to 1.4 kB by ADR-0047 for the option-key check, and back to the original figure in 17.2 - the ADR-0050 floor raise paid that cost back with interest)",
     "path": "dist/esm/index.js",
     "import": "{ httpClient }",
-    "limit": "1.4 kB"
+    "limit": "1.35 kB"
   }
 ]

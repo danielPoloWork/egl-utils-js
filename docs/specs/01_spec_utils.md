@@ -5,7 +5,8 @@
 
 ## 1. Objective & Business Context
 
-A universal JavaScript utilities library (Node.js >= 18 and modern evergreen browsers)
+A universal JavaScript utilities library (Node.js >= 22 and modern evergreen browsers —
+raised from >= 18 for the 1.x line in 17.2, [ADR-0050](../adr/0050-the-1x-runtime-floor.md))
 providing async combinators with first-class AbortSignal cancellation, pure data-manipulation
 functions, typed event helpers, and web/crypto/storage utilities — published on npm as
 egl-utils-js with named exports only, dual ESM/CJS via an exports map, zero runtime
@@ -57,6 +58,7 @@ inputs; events, storage, http, and cookie modules are labeled stateful (spec §1
 - NFR-05 validateEmail worst-case linear: 10^6 adversarial inputs each < 1 ms — property test in suite
 - NFR-06 Zero runtime dependencies in the root entry (DOMPurify is peer + subpath only) — package.json audit in CI
 - NFR-07 Portability: Node >= 18 LTS; last 2 evergreen Chromium/Firefox + Safari >= 15.4; one Web Crypto surface via conditional-exports shim; TypeScript >= 5.0 consumers resolve types through the exports map (spec §1.1)
+  - **Amended (roadmap 17.2, [ADR-0050](../adr/0050-the-1x-runtime-floor.md)):** the floor for the **1.x line** is **Node >= 22** and **Safari >= 16.4**. Node 18 left maintenance in April 2025 and Node 20 in April 2026, so the old floor promised two runtimes nobody patches; 22 is the oldest line still in maintenance, and the CI matrix becomes 22 / 24 / 26 (oldest maintained LTS, Active LTS, Current). The Safari figure moves for a different reason: at 15.4 the claim was four and a half years wide and **untestable** — Playwright ships one recent WebKit build, which is what let the `AbortSignal.timeout` defect reach the 7.6 review — so 16.4 narrows the gap between what is promised and what CI can actually verify, and makes `AbortSignal.timeout` native across the matrix (its fallback is deleted here). `AbortSignal.any` stays reimplemented: Safari added it in 17.4. **Breaking by construction**, which is why it lands before 1.0 rather than after.
 
 
 ## 4. Logical Architecture & Core Algorithm
@@ -92,7 +94,7 @@ Consumers import via `import { parallelLimit, retry } from 'egl-utils-js';`. The
 
 ## 6. Verification & Test Strategy
 
-Vitest on a Node 18/20/22 matrix; Playwright browser smoke (Chromium/Firefox/WebKit)
+Vitest on a Node 22/24/26 matrix (18/20/22 until 17.2, ADR-0050); Playwright browser smoke (Chromium/Firefox/WebKit)
 for the storage/cookie/sanitize entries (from M6); fast-check property tests for
 validateEmail ReDoS resistance (NFR-05), deepMerge non-mutation, and the parseDuration
 grammar. Per-PR quality gates: tsc --noEmit (checkJs), ESLint --max-warnings 0,

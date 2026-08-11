@@ -31,9 +31,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-24.04, toolchain: node-18, preset: default }
-          - { os: ubuntu-24.04, toolchain: node-20, preset: default }
           - { os: ubuntu-24.04, toolchain: node-22, preset: default }
+          - { os: ubuntu-24.04, toolchain: node-24, preset: default }
+          - { os: ubuntu-24.04, toolchain: node-26, preset: default }
     steps:
       - name: Check out the source tree
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,7 +42,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: ${{ matrix.toolchain == 'node-18' && '18' || matrix.toolchain == 'node-22' && '22' || '20' }}
+          node-version: ${{ matrix.toolchain == 'node-22' && '22' || matrix.toolchain == 'node-26' && '26' || '24' }}
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -88,7 +88,7 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
       - name: Check package.json version is in lockstep
         run: node tools/sync-version.mjs --check
 
@@ -121,7 +121,7 @@ jobs:
       - uses: pnpm/action-setup@v6
       - name: Set up Node.js
         uses: actions/setup-node@v7
-        with: { node-version: '20', cache: pnpm }
+        with: { node-version: '24', cache: pnpm }
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       # Invoke the package.json scripts so CI and local runs stay congruent
@@ -134,9 +134,9 @@ jobs:
 
   # Publishing gates — validate the built package's exports map, types
   # resolution, bundle budgets, tree-shakeability, and dependency policy
-  # (NFR-01/02/06). Single-job on Node 20: these tools validate the built
-  # artifact (Node-version-independent) and require Node >= 20, while the
-  # library's Node 18 runtime floor is verified by the build/test matrix above.
+  # (NFR-01/02/06). Single-job on the Active LTS: these tools validate the built
+  # artifact (Node-version-independent), while the library's own runtime floor
+  # (Node >= 22, ADR-0050) is verified by the build/test matrix above.
   packaging:
     name: packaging / exports + budgets
     runs-on: ubuntu-24.04
@@ -147,7 +147,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -177,7 +177,7 @@ jobs:
         # Single-job (no matrix): benchmarks run on one Node to keep baselines
         # comparable. The real suite lands with roadmap 7.1.
         with:
-          node-version: '20'
+          node-version: '24'
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -206,7 +206,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
           cache: pnpm
       - name: Install from the lockfile only (fails if it is stale or incomplete)
         run: pnpm install --frozen-lockfile
@@ -214,9 +214,10 @@ jobs:
         run: pnpm audit --audit-level high
 
   # Real-browser verification for the browser-leaning entries (roadmap 6.4,
-  # spec §6). Runs on Node 20 in its own job: @playwright/test requires
-  # Node >= 20, so it must not run on the Node 18 matrix cell, and the browser
-  # download makes this the slowest job in the workflow.
+  # spec §6). Its own job rather than a matrix cell: the browser download makes
+  # this the slowest step in the workflow, and it verifies engines rather than
+  # Node versions. (Until 17.2 it was also kept off the matrix because
+  # @playwright/test needs Node >= 20 and the floor was 18; the floor is now 22.)
   browser:
     name: browser / storage + cookie + sanitize
     runs-on: ubuntu-24.04
@@ -227,7 +228,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

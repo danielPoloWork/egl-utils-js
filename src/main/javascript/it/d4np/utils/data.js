@@ -25,8 +25,8 @@ function uncloneableType(value) {
   if (type === 'function') return 'function';
   if (type === 'symbol') return 'symbol';
   if (value !== null && type === 'object') {
-    // WeakMap/WeakSet/WeakRef are baseline on the support matrix (Node >= 18,
-    // evergreen browsers, Safari >= 15.4 — spec §1.1), so no presence guard.
+    // WeakMap/WeakSet/WeakRef are baseline on the support matrix (Node >= 22,
+    // evergreen browsers, Safari >= 16.4 — spec §1.1), so no presence guard.
     if (value instanceof Promise) return 'Promise';
     if (value instanceof WeakMap) return 'WeakMap';
     if (value instanceof WeakSet) return 'WeakSet';

@@ -22,39 +22,27 @@ updates:
     # and was reverted (PR #34, and again here); without these rules Dependabot
     # re-proposes them every week and a routine merge silently breaks `main`.
     # Removing an entry is a real decision: re-verify the reason first, and
-    # expect to update the toolchain alongside it.
+    # expect to update the toolchain alongside it. Four were removed in 17.2
+    # (`eslint`, `@eslint/js`, `vitest`, `@vitest/coverage-v8`, `jsdom`) because
+    # their sole objection was the Node 18 floor, which ADR-0050 raised to 22.
     ignore:
-      # eslint >= 10 requires Node >= 20.19, dropping the Node 18 floor the CI
-      # matrix and `engines` both declare (spec §1.1, NFR-07). See PR #8.
-      - dependency-name: "eslint"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@eslint/js"
-        update-types: ["version-update:semver-major"]
       # TypeScript 7 is the native port; tsup's dts pipeline
       # (rollup-plugin-dts) crashes on it, emitting no .d.ts at all. The spec
       # floor is TS >= 5.0. See PR #11.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
-      # @types/node must match the OLDEST supported runtime (Node 18), or
-      # `tsc --noEmit` type-checks against APIs the floor does not have.
+      # @types/node must match the OLDEST supported runtime (Node 22 since 17.2,
+      # ADR-0050), or `tsc --noEmit` type-checks against APIs the floor lacks.
+      # The rule survives the floor raise; the version it points at moved.
       - dependency-name: "@types/node"
-        update-types: ["version-update:semver-major"]
-      # pnpm 11 requires Node >= 22.13; vitest 4 requires Node >= 20.12 — both
-      # break the Node 18 cell. See PR #6 and PR #7.
-      - dependency-name: "vitest"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@vitest/coverage-v8"
-        update-types: ["version-update:semver-major"]
-      # jsdom >= 27 requires Node >= 20, dropping the Node 18 floor. Needed by
-      # the /sanitize test suites (roadmap 6.3). See ADR-0012.
-      - dependency-name: "jsdom"
         update-types: ["version-update:semver-major"]
       # NFR-04 benchmark baselines (ADR-0013). These are pinned EXACTLY on
       # purpose: the nightly regression gate compares against them, so a
       # baseline that moves on its own invalidates every stored measurement.
       # Changing one is a deliberate re-baselining decision (regenerate
       # docs/benchmarks/baseline.json in the same PR), never a routine merge.
-      # p-limit >= 7 and p-retry >= 7 additionally drop the Node 18 floor.
+      # (Their Node-floor objection lapsed with 17.2; the baseline one is why
+      # they are still here.)
       - dependency-name: "lodash"
       - dependency-name: "p-limit"
       - dependency-name: "p-retry"

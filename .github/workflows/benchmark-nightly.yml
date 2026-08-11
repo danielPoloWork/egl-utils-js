@@ -47,7 +47,7 @@ jobs:
         # One Node version, matching the `benchmark` job in ci.yml: baselines
         # are only comparable when the runtime is held constant.
         with:
-          node-version: '20'
+          node-version: '24'
           cache: pnpm
       - name: Install dependencies
         # --frozen-lockfile matters here beyond hygiene: the NFR-04 baselines

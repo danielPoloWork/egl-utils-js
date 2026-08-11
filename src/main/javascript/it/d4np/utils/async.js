@@ -54,9 +54,11 @@ function jitteredBackoff(attempt, minDelay, maxDelay) {
 /**
  * Merge abort signals into one that aborts with the first reason.
  *
- * Internal stand-in for `AbortSignal.any`, which is unavailable on the
- * Node 18 runtime floor (ADR-0004); `cleanup` detaches the merge listeners
- * so settled combinators do not leak listeners on long-lived caller signals.
+ * Internal stand-in for `AbortSignal.any`. Written for the Node 18 floor
+ * (ADR-0004) and kept on the 1.x one for the other half of the matrix: Safari
+ * added the static only in 17.4, above the 16.4 floor (ADR-0050). `cleanup`
+ * detaches the merge listeners so settled combinators do not leak listeners on
+ * long-lived caller signals.
  *
  * @param {AbortSignal[]} signals
  * @returns {{ signal: AbortSignal, cleanup: () => void }}
@@ -82,44 +84,6 @@ function anySignal(signals) {
       for (const detach of detachers) detach();
     },
   };
-}
-
-/**
- * A signal that aborts after `ms`, standing in for `AbortSignal.timeout`.
- *
- * Internal fallback for the same reason {@link anySignal} exists: the platform
- * static is not available across the whole supported matrix. `AbortSignal.any`
- * is missing on the Node 18 floor; `AbortSignal.timeout` is missing on the
- * **Safari 15.4 floor** — it landed in Safari 16.0, while spec §3 NFR-07
- * declares Safari >= 15.4 supported. Calling it unconditionally made
- * `timeout` (and `httpClient`, which composes it) throw
- * `TypeError: AbortSignal.timeout is not a function` on Safari 15.4–15.6,
- * i.e. two public functions broken on a browser the spec promises. Found by
- * the roadmap 7.6 release-readiness review.
- *
- * The reason mirrors the platform's: a `TimeoutError` DOMException, so
- * `timeout`'s own `TimeoutError` mapping is unchanged either way. The timer is
- * `unref`'d where the runtime supports it so a pending fallback timer cannot
- * hold a Node process open.
- *
- * @param {number} ms
- * @returns {AbortSignal}
- */
-function timeoutSignalFor(ms) {
-  if (typeof AbortSignal.timeout === 'function') {
-    return AbortSignal.timeout(ms);
-  }
-  const controller = new AbortController();
-  const timer = setTimeout(() => {
-    // `DOMException` is global on Node >= 17 and in every browser in the
-    // NFR-07 matrix, so no guard is needed — a `typeof` check here would be a
-    // dead branch, and this project removes those rather than mock-covering
-    // them to hold 100% coverage honestly.
-    controller.abort(new DOMException('The operation timed out.', 'TimeoutError'));
-  }, ms);
-  // Node exposes unref on its Timeout object; browsers return a number.
-  /** @type {any} */ (timer)?.unref?.();
-  return controller.signal;
 }
 
 /**
@@ -156,9 +120,10 @@ export function delay(ms, { signal, ...unknown } = {}) {
 /**
  * Enforce a time budget on an operation (spec §2 item 2).
  *
- * Built on `AbortSignal.timeout`, with an internal fallback where that static
- * is unavailable (Safari 15.4–15.6 — see `timeoutSignalFor`), so the whole
- * NFR-07 support matrix is covered. Pass the operation as a **task function**
+ * Built on `AbortSignal.timeout`, called directly: the 1.x runtime floor
+ * (Node >= 22, Safari >= 16.4 — spec §3 NFR-07, ADR-0050) has it everywhere, so
+ * the hand-rolled fallback the 7.6 review added for Safari 15.4 is gone. Pass the
+ * operation as a **task function**
  * `(signal) => promise` and it receives a signal that aborts on timeout or
  * caller cancellation — so the underlying work can actually stop, not just
  * be abandoned. A bare promise is also accepted, but since it is already in
@@ -187,7 +152,9 @@ export function timeout(input, ms, { signal, ...unknown } = {}) {
     return Promise.reject(abortErrorFrom(signal));
   }
 
-  const timeoutSignal = timeoutSignalFor(ms);
+  // Node unrefs the timer behind this static, so a pending budget cannot hold a
+  // process open — the property the removed fallback had to reproduce by hand.
+  const timeoutSignal = AbortSignal.timeout(ms);
   const merged = signal
     ? anySignal([signal, timeoutSignal])
     : { signal: timeoutSignal, cleanup: () => {} };
