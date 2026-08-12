@@ -48,6 +48,12 @@ export { EventEmitter, debounce, throttle } from './events.js';
 // composes any compatible client by injection (ADR-0025).
 export { httpClient, urlSearchParams, createResource } from './web.js';
 
+// URL query-string merge (spec 03 F48) — pure and SSR-safe, so it belongs
+// beside urlSearchParams rather than behind the browser-leaning /dom entry it
+// shipped on; re-exported here per ADR-0052, which also deprecates the /dom
+// binding without removing it.
+export { withUrlParams } from './dom-fragment.js';
+
 // Crypto utilities (spec §2 items 18–19) — Web Crypto only via the #webcrypto
 // conditional-import shim; Math.random is never a fallback (ADR-0008).
 export { uuid, hashString } from './crypto.js';
