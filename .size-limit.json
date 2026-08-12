@@ -1,8 +1,8 @@
 [
   {
-    "name": "root - full import (NFR-01: measured 6002 B, ceiling amended to 6.05 kB by ADR-0052; +138 B for the withUrlParams re-export, roadmap 17.10)",
+    "name": "root - full import (NFR-01: measured 6072 B, ceiling amended to 6.1 kB by ADR-0053; +138 B for withUrlParams (17.10, ADR-0052) then +70 B for DomContractError/PeerMissingError (17.12, ADR-0053))",
     "path": "dist/esm/index.js",
-    "limit": "6.05 kB"
+    "limit": "6.1 kB"
   },
   {
     "name": "/storage - full import (2.15 kB - documented NFR-01 divergence, ADR-0024, amended by ADR-0047: measured 2106 B)",

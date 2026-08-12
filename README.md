@@ -615,7 +615,9 @@ forge a log entry (log injection).
 ### Errors (`egl-utils-js/errors`)
 
 One base class, one stable `.code` per subtype — check identity via `.code`, never
-cross-realm `instanceof` (ADR-0003).
+cross-realm `instanceof` (ADR-0003). Every class here, including `DomContractError` and
+`PeerMissingError` from the `/dom` and `/bootstrap` waves, is also importable from the root
+(ADR-0053) — one place to import from regardless of which entry threw.
 
 ```js
 import { EglError, TimeoutError, RetryExhaustedError, HttpError } from 'egl-utils-js/errors';

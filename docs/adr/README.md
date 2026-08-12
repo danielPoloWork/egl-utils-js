@@ -68,3 +68,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0050](0050-the-1x-runtime-floor.md) | The 1.x runtime floor — Node 22, Safari 16.4 | Accepted |
 | [0051](0051-the-sanitizer-s-peer-range.md) | The sanitizer's peer range is compatibility, not security | Accepted |
 | [0052](0052-withurlparams-moves-to-the-root.md) | `withUrlParams` is also a root export | Accepted |
+| [0053](0053-the-full-taxonomy-reaches-the-root.md) | The whole error taxonomy reaches the root, and spec 01 §5 says what it covers | Accepted |
