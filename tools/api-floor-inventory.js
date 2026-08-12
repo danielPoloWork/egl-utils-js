@@ -74,7 +74,7 @@ export const GLOBALS = {
     guardReason: 'context',
     bcd: 'api.crypto',
     guarded:
-      'the #webcrypto shims resolve globalThis.crypto, with the node shim falling back to node:crypto webcrypto (ADR-0008). The global landed in Node 19, so that fallback now covers only runtimes below the 1.x floor — kept as graceful behaviour rather than deleted, and collapsing the shim is roadmap 17.14',
+      'webcrypto.js reads globalThis.crypto once, as the single surface the crypto group draws entropy through, and `undefined` is a legal value there: uuid/hashString throw naming the missing surface rather than degrading to Math.random (F18, ADR-0054). The global is within the 1.x matrix — Node 19, Safari 11 — so this is no longer a floor fallback but the exotic-runtime case; 17.14 deleted the node:crypto shim the Node 18 floor needed',
   },
   document: {
     guardReason: 'context',

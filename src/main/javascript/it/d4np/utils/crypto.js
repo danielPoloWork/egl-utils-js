@@ -2,16 +2,17 @@
  * egl-utils-js — crypto utilities (spec §2 items 18–19, pure by contract).
  *
  * This module is a security surface: it produces identifiers whose
- * unpredictability callers may rely on. Its contract (ADR-0008) is
- * **Web Crypto only** — entropy comes from the platform's CSPRNG through the
- * `#webcrypto` conditional-import shim (one surface across Node and
- * browsers, NFR-07), and `Math.random` is never an acceptable fallback: if
- * no Web Crypto surface exists, the functions throw instead of degrading.
+ * unpredictability callers may rely on. Its contract (ADR-0008, amended by
+ * ADR-0054) is **Web Crypto only** — entropy comes from the platform's CSPRNG
+ * through the single {@link module:egl-utils-js/webcrypto} surface (one symbol
+ * across Node and browsers, NFR-07), and `Math.random` is never an acceptable
+ * fallback: if no Web Crypto surface exists, the functions throw instead of
+ * degrading.
  *
  * @module egl-utils-js/crypto
  */
 
-import { cryptoSurface } from '#webcrypto';
+import { cryptoSurface } from './webcrypto.js';
 
 /**
  * Generate a random RFC 4122 version-4 UUID (spec §2 item 18, ADR-0008).

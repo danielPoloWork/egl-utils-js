@@ -79,12 +79,14 @@ describe('hashString — contract', () => {
   });
 });
 
-describe('hashString — surface matrix (controlled #webcrypto)', () => {
+const WEBCRYPTO = '../../../../../main/javascript/it/d4np/utils/webcrypto.js';
+
+describe('hashString — surface matrix (controlled webcrypto module)', () => {
   beforeEach(() => {
     vi.resetModules();
   });
   afterEach(() => {
-    vi.doUnmock('#webcrypto');
+    vi.doUnmock(WEBCRYPTO);
     vi.resetModules();
   });
 
@@ -93,7 +95,7 @@ describe('hashString — surface matrix (controlled #webcrypto)', () => {
    * @returns {Promise<typeof hashString>}
    */
   async function hashStringWithSurface(surface) {
-    vi.doMock('#webcrypto', () => ({ cryptoSurface: surface }));
+    vi.doMock(WEBCRYPTO, () => ({ cryptoSurface: surface }));
     const mod = await import('../../../../../main/javascript/it/d4np/utils/crypto.js');
     return mod.hashString;
   }

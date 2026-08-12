@@ -23,7 +23,7 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0005](0005-validate-email-linear-scan.md) | validateEmail — a hand-rolled linear scan, no regex | Accepted |
 | [0006](0006-typed-event-emitter-contract.md) | Typed EventEmitter — single-payload maps and non-silent isolation | Accepted |
 | [0007](0007-http-client-facade-contract.md) | httpClient — a fetch facade with a no-token-storage auth contract | Accepted |
-| [0008](0008-one-webcrypto-surface-conditional-exports.md) | One Web Crypto surface via conditional exports — never Math.random | Accepted |
+| [0008](0008-one-webcrypto-surface-conditional-exports.md) | One Web Crypto surface via conditional exports — never Math.random | Superseded by ADR-0054 |
 | [0009](0009-parse-duration-grammar.md) | parseDuration — a strict, ordered h/m/s grammar, no calendar units | Accepted |
 | [0010](0010-storage-in-memory-fallback-contract.md) | Storage wrappers — silent in-memory fallback, quota as StorageError | Accepted |
 | [0011](0011-cookie-helper-security-defaults.md) | cookieHelper — secure-by-default attributes, encoded values, no HttpOnly claim | Accepted |
@@ -69,3 +69,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0051](0051-the-sanitizer-s-peer-range.md) | The sanitizer's peer range is compatibility, not security | Accepted |
 | [0052](0052-withurlparams-moves-to-the-root.md) | `withUrlParams` is also a root export | Accepted |
 | [0053](0053-the-full-taxonomy-reaches-the-root.md) | The whole error taxonomy reaches the root, and spec 01 §5 says what it covers | Accepted |
+| [0054](0054-one-web-crypto-surface-without-the-conditions.md) | One Web Crypto surface, without the conditions — and two builds instead of four | Accepted |

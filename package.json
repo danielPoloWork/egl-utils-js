@@ -27,28 +27,10 @@
   "packageManager": "pnpm@10.34.5",
   "sideEffects": false,
   "files": [
-    "dist",
-    "src/main/javascript/it/d4np/utils/webcrypto-node.js",
-    "src/main/javascript/it/d4np/utils/webcrypto-browser.js"
+    "dist"
   ],
-  "imports": {
-    "#webcrypto": {
-      "node": "./src/main/javascript/it/d4np/utils/webcrypto-node.js",
-      "default": "./src/main/javascript/it/d4np/utils/webcrypto-browser.js"
-    }
-  },
   "exports": {
     ".": {
-      "node": {
-        "import": {
-          "types": "./dist/node/esm/index.d.ts",
-          "default": "./dist/node/esm/index.js"
-        },
-        "require": {
-          "types": "./dist/node/cjs/index.d.cts",
-          "default": "./dist/node/cjs/index.cjs"
-        }
-      },
       "import": {
         "types": "./dist/esm/index.d.ts",
         "default": "./dist/esm/index.js"
