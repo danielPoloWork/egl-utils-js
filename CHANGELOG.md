@@ -30,6 +30,21 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Removed
 
+- **The exports map's `node` condition and the `dist/node` build pair are gone**
+  ([ADR-0054](docs/adr/0054-one-web-crypto-surface-without-the-conditions.md), roadmap 17.14,
+  superseding [ADR-0008](docs/adr/0008-one-webcrypto-surface-conditional-exports.md)). They
+  existed to keep a `node:crypto` import — needed only because Node 18 lacked
+  `globalThis.crypto` — out of browser bundles. The 1.x floor is Node >= 22, so the two
+  `#webcrypto` shims had reduced to the same line and the condition chose between identical
+  files. Now one plain module reads `globalThis.crypto`, the `imports` field is gone, and the
+  published tarball drops two of the root entry's four builds plus two source files from
+  `files`. **Public API and behaviour are unchanged** — a Node consumer resolves
+  `dist/esm/index.js` instead of `dist/node/esm/index.js`, and the two were already
+  behaviourally identical. One Web Crypto surface and never `Math.random` (F18) are
+  unchanged; only the wiring below them moved.
+  - Verification payoff: agadoo and the size budgets already gate the neutral artifact, so
+    **what CI measures is now what every consumer gets**. The node pair was exempt from the
+    shakeability gate by design.
 - **BREAKING — the supported-runtime floor for the 1.x line is now Node >= 22 and
   Safari >= 16.4** ([ADR-0050](docs/adr/0050-the-1x-runtime-floor.md), roadmap 17.2). Node 18
   left maintenance in April 2025 and Node 20 in April 2026, so the old `>= 18` floor promised

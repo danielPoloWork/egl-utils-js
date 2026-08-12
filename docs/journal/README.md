@@ -19,6 +19,9 @@ _(newest first)_
 
 #### August
 
+- [2026-08-12 — The `#webcrypto` shim collapses (roadmap 17.14)](2026/08/2026-08-12-webcrypto-shim-collapse.md)
+- [2026-08-12 — The full error taxonomy reaches the root (roadmap 17.12)](2026/08/2026-08-12-error-taxonomy-root-export.md)
+- [2026-08-12 — `withUrlParams` moves to the root (roadmap 17.10)](2026/08/2026-08-12-withurlparams-root-export.md)
 - [2026-08-11 — The sanitizer's peer range (roadmap 17.11)](2026/08/2026-08-11-dompurify-peer-floor.md)
 - [2026-08-11 — The 1.x runtime floor (roadmap 17.2)](2026/08/2026-08-11-runtime-floor.md)
 - [2026-08-10 — Commands throw, queries answer (roadmap 17.9)](2026/08/2026-08-10-instance-contract.md)

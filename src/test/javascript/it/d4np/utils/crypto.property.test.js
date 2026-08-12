@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fc from 'fast-check';
 import { uuid, hashString } from '../../../../../main/javascript/it/d4np/utils/crypto.js';
-import { cryptoSurface } from '../../../../../main/javascript/it/d4np/utils/webcrypto-node.js';
+import { cryptoSurface } from '../../../../../main/javascript/it/d4np/utils/webcrypto.js';
+
+const WEBCRYPTO = '../../../../../main/javascript/it/d4np/utils/webcrypto.js';
 
 // Property suite (roadmap 2.6 template) for the crypto module (spec §2
 // items 18–19).
@@ -26,7 +28,7 @@ describe('uuid — fallback assembly law (controlled bytes)', () => {
     vi.resetModules();
   });
   afterEach(() => {
-    vi.doUnmock('#webcrypto');
+    vi.doUnmock(WEBCRYPTO);
     vi.resetModules();
   });
 
@@ -34,7 +36,7 @@ describe('uuid — fallback assembly law (controlled bytes)', () => {
   // bytes in lowercase hex with byte 6 forced to (b & 0x0f) | 0x40 and byte 8
   // to (b & 0x3f) | 0x80 — nothing else altered, nothing reordered.
   it('preserves all entropy bytes except the forced version/variant bits', async () => {
-    vi.doMock('#webcrypto', () => {
+    vi.doMock(WEBCRYPTO, () => {
       /** @type {Uint8Array} */
       let nextBytes = new Uint8Array(16);
       return {
@@ -50,13 +52,12 @@ describe('uuid — fallback assembly law (controlled bytes)', () => {
       };
     });
     const mod = await import('../../../../../main/javascript/it/d4np/utils/crypto.js');
-    const shim = /** @type {any} */ (
-      await import('../../../../../main/javascript/it/d4np/utils/webcrypto-browser.js')
-    );
-    // The mock replaced the module #webcrypto resolves to; grab its setter
-    // through a fresh import of the same specifier crypto.js used.
-    const mocked = /** @type {any} */ (await import('#webcrypto'));
-    expect(shim).not.toBe(mocked); // sanity: the mock is in effect
+    // Grab the mock's setter through a fresh import of the same module
+    // crypto.js reads its surface from.
+    const mocked = /** @type {any} */ (await import(WEBCRYPTO));
+    // Sanity: the mock is in effect, not the real surface.
+    expect(mocked.cryptoSurface).not.toBe(cryptoSurface);
+    expect(typeof mocked.__setNextBytes).toBe('function');
 
     await fc.assert(
       fc.asyncProperty(fc.uint8Array({ minLength: 16, maxLength: 16 }), async (bytes) => {
@@ -107,9 +108,10 @@ describe('hashString — digest laws (spec §2 item 19)', () => {
   it('matches a direct subtle.digest oracle for any unicode string', async () => {
     await fc.assert(
       fc.asyncProperty(fc.string({ unit: 'binary' }), async (input) => {
-        // Oracle over the node shim's surface, which is what the module under
-        // test resolves `#webcrypto` to on Node. (Until 17.2 this also covered
-        // the Node 18 cell, where `globalThis.crypto` did not exist at all.)
+        // Oracle over the same single surface the module under test reads
+        // (ADR-0054). Until 17.2 this was the node shim specifically, because
+        // the Node 18 cell had no `globalThis.crypto` at all; the 1.x floor
+        // removed both the cell and the shim.
         const digest = await cryptoSurface.subtle.digest(
           'SHA-256',
           new TextEncoder().encode(input),

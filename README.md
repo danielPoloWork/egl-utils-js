@@ -186,7 +186,9 @@ await users.remove(42, { timeout: 5_000 }); //DELETE users/42 — per-call optio
 
 ### Crypto (`egl-utils-js`)
 
-Web Crypto only — `Math.random` is never used, even as a fallback (ADR-0008).
+Web Crypto only — `Math.random` is never used, even as a fallback (ADR-0008). Entropy enters
+through a single `globalThis.crypto` surface shared by Node and browsers (ADR-0054); a runtime
+without Web Crypto gets a `TypeError`, never a predictable identifier.
 
 ```js
 import { uuid, hashString } from 'egl-utils-js';

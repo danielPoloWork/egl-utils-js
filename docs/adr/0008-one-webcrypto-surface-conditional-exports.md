@@ -1,8 +1,18 @@
 # ADR-0008: One Web Crypto surface via conditional exports — never Math.random
 
-- **Status:** Accepted
+- **Status:** **Superseded** by [ADR-0054](0054-one-web-crypto-surface-without-the-conditions.md) (2026-08-12, roadmap 17.14)
 - **Date:** 2026-07-24
 - **Roadmap:** 5.3 (spec §2 item 18, NFR-07)
+
+> **Superseded in mechanism, not in principle.** The two decisions this ADR is remembered for
+> hold unchanged: **one Web Crypto surface** for the whole library, and **never
+> `Math.random`** — `uuid()` throws rather than degrading (F18). What ADR-0054 removes is the
+> machinery below: the two-file `#webcrypto` conditional import, the `dist/node` build pair,
+> and the exports map's `node` condition. All three existed to keep a `node:crypto` import —
+> needed only because Node 18 lacked `globalThis.crypto` — out of browser bundles. The 1.x
+> floor is Node >= 22 (ADR-0050), so the two shims had reduced to the same single line and
+> the condition was choosing between identical files. Read this ADR for *why the surface is
+> single and Web-Crypto-only*; read ADR-0054 for *how it is wired today*.
 
 ## Context
 

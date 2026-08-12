@@ -28,21 +28,16 @@ const shared = {
   dts: true,
 };
 
-// The root entry is additionally built per platform (ADR-0008): the neutral
-// build above resolves `#webcrypto` to the browser shim (`default` condition
-// of package.json `imports`) and stays free of `node:` built-ins — the file
-// agadoo/size-limit gate (NFR-01/02); the node build resolves the `node`
-// condition (globalThis.crypto ?? node:crypto webcrypto, covering the Node 18
-// floor) and is served through the exports map's `node` condition.
-const nodeRootEntry = {
-  entry: { index: 'src/main/javascript/it/d4np/utils/index.js' },
-  platform: 'node',
-  target: 'es2022',
-  sourcemap: true,
-  clean: true,
-  dts: true,
-};
-
+// Two builds, not four. The root entry had a second, `platform: 'node'` pair
+// (dist/node/{esm,cjs}) served through the exports map's `node` condition,
+// because ADR-0008's node-side `#webcrypto` shim imported `node:crypto` for the
+// Node 18 floor and that import must never reach a browser bundle. The 1.x
+// floor is Node >= 22 (ADR-0050) and `globalThis.crypto` has been unflagged
+// since Node 19, so the shim collapsed to one platform-neutral module and both
+// node builds lost their reason to exist (ADR-0054, roadmap 17.14). The neutral
+// pair below now serves every runtime — and it is the pair agadoo and
+// size-limit already gate (NFR-01/02), so what CI measures is what every
+// consumer gets.
 export default defineConfig([
   {
     ...shared,
@@ -54,17 +49,6 @@ export default defineConfig([
     format: 'cjs',
     outDir: 'dist/cjs',
     // package.json is "type": "module", so CommonJS artifacts must be .cjs/.d.cts.
-    outExtension: () => ({ js: '.cjs' }),
-  },
-  {
-    ...nodeRootEntry,
-    format: 'esm',
-    outDir: 'dist/node/esm',
-  },
-  {
-    ...nodeRootEntry,
-    format: 'cjs',
-    outDir: 'dist/node/cjs',
     outExtension: () => ({ js: '.cjs' }),
   },
 ]);
