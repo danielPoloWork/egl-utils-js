@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import fc from 'fast-check';
+import DOMPurify from 'dompurify';
 import { sanitizeHtml } from '../../../../../main/javascript/it/d4np/utils/sanitize.js';
+
+// The peer reaches the module ambiently, as on a script-tag page (ADR-0055).
+beforeAll(() => {
+  /** @type {any} */ (globalThis).DOMPurify = DOMPurify;
+});
 
 // Property suite (roadmap 2.6 template) for sanitizeHtml (spec §2 item 24,
 // ADR-003/ADR-0012). Runs in jsdom so the real browser code path is exercised.

@@ -40,6 +40,7 @@ inputs; events, storage, http, and cookie modules are labeled stateful (spec §1
 - F22 sessionStorageWrapper — same contract over sessionStorage
 - F23 cookieHelper — document.cookie read/write/delete with Secure/SameSite/Max-Age/Path; browser-only (warns and no-ops in Node); no HttpOnly claims
 - F24 sanitizeHtml(html, opts?) — allowlist-based, delegates to DOMPurify (optional peer) on the egl-utils-js/sanitize subpath with a curated default profile (ADR-003)
+  - **Amended (roadmap 17.6, [ADR-0055](../adr/0055-the-sanitizer-s-peer-is-looked-up.md)):** the peer is **looked up, not imported** — `options.dompurify`, then `globalThis.DOMPurify`, then `EGL_PEER_MISSING` naming `dompurify` at the call that needed it. The entry therefore carries no bare specifier and loads on a page with no bundler and no import map (spec 05 F82), where the previous static `import 'dompurify'` died before any typed error could speak. **Breaking for bundler consumers**, who now inject the module once or per call; that is why it lands pre-1.0. The curated profile itself (ADR-0012) is unchanged.
 - F25 parseDuration(str) — '2h'|'30m'|'5s'|'1h30m' to milliseconds; invalid input throws DurationParseError (never NaN)
 
 

@@ -12,6 +12,22 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Security
 
+- **BREAKING — `/sanitize` looks DOMPurify up instead of importing it**
+  ([ADR-0055](docs/adr/0055-the-sanitizer-s-peer-is-looked-up.md), roadmap 17.6).
+  `sanitizeHtml` resolves `options.dompurify`, then `globalThis.DOMPurify`, and throws
+  `PeerMissingError` (`EGL_PEER_MISSING`, `.peer === 'dompurify'`) when neither is reachable.
+  The entry now carries **no bare specifier**, so it loads on a plain HTML page with no bundler
+  and no import map — where `import createDOMPurify from 'dompurify'` died at module load,
+  before any typed error could speak (spec 05 F82). This is `/bootstrap`'s existing contract
+  (ADR-0041), so the library has one peer mechanism rather than two.
+  - **Bundler consumers must supply the module**: one option per call, or one binding —
+    `const clean = (html) => sanitizeHtml(html, { dompurify: DOMPurify });`
+  - Stated rather than buried: a missing peer used to fail the **build** and now fails at the
+    first sanitize call. The failure stays loud and typed — absence never degrades to a
+    pass-through of unsanitized HTML, and a module that is neither a factory nor a bound
+    sanitizer is a `TypeError` naming the shape, never a silent no-op sanitizer.
+  - Fixed alongside it: a bound DOMPurify instance passed together with `window` hit the
+    factory branch and threw `purify is not a function`. Both module shapes are now accepted.
 - **BREAKING — the `dompurify` peer range is now `^3.4.13`**, raised from `^3`
   ([ADR-0051](docs/adr/0051-the-sanitizer-s-peer-range.md), roadmap 17.11). 3.4.13 is the first
   release without [GHSA-55q2-fjhq-7xh7](https://github.com/advisories/GHSA-55q2-fjhq-7xh7), so

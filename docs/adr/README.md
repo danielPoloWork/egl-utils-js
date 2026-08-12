@@ -27,7 +27,7 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0009](0009-parse-duration-grammar.md) | parseDuration — a strict, ordered h/m/s grammar, no calendar units | Accepted |
 | [0010](0010-storage-in-memory-fallback-contract.md) | Storage wrappers — silent in-memory fallback, quota as StorageError | Accepted |
 | [0011](0011-cookie-helper-security-defaults.md) | cookieHelper — secure-by-default attributes, encoded values, no HttpOnly claim | Accepted |
-| [0012](0012-sanitize-default-profile.md) | The curated sanitize profile — deny-by-default, and how DOMPurify is reached | Accepted |
+| [0012](0012-sanitize-default-profile.md) | The curated sanitize profile — deny-by-default, and how DOMPurify is reached | Accepted (peer reach superseded by ADR-0055) |
 | [0013](0013-benchmark-fair-comparison-methodology.md) | Benchmark methodology — what counts as a fair comparison, and what we refuse to compare | Accepted |
 | [0014](0014-nightly-regression-gate-design.md) | The nightly NFR-04 gate — enforce a parity floor, not a diff against history | Accepted |
 | [0015](0015-final-size-budgets-and-the-httpclient-exception.md) | Final size budgets, and the one per-function budget composition cannot meet | Accepted |
@@ -70,3 +70,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0052](0052-withurlparams-moves-to-the-root.md) | `withUrlParams` is also a root export | Accepted |
 | [0053](0053-the-full-taxonomy-reaches-the-root.md) | The whole error taxonomy reaches the root, and spec 01 §5 says what it covers | Accepted |
 | [0054](0054-one-web-crypto-surface-without-the-conditions.md) | One Web Crypto surface, without the conditions — and two builds instead of four | Accepted |
+| [0055](0055-the-sanitizer-s-peer-is-looked-up.md) | The sanitizer's peer is looked up, not imported — one contract for both peers | Accepted |
