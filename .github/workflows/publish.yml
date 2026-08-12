@@ -57,7 +57,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Supply-chain audit
-        run: pnpm audit --audit-level high
+        run: pnpm audit --audit-level moderate
 
       # The full quality bar runs again here rather than trusting the green on
       # the merge commit: publishing is irreversible, so it re-earns its pass

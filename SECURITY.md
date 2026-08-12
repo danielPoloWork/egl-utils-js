@@ -37,8 +37,21 @@ in an incident:
 - **Browser-first.** In Node.js, `sanitizeHtml` requires an explicit DOM (pass a `jsdom`
   window via `options.window`); without one it throws rather than silently no-op'ing.
 - **DOMPurify version currency is the operator's responsibility.** The security guarantee
-  is "DOMPurify `^3` + this profile" — keeping the peer dependency updated is part of using
-  this function safely, the same as any other security-relevant dependency.
+  is "DOMPurify within the declared peer range + this profile" — keeping the peer dependency
+  updated is part of using this function safely, the same as any other security-relevant
+  dependency. The range is **`^3.4.13`** (raised from `^3` in 17.11,
+  [ADR-0051](docs/adr/0051-the-sanitizer-s-peer-range.md)): 3.4.13 is the first release
+  without [GHSA-55q2-fjhq-7xh7](https://github.com/advisories/GHSA-55q2-fjhq-7xh7), so the
+  range excludes every version known-vulnerable when 1.0 froze it.
+
+  **What that range is, and is not.** It is a *compatibility* statement, not a security
+  mechanism. It cannot be a security mechanism, because raising a peer floor is a breaking
+  change and this library will not ship a major per advisory — so an advisory published
+  *after* 1.0 is yours to patch, and you can, because you own the dependency. That is what a
+  peer dependency is for. What this project does on its side: the CI audit gate runs at
+  `--audit-level moderate` (17.11) precisely so a finding on this peer is visible here too,
+  since a DOMPurify advisory is the one that might mean `sanitizeHtml`'s own configuration
+  needs to change.
 
 The bypass-corpus regression suite (`src/test/fixtures/sanitize-bypass-corpus.js`, roadmap
 6.5) validates the default profile against documented mXSS and sanitizer-bypass technique

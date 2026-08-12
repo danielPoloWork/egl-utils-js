@@ -73,3 +73,13 @@ A threat that survives analysis lands in the audit **risk register** with its se
 same record shape the audit phase emits. A confirmed, reproducible defect additionally becomes a
 [bug-ledger](../bugs/README.md) record; a vulnerability needing coordinated disclosure becomes a
 **draft** advisory the human publishes.
+
+### Standing risk: the delegated sanitizer's version
+
+| Severity | Component | Realistic impact | Mitigation |
+|---|---|---|---|
+| medium | `sanitizeHtml` (`egl-utils-js/sanitize`) | The library delegates sanitization to DOMPurify (ADR-0012), so a bypass in the peer is a bypass in every `{html: true, sanitize: sanitizeHtml}` call the host makes. The version installed is the consumer's choice, not ours | Two-part, and deliberately not one part ([ADR-0051](../adr/0051-the-sanitizer-s-peer-range.md)). The **declared peer range** (`^3.4.13`) excludes every version known vulnerable when 1.0 froze it — a one-time act, because raising a peer floor is breaking and this project will not ship a major per advisory. Everything after that is the **consumer's to patch**, which they can, because they own the dependency; `SECURITY.md` states it where they read it. On this side, the CI audit gate runs at `--audit-level moderate` so a DOMPurify advisory is visible *here* too — it is the one finding in this tree that can mean `sanitizeHtml`'s own configuration (its pinned `IN_PLACE: false`, `RETURN_DOM: false`, allowlist) needs to change |
+
+Recorded as a standing risk rather than closed: it has no end state. The boundary itself is
+unchanged — the sanitizer is still a caller-supplied parameter everywhere but this entry — so
+what is new is the *policy* about the peer's version, not a new untrusted input.
