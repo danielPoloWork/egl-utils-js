@@ -55,6 +55,10 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   on `egl-utils-js/dom`, which is kept for compatibility, but it is pure and SSR-safe and
   belongs beside its sibling `urlSearchParams`. The root full-import budget (NFR-01) is
   amended from 6 kB to **6.05 kB** to fit it — the aggregate's first-ever increase.
+- `DomContractError` and `PeerMissingError` are now also exported from the root entry
+  ([ADR-0053](docs/adr/0053-the-full-taxonomy-reaches-the-root.md), roadmap 17.12),
+  completing the taxonomy re-export ADR-0003 already promised. The root full-import budget
+  (NFR-01) is amended a second time this milestone, from 6.05 kB to **6.1 kB**.
 
 ### Changed
 

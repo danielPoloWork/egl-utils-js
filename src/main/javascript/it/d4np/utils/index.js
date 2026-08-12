@@ -19,7 +19,11 @@
  */
 
 // Shared typed error classes (spec §3, ADR-0003) — importable from the root
-// and from 'egl-utils-js/errors' alike.
+// and from 'egl-utils-js/errors' alike. The full taxonomy, including the
+// classes /dom (F43) and /bootstrap (F68) added after spec 01 froze: a
+// consumer catches any egl-utils-js error from one place, per ADR-0003 and
+// ADR-0053, without a second import for a class it only ever narrows on
+// `.code` (roadmap 17.12).
 export {
   EglError,
   TimeoutError,
@@ -29,6 +33,8 @@ export {
   CloneError,
   StorageError,
   DurationParseError,
+  DomContractError,
+  PeerMissingError,
 } from './errors.js';
 
 // Async combinators (spec §2 items 1–5), signal-first per ADR-0004.

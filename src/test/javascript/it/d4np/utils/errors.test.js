@@ -9,6 +9,7 @@ import {
   StorageError,
   DurationParseError,
 } from '../../../../../main/javascript/it/d4np/utils/errors.js';
+import * as errorsEntry from '../../../../../main/javascript/it/d4np/utils/errors.js';
 import * as rootEntry from '../../../../../main/javascript/it/d4np/utils/index.js';
 
 /** Every concrete class with its frozen public code (ADR-0003). */
@@ -117,7 +118,7 @@ describe('cross-realm identity contract (ADR-001/ADR-0003)', () => {
   });
 });
 
-describe('root re-export (spec §6)', () => {
+describe('root re-export (spec §6, ADR-0003, ADR-0053)', () => {
   it('exposes the same class objects from the root entry and /errors', () => {
     expect(rootEntry.TimeoutError).toBe(TimeoutError);
     expect(rootEntry.EglError).toBe(EglError);
@@ -127,5 +128,19 @@ describe('root re-export (spec §6)', () => {
     expect(rootEntry.StorageError).toBe(StorageError);
     expect(rootEntry.DurationParseError).toBe(DurationParseError);
     expect(rootEntry.AbortError).toBe(AbortError);
+  });
+
+  it('re-exports the WHOLE /errors taxonomy from the root, not a hand-copied subset', () => {
+    // Keyed off /errors' own export list (roadmap 17.12): an 11th class added
+    // to the taxonomy without a matching root re-export fails here immediately,
+    // rather than drifting unnoticed the way DomContractError and
+    // PeerMissingError did between spec 03/04 and this fix.
+    const taxonomyExports = Object.keys(errorsEntry).filter(
+      (name) => typeof errorsEntry[name] === 'function',
+    );
+    expect(taxonomyExports.length).toBeGreaterThanOrEqual(10);
+    for (const name of taxonomyExports) {
+      expect(rootEntry[name]).toBe(errorsEntry[name]);
+    }
   });
 });
