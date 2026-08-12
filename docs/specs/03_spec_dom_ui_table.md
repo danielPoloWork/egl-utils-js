@@ -205,7 +205,10 @@ Consumers import via the exports map, e.g.
 - `egl-utils-js/table` += `tablePipeline` (F42)
 - `egl-utils-js/dom` (new): `bindElements`, `delegate`, `setEnabled`, `setVisible`,
   `setValue`, `autoGrow`, `injectFragment`, `withUrlParams`, `inlineAlert`,
-  `loadingOverlay`, `bindTableControls` (F43–F51)
+  `loadingOverlay`, `bindTableControls` (F43–F51) — **`withUrlParams` (F48) is also
+  re-exported from the root entry** (roadmap 17.10, [ADR-0052](../adr/0052-withurlparams-moves-to-the-root.md)):
+  it is pure and SSR-safe, so it never needed the DOM-fencing this entry exists for; the
+  `/dom` binding is kept for compatibility
 - `egl-utils-js/errors` += `DomContractError` with stable code `EGL_DOM_CONTRACT` (F43)
 
 Error model, unchanged in kind from the earlier waves: **wrong types throw `TypeError`**

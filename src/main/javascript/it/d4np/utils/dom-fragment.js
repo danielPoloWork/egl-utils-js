@@ -301,6 +301,11 @@ function defaultMeasure(textarea) {
  * Nullish values are **skipped, not deleted** — the same contract as
  * `urlSearchParams` (F17). To drop a key, build the URL without it.
  *
+ * **Also exported from the root entry** (ADR-0052): being pure and SSR-safe,
+ * it never belonged behind `egl-utils-js/dom`, which fences off code that
+ * needs a real DOM. This binding is kept for compatibility and is not
+ * removed, but new code should import it from `egl-utils-js`.
+ *
  * @example
  * withUrlParams('/api/items?page=1', { page: 2, tag: ['x', 'y'] });
  * // '/api/items?page=2&tag=x&tag=y'  — page replaced, arrays repeat the key

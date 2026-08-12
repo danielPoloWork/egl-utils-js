@@ -152,7 +152,7 @@ const onScroll = throttle((event) => updatePosition(event), 100); // at most onc
 ### Web (`egl-utils-js`)
 
 ```js
-import { httpClient, urlSearchParams, createResource } from 'egl-utils-js';
+import { httpClient, urlSearchParams, withUrlParams, createResource } from 'egl-utils-js';
 
 const api = httpClient({
   baseUrl: 'https://api.example.test/v1/',
@@ -163,6 +163,13 @@ await api.post('users', { json: { name: 'Ada' } });
 
 urlSearchParams({ q: 'a b', tag: ['x', 'y'], page: 2, empty: undefined });
 // -> 'q=a+b&tag=x&tag=y&page=2' — arrays repeat the key, nullish values are skipped
+
+// Its sibling merges into a whole URL instead of building a bare query string — pure and
+// SSR-safe (no `document`, `location`, or `URL` constructor), so a relative URL works too.
+// Also on `egl-utils-js/dom`, which is where it shipped (ADR-0052); import from here now.
+withUrlParams('/api/items?page=1', { page: 2, tag: ['x', 'y'] });
+// -> '/api/items?page=2&tag=x&tag=y' — one `?`, ever; page replaced, tag repeats
+withUrlParams('/docs#section', { v: buildId }); // -> '/docs?v=abc123#section' — fragment kept last
 
 // One REST collection, six methods, one line. The client is a PARAMETER, never an
 // import (ADR-0025): any object with get/post/put/patch/delete works — httpClient, a
@@ -431,7 +438,7 @@ either, and synthesising one could re-enter the handler that called it; dispatch
 when a listener must run.
 
 ```js
-import { injectFragment, autoGrow, withUrlParams } from 'egl-utils-js/dom';
+import { injectFragment, autoGrow } from 'egl-utils-js/dom';
 import { sanitizeHtml } from 'egl-utils-js/sanitize';
 
 // `sanitize` is REQUIRED and has no default (ADR-0030). A sanitizing default would drag
@@ -451,11 +458,11 @@ await injectFragment(list, '/partials/next-page.html', {
 
 const detach = autoGrow(elements.comment, { maxRows: 8 }); // grows AND shrinks: the inline
 detach(); //  height is released before measuring, and detach restores the original styles
-
-withUrlParams('/api/items?page=1', { page: 2, tag: ['x', 'y'] });
-// '/api/items?page=2&tag=x&tag=y' — one `?`, ever. Pure, SSR-safe, works on relative URLs.
-withUrlParams('/docs#section', { v: buildId }); // '/docs?v=abc#section' — fragment kept last
 ```
+
+`withUrlParams` also lives on this entry (it shipped here, spec 03 F48), but it is pure and
+touches no DOM — import it from the root instead (see Web, above); the ADR-0052 binding
+here is kept only for compatibility.
 
 ### UI components (`egl-utils-js/dom`)
 

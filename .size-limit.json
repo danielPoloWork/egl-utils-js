@@ -1,8 +1,8 @@
 [
   {
-    "name": "root - full import (NFR-01: measured 5864 B, ceiling 6 kB; -50 B in 17.2 from deleting the AbortSignal.timeout fallback the raised floor made dead, ADR-0050)",
+    "name": "root - full import (NFR-01: measured 6002 B, ceiling amended to 6.05 kB by ADR-0052; +138 B for the withUrlParams re-export, roadmap 17.10)",
     "path": "dist/esm/index.js",
-    "limit": "5.9 kB"
+    "limit": "6.05 kB"
   },
   {
     "name": "/storage - full import (2.15 kB - documented NFR-01 divergence, ADR-0024, amended by ADR-0047: measured 2106 B)",
@@ -527,6 +527,12 @@
     "name": "single: urlSearchParams (NFR-01 <= 1 kB / NFR-02)",
     "path": "dist/esm/index.js",
     "import": "{ urlSearchParams }",
+    "limit": "1 kB"
+  },
+  {
+    "name": "single: withUrlParams (root - NFR-01 <= 1 kB / NFR-02; ADR-0052, also on /dom)",
+    "path": "dist/esm/index.js",
+    "import": "{ withUrlParams }",
     "limit": "1 kB"
   },
   {

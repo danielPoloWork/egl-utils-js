@@ -8,6 +8,7 @@ import {
   withUrlParams,
 } from '../../../../../main/javascript/it/d4np/utils/dom.js';
 import { HttpError } from '../../../../../main/javascript/it/d4np/utils/errors.js';
+import { withUrlParams as rootWithUrlParams } from '../../../../../main/javascript/it/d4np/utils/index.js';
 
 /** A fetch double returning `body` with the given status. */
 function fetchReturning(body, status = 200) {
@@ -396,5 +397,9 @@ describe('withUrlParams', () => {
     ['params is an array', () => withUrlParams('/a', /** @type {never} */ ([]))],
   ])('throws TypeError when %s', (_label, call) => {
     expect(call).toThrow(TypeError);
+  });
+
+  it('is re-exported, as the same function, from the root entry (roadmap 17.10, ADR-0052)', () => {
+    expect(rootWithUrlParams).toBe(withUrlParams);
   });
 });

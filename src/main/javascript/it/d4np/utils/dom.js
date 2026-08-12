@@ -9,8 +9,11 @@
  * a second entry would cost four coordinated wiring edits to say so.
  *
  * Everything here needs a live document and fails fast with `DomContractError`
- * when there is none (spec 03 NFR-14, ADR-0028). The DOM-free half of the same
- * feature set lives on `egl-utils-js/table`.
+ * when there is none (spec 03 NFR-14, ADR-0028) — except `withUrlParams`, which
+ * is pure and SSR-safe and is kept on this entry only for compatibility; it is
+ * also exported from the root (ADR-0052), which is where new code should
+ * import it from. The DOM-free half of the same feature set lives on
+ * `egl-utils-js/table`.
  *
  * Every options bag on this entry **rejects a key it does not know** with a
  * `TypeError` naming it: the destructuring is the schema (ADR-0047).
@@ -25,6 +28,8 @@ export { bindElements, isElement, requireDocument } from './dom-helpers.js';
 export { delegate, setEnabled, setValue, setVisible } from './dom-events.js';
 
 // Fragment injection, textarea auto-grow, URL parameters (spec 03 §2 items F46-F48, ADR-0030).
+// `withUrlParams` is also on the root entry (ADR-0052) — this binding stays for
+// compatibility and is not removed.
 export { autoGrow, injectFragment, withUrlParams } from './dom-fragment.js';
 
 // Instance-based UI components (spec 03 §2 items F49-F50, ADR-0031/0032).

@@ -50,6 +50,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   `bsToast`, subscribed on the container so one listener sees every toast it builds; and a
   `document` override on `bsPagination` and `bsTable`, which `bsToast` already had
   ([ADR-0049](docs/adr/0049-commands-throw-queries-answer.md), roadmap 17.9).
+- `withUrlParams` is now also exported from the root entry
+  ([ADR-0052](docs/adr/0052-withurlparams-moves-to-the-root.md), roadmap 17.10). It shipped
+  on `egl-utils-js/dom`, which is kept for compatibility, but it is pure and SSR-safe and
+  belongs beside its sibling `urlSearchParams`. The root full-import budget (NFR-01) is
+  amended from 6 kB to **6.05 kB** to fit it — the aggregate's first-ever increase.
 
 ### Changed
 
