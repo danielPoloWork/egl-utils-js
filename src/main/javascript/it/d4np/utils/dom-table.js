@@ -204,7 +204,31 @@ export function bindTableControls(pipeline, bindings, options = {}) {
     return found;
   };
 
-  const { filters = {}, search, sortHeaders, pagination = {}, pageSize } = bindings;
+  // `filters` is a map keyed by the caller's own column keys, so its keys are
+  // data and are never checked. The bindings shape itself, and the two nested
+  // shapes below, are fixed vocabularies and are checked (ADR-0056).
+  const {
+    filters = {},
+    search,
+    sortHeaders,
+    pagination = {},
+    pageSize,
+    ...unknownBindings
+  } = bindings;
+  assertNoUnknownOptions(unknownBindings, 'bindTableControls', 'binding');
+  if (sortHeaders !== undefined) {
+    // Checked without rebinding the values: the reads below stay `sortHeaders.x`
+    // so the narrowing that proves them defined survives.
+    const { root, selector, ...unknownSort } = sortHeaders;
+    assertNoUnknownOptions(unknownSort, 'bindTableControls', 'sortHeaders binding');
+  }
+  const {
+    prev: prevBinding,
+    next: nextBinding,
+    status: statusBinding,
+    ...unknownPagination
+  } = pagination;
+  assertNoUnknownOptions(unknownPagination, 'bindTableControls', 'pagination binding');
 
   // Resolve everything before attaching anything, so a partly-wired table is
   // never left behind by a throw halfway through.
@@ -214,10 +238,9 @@ export function bindTableControls(pipeline, bindings, options = {}) {
   const searchEl = search === undefined ? null : resolve(search, 'search');
   const headerRoot =
     sortHeaders === undefined ? null : resolve(sortHeaders.root, 'sortHeaders.root');
-  const prevEl = pagination.prev === undefined ? null : resolve(pagination.prev, 'pagination.prev');
-  const nextEl = pagination.next === undefined ? null : resolve(pagination.next, 'pagination.next');
-  const statusEl =
-    pagination.status === undefined ? null : resolve(pagination.status, 'pagination.status');
+  const prevEl = prevBinding === undefined ? null : resolve(prevBinding, 'pagination.prev');
+  const nextEl = nextBinding === undefined ? null : resolve(nextBinding, 'pagination.next');
+  const statusEl = statusBinding === undefined ? null : resolve(statusBinding, 'pagination.status');
   const pageSizeEl = pageSize === undefined ? null : resolve(pageSize, 'pageSize');
 
   if (missing.length > 0) {

@@ -221,7 +221,9 @@ export function bsCarousel(container, options = {}) {
     previous: previousLabel = 'Previous',
     next: nextLabel = 'Next',
     slide: slideLabel = (index) => String(index + 1),
+    ...unknownLabels
   } = labels;
+  assertNoUnknownOptions(unknownLabels, api, 'options.labels property');
   if (typeof slideLabel !== 'function') {
     throw new TypeError(`${api}: options.labels.slide must be a function`);
   }
@@ -251,38 +253,46 @@ export function bsCarousel(container, options = {}) {
       if (item === null || typeof item !== 'object') {
         throw new TypeError(`${api}: items[${index}] must be { content, alt?, caption?, active? }`);
       }
-      const active = item.active === true;
+      const {
+        content: itemContent,
+        alt: itemAlt,
+        caption: itemCaption,
+        active: itemActive,
+        ...unknownItem
+      } = /** @type {BsCarouselItem} */ (item);
+      assertNoUnknownOptions(unknownItem, api, `items[${index}] property`);
+      const active = itemActive === true;
 
       const slide = doc.createElement('div');
       applyClasses(slide, ['carousel-item', active && 'active'], undefined, api);
 
-      if (item.alt === undefined) {
-        appendContent(slide, item.content, contentOptions, api);
+      if (itemAlt === undefined) {
+        appendContent(slide, itemContent, contentOptions, api);
       } else {
         // `alt` is what declares this an image, and it is required the moment it
         // does — an image whose alt is merely forgotten reads its file name
         // aloud (the F61 rule, applied here).
-        if (typeof item.alt !== 'string') {
+        if (typeof itemAlt !== 'string') {
           throw new TypeError(
             `${api}: items[${index}].alt must be a string — pass '' to declare the image decorative`,
           );
         }
-        if (typeof item.content !== 'string' || item.content === '') {
+        if (typeof itemContent !== 'string' || itemContent === '') {
           throw new TypeError(
             `${api}: items[${index}].content must be an image source string when alt is given`,
           );
         }
         const img = doc.createElement('img');
         img.className = 'd-block w-100';
-        img.setAttribute('src', item.content);
-        img.setAttribute('alt', item.alt);
+        img.setAttribute('src', itemContent);
+        img.setAttribute('alt', itemAlt);
         slide.append(img);
       }
 
-      if (item.caption !== undefined) {
+      if (itemCaption !== undefined) {
         const caption = doc.createElement('div');
         caption.className = 'carousel-caption d-none d-md-block';
-        appendContent(caption, item.caption, contentOptions, api);
+        appendContent(caption, itemCaption, contentOptions, api);
         slide.append(caption);
       }
       slides.append(slide);

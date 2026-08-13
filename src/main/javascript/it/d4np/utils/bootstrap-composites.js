@@ -197,24 +197,21 @@ function slot(doc, tag, classes, content, options, api) {
  */
 function buildCardImage(image, doc, api) {
   assertPlainObject(image, 'options.image', api);
-  if (typeof image.src !== 'string' || image.src === '') {
+  const { src, alt, position, class: imageClass, ...unknown } = image;
+  assertNoUnknownOptions(unknown, api, 'options.image property');
+  if (typeof src !== 'string' || src === '') {
     throw new TypeError(`${api}: options.image.src must be a non-empty string`);
   }
-  if (typeof image.alt !== 'string') {
+  if (typeof alt !== 'string') {
     throw new TypeError(
       `${api}: options.image.alt is required — pass '' to declare the image decorative. ` +
         'Omitting it makes a screen reader fall back to reading the file name.',
     );
   }
   const el = doc.createElement('img');
-  el.setAttribute('src', image.src);
-  el.setAttribute('alt', image.alt);
-  applyClasses(
-    el,
-    [image.position === 'bottom' ? 'card-img-bottom' : 'card-img-top'],
-    image.class,
-    api,
-  );
+  el.setAttribute('src', src);
+  el.setAttribute('alt', alt);
+  applyClasses(el, [position === 'bottom' ? 'card-img-bottom' : 'card-img-top'], imageClass, api);
   return el;
 }
 
@@ -453,15 +450,21 @@ function normalizeItem(entry, index, api) {
   if (entry === null || typeof entry !== 'object') {
     throw new TypeError(`${api}: items[${index}] must be content or an item object`);
   }
-  const item = /** @type {BsListGroupItem} */ (entry);
-  if (item.content === undefined) {
+  // Destructured rather than read in place, so the object that flows on to
+  // `buildListItem` carries exactly the properties this shape declares: every
+  // downstream read is a read of something named here, and anything else is a
+  // typo the caller hears about (ADR-0056 extending ADR-0047).
+  const { content, variant, active, disabled, href, badge, value, ...unknown } =
+    /** @type {BsListGroupItem} */ (entry);
+  assertNoUnknownOptions(unknown, api, `items[${index}] property`);
+  if (content === undefined) {
     throw new TypeError(`${api}: items[${index}].content is required`);
   }
-  if (item.variant !== undefined) assertToken(item.variant, `items[${index}].variant`, api);
-  if (item.href !== undefined && typeof item.href !== 'string') {
+  if (variant !== undefined) assertToken(variant, `items[${index}].variant`, api);
+  if (href !== undefined && typeof href !== 'string') {
     throw new TypeError(`${api}: items[${index}].href must be a string`);
   }
-  return item;
+  return { content, variant, active, disabled, href, badge, value };
 }
 
 /**
@@ -479,7 +482,8 @@ function renderItemBadge(badge, doc, options, api) {
     return bsBadge(String(badge), { variant: 'primary', pill: true, document: doc });
   }
   assertPlainObject(badge, 'items[].badge', api);
-  const { content, variant = 'primary', pill = true } = badge;
+  const { content, variant = 'primary', pill = true, ...unknown } = badge;
+  assertNoUnknownOptions(unknown, api, 'items[].badge property');
   return bsBadge(content, {
     variant,
     pill,
@@ -570,20 +574,22 @@ export function bsBreadcrumb(items, options = {}) {
         `${api}: items[${index}] must be content or { content, href?, current? }`,
       );
     }
-    const isCurrent = item.current ?? index === items.length - 1;
+    const { content, href, current, ...unknownItem } = /** @type {BsBreadcrumbItem} */ (item);
+    assertNoUnknownOptions(unknownItem, api, `items[${index}] property`);
+    const isCurrent = current ?? index === items.length - 1;
 
     const li = doc.createElement('li');
     applyClasses(li, ['breadcrumb-item', isCurrent && 'active'], undefined, api);
     if (isCurrent) {
       li.setAttribute('aria-current', 'page');
-      appendContent(li, item.content, common, api);
-    } else if (typeof item.href === 'string') {
+      appendContent(li, content, common, api);
+    } else if (typeof href === 'string') {
       const link = doc.createElement('a');
-      link.setAttribute('href', item.href);
-      appendContent(link, item.content, common, api);
+      link.setAttribute('href', href);
+      appendContent(link, content, common, api);
       li.append(link);
     } else {
-      appendContent(li, item.content, common, api);
+      appendContent(li, content, common, api);
     }
     fragment.append(li);
   }
@@ -790,7 +796,9 @@ export function bsPagination(container, options) {
     nextText = '›',
     ellipsis = '…',
     page: pageLabel,
+    ...unknownLabels
   } = labels;
+  assertNoUnknownOptions(unknownLabels, api, 'options.labels property');
   if (pageLabel !== undefined && typeof pageLabel !== 'function') {
     throw new TypeError(`${api}: options.labels.page must be a function`);
   }

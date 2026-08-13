@@ -71,3 +71,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0053](0053-the-full-taxonomy-reaches-the-root.md) | The whole error taxonomy reaches the root, and spec 01 §5 says what it covers | Accepted |
 | [0054](0054-one-web-crypto-surface-without-the-conditions.md) | One Web Crypto surface, without the conditions — and two builds instead of four | Accepted |
 | [0055](0055-the-sanitizer-s-peer-is-looked-up.md) | The sanitizer's peer is looked up, not imported — one contract for both peers | Accepted |
+| [0056](0056-descriptors-are-checked-too.md) | Descriptors are checked too — and where the rule deliberately stops | Accepted |

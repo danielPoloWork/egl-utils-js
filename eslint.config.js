@@ -27,6 +27,17 @@ export default [
         ...globals.browser,
       },
     },
+    rules: {
+      // `ignoreRestSiblings` (the rule's own default, restated because
+      // js.configs.recommended does not set it) exempts exactly one pattern:
+      // names destructured alongside a `...rest` element. That pattern *is* the
+      // unknown-key contract for descriptor shapes — `const { key, label, ...unknown } = column`
+      // declares the accepted set so `unknown` can be asserted empty
+      // (ADR-0047, extended to descriptors by ADR-0056). The keys a descriptor's
+      // validation does not itself read are still named there deliberately, so
+      // flagging them as unused would fight the contract rather than find a bug.
+      'no-unused-vars': ['error', { ignoreRestSiblings: true }],
+    },
   },
   {
     // Tooling configs and Node scripts run on Node only.

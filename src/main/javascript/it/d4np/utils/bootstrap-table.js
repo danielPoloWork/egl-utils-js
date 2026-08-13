@@ -301,13 +301,38 @@ export function bsTable(container, options) {
   }
   for (const [index, column] of columns.entries()) {
     assertPlainObject(column, `options.columns[${index}]`, api);
-    if (typeof column.key !== 'string' || column.key === '') {
+    // A column definition is hand-written configuration, so a mistyped
+    // `sortible` is the same programming error a mistyped option is — and the
+    // same rule applies (ADR-0056 extending ADR-0047). The destructuring is the
+    // schema here too; the rest element is what the checks below never read.
+    // Rows are **not** checked: those are data, and a record legitimately
+    // carries keys this library does not model.
+    const {
+      key,
+      label,
+      format,
+      align,
+      headerClass,
+      cellClass,
+      sortable,
+      html: columnHtml,
+      sanitize: columnSanitize,
+      type,
+      compare,
+      getValue,
+      searchable,
+      filterable,
+      ...unknownColumn
+    } = column;
+    assertNoUnknownOptions(unknownColumn, api, `options.columns[${index}] property`);
+
+    if (typeof key !== 'string' || key === '') {
       throw new TypeError(`${api}: options.columns[${index}].key must be a non-empty string`);
     }
-    if (column.format !== undefined && typeof column.format !== 'function') {
+    if (format !== undefined && typeof format !== 'function') {
       throw new TypeError(`${api}: options.columns[${index}].format must be a function`);
     }
-    if (column.align !== undefined && !ALIGNMENTS.has(column.align)) {
+    if (align !== undefined && !ALIGNMENTS.has(align)) {
       throw new TypeError(`${api}: options.columns[${index}].align must be start, center, or end`);
     }
   }
@@ -347,11 +372,23 @@ export function bsTable(container, options) {
   // Container-first, `document` as an override (ADR-0049).
   const doc = documentOf(container, { document: explicitDocument }, api);
 
+  // The pipeline gets exactly the F42 fields, projected rather than spread: a
+  // BsTableColumn is a superset (label, format, align, the class and markup
+  // options are this renderer's), and /table rejects a key it does not know just
+  // as this entry does (ADR-0047, ADR-0056). Passing the superset wholesale would
+  // make one declaration serving both halves a lie the moment either tightened.
   const pipeline =
     injected ??
     tablePipeline({
       source: data ?? [],
-      columns: /** @type {readonly import('./table.js').TableColumn<Row>[]} */ (columns),
+      columns: columns.map(({ key, type, compare, getValue, searchable, filterable }) => ({
+        key,
+        ...(type === undefined ? {} : { type }),
+        ...(compare === undefined ? {} : { compare }),
+        ...(getValue === undefined ? {} : { getValue }),
+        ...(searchable === undefined ? {} : { searchable }),
+        ...(filterable === undefined ? {} : { filterable }),
+      })),
       ...(pageSize === undefined ? {} : { pageSize }),
       ...(locale === undefined ? {} : { locale }),
     });
@@ -679,29 +716,41 @@ function buildControls(context) {
   if (toolbar !== undefined) header.append(toolbar);
 
   if (search !== undefined && search !== false) {
-    const options = search === true ? {} : opts(search, 'options.controls.search', api);
+    const {
+      label: searchLabel,
+      placeholder,
+      class: searchClass,
+      ...unknownSearch
+    } = search === true ? {} : opts(search, 'options.controls.search', api);
+    assertNoUnknownOptions(unknownSearch, api, 'options.controls.search property');
     const input = doc.createElement('input');
     input.setAttribute('type', 'search');
     // An accessible name has to be words, so — unlike a glyph — it cannot have a
     // language-neutral default. English, and injectable (the F57/F65 precedent).
-    input.setAttribute('aria-label', options.label ?? 'Search');
-    if (options.placeholder !== undefined) {
-      input.setAttribute('placeholder', options.placeholder);
+    input.setAttribute('aria-label', searchLabel ?? 'Search');
+    if (placeholder !== undefined) {
+      input.setAttribute('placeholder', placeholder);
     }
-    applyClasses(input, ['form-control', 'form-control-sm', 'w-auto'], options.class, api);
+    applyClasses(input, ['form-control', 'form-control-sm', 'w-auto'], searchClass, api);
     header.append(input);
     bindings.search = input;
     parts.search = input;
   }
 
   if (pageSizeControl !== undefined && pageSizeControl !== false) {
-    const options =
-      pageSizeControl === true ? {} : opts(pageSizeControl, 'options.controls.pageSize', api);
+    const {
+      options: sizeOptions,
+      allLabel,
+      label: pageSizeLabel,
+      class: pageSizeClass,
+      ...unknownPageSize
+    } = pageSizeControl === true ? {} : opts(pageSizeControl, 'options.controls.pageSize', api);
+    assertNoUnknownOptions(unknownPageSize, api, 'options.controls.pageSize property');
     const select = doc.createElement('select');
-    select.setAttribute('aria-label', options.label ?? 'Rows per page');
-    applyClasses(select, ['form-select', 'form-select-sm', 'w-auto'], options.class, api);
+    select.setAttribute('aria-label', pageSizeLabel ?? 'Rows per page');
+    applyClasses(select, ['form-select', 'form-select-sm', 'w-auto'], pageSizeClass, api);
 
-    const sizes = options.options ?? DEFAULT_PAGE_SIZES;
+    const sizes = sizeOptions ?? DEFAULT_PAGE_SIZES;
     if (!Array.isArray(sizes) || sizes.some((n) => !Number.isInteger(n) || n <= 0)) {
       throw new TypeError(`${api}: options.controls.pageSize.options must be positive integers`);
     }
@@ -718,12 +767,12 @@ function buildControls(context) {
       if (value === pageSize) option.setAttribute('selected', '');
       select.append(option);
     }
-    if (options.allLabel !== undefined) {
+    if (allLabel !== undefined) {
       // Only on request: "All" is a word, and shipping one would put English in
       // every consumer's UI (NFR-21). An empty value stops paginating (F51).
       const option = doc.createElement('option');
       option.setAttribute('value', '');
-      option.textContent = options.allLabel;
+      option.textContent = allLabel;
       if (pageSize === undefined) option.setAttribute('selected', '');
       select.append(option);
     }
@@ -733,12 +782,18 @@ function buildControls(context) {
   }
 
   if (filterRow !== undefined && filterRow !== false) {
-    const options = filterRow === true ? {} : opts(filterRow, 'options.controls.filterRow', api);
-    if (options.label !== undefined && typeof options.label !== 'function') {
+    const {
+      label: filterLabel,
+      inputClass,
+      class: filterRowClass,
+      ...unknownFilterRow
+    } = filterRow === true ? {} : opts(filterRow, 'options.controls.filterRow', api);
+    assertNoUnknownOptions(unknownFilterRow, api, 'options.controls.filterRow property');
+    if (filterLabel !== undefined && typeof filterLabel !== 'function') {
       throw new TypeError(`${api}: options.controls.filterRow.label must be a function`);
     }
     const row = doc.createElement('tr');
-    applyClasses(row, [], options.class, api);
+    applyClasses(row, [], filterRowClass, api);
     /** @type {Record<string, Element>} */
     const filters = {};
     for (const column of columns) {
@@ -752,9 +807,9 @@ function buildControls(context) {
         input.setAttribute('type', 'search');
         input.setAttribute(
           'aria-label',
-          options.label === undefined ? `Filter ${labelText(column)}` : options.label(column),
+          filterLabel === undefined ? `Filter ${labelText(column)}` : filterLabel(column),
         );
-        applyClasses(input, ['form-control', 'form-control-sm'], options.inputClass, api);
+        applyClasses(input, ['form-control', 'form-control-sm'], inputClass, api);
         cell.append(input);
         filters[column.key] = input;
       }

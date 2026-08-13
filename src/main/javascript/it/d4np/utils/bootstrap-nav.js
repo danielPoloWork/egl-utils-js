@@ -261,9 +261,16 @@ export function bsAccordion(container, options = {}) {
       if (item === null || typeof item !== 'object') {
         throw new TypeError(`${api}: items[${index}] must be { header, body, open? }`);
       }
+      const {
+        header: itemHeader,
+        body: itemBody,
+        open: itemOpen,
+        ...unknownItem
+      } = /** @type {BsAccordionItem} */ (item);
+      assertNoUnknownOptions(unknownItem, api, `items[${index}] property`);
       const paneId = uniqueId(doc, `${root.id}-pane`, reserved);
       const headerId = uniqueId(doc, `${root.id}-header`, reserved);
-      const open = item.open === true;
+      const open = itemOpen === true;
 
       const wrapper = doc.createElement('div');
       wrapper.className = 'accordion-item';
@@ -277,7 +284,7 @@ export function bsAccordion(container, options = {}) {
       button.setAttribute('type', 'button');
       button.setAttribute('aria-expanded', String(open));
       button.setAttribute('aria-controls', paneId);
-      renderContent(button, item.header, { html, sanitize }, api);
+      renderContent(button, itemHeader, { html, sanitize }, api);
       heading.append(button);
 
       const pane = doc.createElement('div');
@@ -287,7 +294,7 @@ export function bsAccordion(container, options = {}) {
 
       const body = doc.createElement('div');
       body.className = 'accordion-body';
-      appendContent(body, item.body, { html, sanitize }, api);
+      appendContent(body, itemBody, { html, sanitize }, api);
       pane.append(body);
 
       wrapper.append(heading);
@@ -561,10 +568,18 @@ export function bsTabs(container, options = {}) {
       if (tab === null || typeof tab !== 'object') {
         throw new TypeError(`${api}: tabs[${index}] must be { label, pane, active?, disabled? }`);
       }
+      const {
+        label: tabLabel,
+        pane: tabPane,
+        active: tabActive,
+        disabled: tabDisabled,
+        ...unknownTab
+      } = /** @type {BsTabsItem} */ (tab);
+      assertNoUnknownOptions(unknownTab, api, `tabs[${index}] property`);
       const paneId = uniqueId(doc, `${base}-pane`, reserved);
       const tabId = uniqueId(doc, `${base}-tab`, reserved);
-      const active = tab.active === true;
-      const disabled = tab.disabled === true;
+      const active = tabActive === true;
+      const disabled = tabDisabled === true;
 
       const li = doc.createElement('li');
       li.className = 'nav-item';
@@ -585,7 +600,7 @@ export function bsTabs(container, options = {}) {
       trigger.setAttribute('aria-controls', paneId);
       trigger.setAttribute('aria-selected', String(active));
       if (disabled) trigger.setAttribute('disabled', '');
-      renderContent(trigger, tab.label, { html, sanitize }, api);
+      renderContent(trigger, tabLabel, { html, sanitize }, api);
       li.append(trigger);
       listFragment.append(li);
 
@@ -602,7 +617,7 @@ export function bsTabs(container, options = {}) {
       // A panel is a focus stop: a keyboard user arriving from the tab must be
       // able to reach content that is not itself focusable.
       pane.setAttribute('tabindex', '0');
-      appendContent(pane, tab.pane, { html, sanitize }, api);
+      appendContent(pane, tabPane, { html, sanitize }, api);
       contentFragment.append(pane);
     }
 
@@ -829,13 +844,25 @@ export function bsNavbar(container, options = {}) {
     if (item === null || typeof item !== 'object') {
       throw new TypeError(`${api}: items[${index}] must be { label, href?, ... }`);
     }
+    // A submenu child is the same declared shape but is rendered inline below
+    // rather than through this function, so it carries its own check.
+    const {
+      label: itemLabel,
+      href: itemHref,
+      active: itemActive,
+      disabled: itemDisabled,
+      children,
+      ...unknownItem
+    } = /** @type {BsNavbarItem} */ (item);
+    assertNoUnknownOptions(unknownItem, api, `items[${index}] property`);
+
     const li = doc.createElement('li');
     li.className = 'nav-item';
 
     const link = doc.createElement('a');
-    const active = item.active === true;
-    const disabled = item.disabled === true;
-    const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+    const active = itemActive === true;
+    const disabled = itemDisabled === true;
+    const hasChildren = Array.isArray(children) && children.length > 0;
 
     applyClasses(
       link,
@@ -843,11 +870,11 @@ export function bsNavbar(container, options = {}) {
       undefined,
       api,
     );
-    link.setAttribute('href', item.href ?? '#');
+    link.setAttribute('href', itemHref ?? '#');
     // Which page you are on is an ARIA state, not a colour.
     if (active) link.setAttribute('aria-current', 'page');
     if (disabled) link.setAttribute('aria-disabled', 'true');
-    renderContent(link, item.label, contentOptions, api);
+    renderContent(link, itemLabel, contentOptions, api);
 
     if (!hasChildren) {
       li.append(link);
@@ -862,16 +889,25 @@ export function bsNavbar(container, options = {}) {
 
     const menu = doc.createElement('ul');
     menu.className = 'dropdown-menu';
-    for (const [childIndex, child] of /** @type {BsNavbarItem[]} */ (item.children).entries()) {
+    for (const [childIndex, child] of /** @type {BsNavbarItem[]} */ (children).entries()) {
       if (child === null || typeof child !== 'object') {
         throw new TypeError(`${api}: items[${index}].children[${childIndex}] must be an object`);
       }
+      const {
+        label: childLabel,
+        href: childHref,
+        active: childActive,
+        disabled: childDisabled,
+        children: childChildren,
+        ...unknownChild
+      } = /** @type {BsNavbarItem} */ (child);
+      assertNoUnknownOptions(unknownChild, api, `items[${index}].children[${childIndex}] property`);
       const childLi = doc.createElement('li');
       const childLink = doc.createElement('a');
-      applyClasses(childLink, ['dropdown-item', child.active === true && 'active'], undefined, api);
-      childLink.setAttribute('href', child.href ?? '#');
-      if (child.active === true) childLink.setAttribute('aria-current', 'page');
-      renderContent(childLink, child.label, contentOptions, api);
+      applyClasses(childLink, ['dropdown-item', childActive === true && 'active'], undefined, api);
+      childLink.setAttribute('href', childHref ?? '#');
+      if (childActive === true) childLink.setAttribute('aria-current', 'page');
+      renderContent(childLink, childLabel, contentOptions, api);
       childLi.append(childLink);
       menu.append(childLi);
     }

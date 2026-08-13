@@ -734,15 +734,21 @@ function indexColumns(columns) {
     if (column === null || typeof column !== 'object') {
       throw new TypeError('each column must be an object');
     }
-    assertString(column.key, 'column.key');
-    if (column.type !== undefined) assertOneOf(column.type, COMPARE_TYPES, 'column.type');
-    if (column.compare !== undefined && typeof column.compare !== 'function') {
+    // A column declaration is hand-written configuration, so a mistyped
+    // `searchible` is rejected the way a mistyped option is (ADR-0056). Rows are
+    // never checked this way: a record legitimately carries keys the library
+    // does not model.
+    const { key, type, compare, getValue, searchable, filterable, ...unknown } = column;
+    assertNoUnknownOptions(unknown, 'tablePipeline', 'column property');
+    assertString(key, 'column.key');
+    if (type !== undefined) assertOneOf(type, COMPARE_TYPES, 'column.type');
+    if (compare !== undefined && typeof compare !== 'function') {
       throw new TypeError('column.compare must be a function');
     }
-    if (column.getValue !== undefined && typeof column.getValue !== 'function') {
+    if (getValue !== undefined && typeof getValue !== 'function') {
       throw new TypeError('column.getValue must be a function');
     }
-    byKey.set(column.key, column);
+    byKey.set(key, column);
   }
   return byKey;
 }
