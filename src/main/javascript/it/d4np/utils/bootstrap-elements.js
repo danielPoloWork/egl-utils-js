@@ -398,6 +398,11 @@ export function bsIcon(name, options = {}) {
   const { set = bootstrapIconsSet, ariaLabel, ...rest } = options;
   const common = commonNodeOptions(rest, api);
   assertPlainObject(set, 'options.set', api);
+  // A custom icon set is caller-written configuration, so it gets the same
+  // unknown-key rule as an options bag (ADR-0056). The library's own
+  // `bootstrapIconsSet`/`materialIconsSet` are frozen and pass by construction.
+  const { tag, classTemplate, ligature, render, ...unknownSet } = set;
+  assertNoUnknownOptions(unknownSet, api, 'options.set property');
 
   const doc = resolveDocument(common, api);
 
@@ -405,30 +410,30 @@ export function bsIcon(name, options = {}) {
   let el;
   /** @type {string[]} */
   let setClasses = [];
-  if (set.render !== undefined) {
-    if (typeof set.render !== 'function') {
+  if (render !== undefined) {
+    if (typeof render !== 'function') {
       throw new TypeError(`${api}: options.set.render must be a function`);
     }
-    el = set.render(name, doc);
+    el = render(name, doc);
     if (!isElement(el)) {
       throw new TypeError(`${api}: options.set.render must return an Element`);
     }
   } else {
-    el = doc.createElement(set.tag ?? 'i');
-    if (set.classTemplate !== undefined) {
-      if (typeof set.classTemplate !== 'string') {
+    el = doc.createElement(tag ?? 'i');
+    if (classTemplate !== undefined) {
+      if (typeof classTemplate !== 'string') {
         throw new TypeError(`${api}: options.set.classTemplate must be a string`);
       }
       // The template is the caller's, so it goes through the same tokeniser as
       // any other caller-supplied class rather than being trusted like our own
       // literals.
       setClasses = extraTokens(
-        set.classTemplate.replace('{name}', name),
+        classTemplate.replace('{name}', name),
         'options.set.classTemplate',
         api,
       );
     }
-    if (set.ligature === true) el.textContent = name;
+    if (ligature === true) el.textContent = name;
   }
 
   applyClasses(el, setClasses, common.class, api);

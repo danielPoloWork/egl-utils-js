@@ -61,6 +61,19 @@ there is a typed channel for it instead — `bootstrap` on the behaviour wrapper
 vendor config straight through, `operators` extends the filter grammar, `classes`
 retargets the alert's class map.
 
+**The same holds inside the shapes you hand them** — columns, items, labels, icon sets,
+control configs, bindings ([ADR-0056](docs/adr/0056-descriptors-are-checked-too.md)), with the
+message naming where the key sat:
+
+```js
+bsTable(host, { columns: [{ key: 'total', sortible: true }] });
+// TypeError: bsTable: unknown options.columns[0] property 'sortible'
+```
+
+**Your data is never inspected this way.** Rows carry whatever keys they carry — a record is
+not configuration — and maps you key yourself (`bindings.filters`, `classes`, `icons`) are
+read as data, not matched against a vocabulary.
+
 ### Async combinators (`egl-utils-js`)
 
 Signal-first cancellation throughout (ADR-0004): pass `{ signal }`, get `AbortError` on

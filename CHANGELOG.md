@@ -137,6 +137,23 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   `comparator` 1.05 → 1.1 kB, `logger` 1.45 → 1.5 kB, `/storage` 2.1 → 2.15 kB) and
   `compileFilter` takes a new named one at 1.03 kB. No component or builder clause moved,
   and the root entry stays inside its 6 kB ceiling at 5914 B.
+- **BREAKING — the same rule now covers caller-supplied *descriptor* shapes**, which 17.7
+  deliberately left out ([ADR-0056](docs/adr/0056-descriptors-are-checked-too.md), roadmap
+  17.13). Fourteen shapes, with the message naming where the key sat
+  (`bsTable: unknown options.columns[0] property 'sortible'`): `bsTable` columns and the
+  `controls` sub-configs; `bsListGroup` items and their `badge`; `bsBreadcrumb`,
+  `bsAccordion`, `bsTabs`, `bsCarousel` items; `bsNavbar` items **and submenu children**;
+  `bsCard`'s `image`; the `labels` sets; a custom `bsIcon` `set`; `tablePipeline` columns; and
+  `bindTableControls` bindings with its nested `sortHeaders` and `pagination`.
+  - **Row data is never checked**, and neither are maps keyed by your own names
+    (`bindings.filters`, `classes`, `icons`). Descriptors are configuration you wrote; rows
+    are records that carry keys this library does not model.
+  - Measured before adopting, since "cheap × N" is an argument and not a conclusion:
+    **0.18 µs per descriptor** — ~13× the cost of *reading* one, and **0.34%** of a 500-item
+    `bsListGroup` build. Three budget rows moved, against seventeen for 17.7.
+- `bsTable` now hands `tablePipeline` only the F42 column fields (`type`, `compare`,
+  `getValue`, `searchable`, `filterable`) instead of spreading the whole `BsTableColumn` — what
+  its own documentation always claimed, and now enforced by the pipeline's own key check.
 
 ### Deprecated
 

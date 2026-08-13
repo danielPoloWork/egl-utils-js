@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-13 — Descriptors are checked too (roadmap 17.13)](2026/08/2026-08-13-descriptor-keys.md)
 - [2026-08-12 — The sanitizer's peer is looked up (roadmap 17.6)](2026/08/2026-08-12-sanitize-peer-lookup.md)
 - [2026-08-12 — The `#webcrypto` shim collapses (roadmap 17.14)](2026/08/2026-08-12-webcrypto-shim-collapse.md)
 - [2026-08-12 — The full error taxonomy reaches the root (roadmap 17.12)](2026/08/2026-08-12-error-taxonomy-root-export.md)
