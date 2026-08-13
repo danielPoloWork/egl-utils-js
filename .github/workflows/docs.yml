@@ -1,0 +1,98 @@
+name: docs
+
+# Publishes the generated API reference to GitHub Pages (roadmap 17.3, ADR-0057).
+#
+# `docs/api/` is built by `pnpm docs:api` and gitignored, so until this workflow
+# existed a consumer of a 110-export surface had the README, their editor's
+# tooltips, and nothing navigable. CI already *builds* it warning-free on every
+# PR (ci.yml, `treatWarningsAsErrors`); this only publishes what that gate
+# already proves is clean.
+#
+# **Trigger: a published release, not a tag push.** release.yml drafts on the tag
+# and a human presses "Publish" (AGENTS.md §11) — hooking the docs to that same
+# human act keeps the site and the release announcement in step, and means the
+# reference never describes a version nobody can install yet. `workflow_dispatch`
+# is here so the site can be rebuilt without cutting a release.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+# Least privilege: read the tree, write a Pages deployment, and mint the OIDC
+# token deploy-pages exchanges. No `contents: write` — this workflow publishes a
+# site, never a commit or a release.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and never cancel one in flight: a half-finished
+# deploy would leave the site inconsistent, which is worse than a queued one
+# (the same reasoning release.yml states for its own concurrency group).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish the API reference
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      # Explicit rather than relying on the default ref: for a `release` event
+      # that is the tag, and for a manual run it is whatever branch was chosen.
+      # Naming both makes it obvious which tree the published docs describe.
+      - name: Check out the released tree
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - uses: pnpm/action-setup@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # No `pnpm build` step: TypeDoc reads the JSDoc-typed sources directly, so
+      # the reference does not depend on dist/ existing.
+      - name: Generate the API reference
+        run: pnpm docs:api
+
+      # Pages must be enabled once, by hand, with Actions as the source. It
+      # cannot be done from here: configure-pages' `enablement` input needs
+      # `administration:write`, which is not a permission `GITHUB_TOKEN` can be
+      # granted — only a PAT or App token, and carrying one of those as a secret
+      # is a poor trade for a single setting. So this checks and fails with the
+      # remedy in the message, the way release.yml does for missing release notes,
+      # rather than letting a published release hit an opaque deploy error.
+      - name: Require Pages to be enabled (one-time repository setting)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          if ! gh api "repos/${GITHUB_REPOSITORY}/pages" >/dev/null 2>&1; then
+            echo "::error::GitHub Pages is not enabled for ${GITHUB_REPOSITORY}."
+            echo "::error::Enable it once — Settings > Pages > Source: GitHub Actions, or:"
+            echo "::error::  gh api -X POST repos/${GITHUB_REPOSITORY}/pages -f build_type=workflow"
+            echo "::error::See docs/workflow/github-setup.md section 4."
+            exit 1
+          fi
+          echo "Pages is enabled; continuing."
+
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Upload the generated site
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: docs/api
+
+      - name: Deploy to Pages
+        id: deploy
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

@@ -19,10 +19,15 @@ dependencies in the root entry, and a typed error hierarchy (EglError base with 
 .code). Pure by default, stateful by contract: the data and async modules never mutate
 inputs; events, storage, http, and cookie modules are labeled stateful (spec §1, §3).
 
-The frozen specification is in
-[`docs/specs/01_spec_utils.md`](docs/specs/01_spec_utils.md). The full generated API
-reference (roadmap 7.5) builds with `pnpm docs:api` into `docs/api/` (not committed —
+**[API reference →](https://danielpolowork.github.io/egl-utils-js/)** — every export,
+generated from the JSDoc types and published per release (roadmap 17.3,
+[ADR-0057](docs/adr/0057-the-api-reference-is-published-per-release.md)). It documents the
+**latest release**, and says which version that is in its header. To read it for the tree in
+front of you instead, `pnpm docs:api` builds it into `docs/api/` (generated, never committed —
 see [`docs/workflow/documentation.md`](docs/workflow/documentation.md)).
+
+The frozen specification is in
+[`docs/specs/01_spec_utils.md`](docs/specs/01_spec_utils.md).
 
 ## Build, test, run
 

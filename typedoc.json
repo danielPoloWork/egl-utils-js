@@ -15,6 +15,7 @@
   "tsconfig": "tsconfig.json",
   "out": "docs/api",
   "name": "egl-utils-js",
+  "includeVersion": true,
   "readme": "none",
   "excludeInternal": true,
   "treatWarningsAsErrors": true,
