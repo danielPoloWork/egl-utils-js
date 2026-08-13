@@ -578,7 +578,7 @@
     "limit": "1 kB"
   },
   {
-    "name": "single: httpClient (1.35 kB - documented NFR-01 exception, ADR-0015: measured 1309 B. Amended to 1.4 kB by ADR-0047 for the option-key check, and back to the original figure in 17.2 - the ADR-0050 floor raise paid that cost back with interest)",
+    "name": "single: httpClient (1.35 kB - THE named NFR-01 exception, and the only one: ADR-0015 measured it, ADR-0058 made 'named, measured, ADR-documented' the clause's rule rather than exempting composing facades as a category. Measured 1310 B; 27 of 28 root functions comply unaided. Amended to 1.4 kB by ADR-0047 for the option-key check, and back to the original figure in 17.2 - the ADR-0050 floor raise paid that cost back with interest)",
     "path": "dist/esm/index.js",
     "import": "{ httpClient }",
     "limit": "1.35 kB"

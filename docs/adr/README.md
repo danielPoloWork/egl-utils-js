@@ -73,3 +73,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0055](0055-the-sanitizer-s-peer-is-looked-up.md) | The sanitizer's peer is looked up, not imported — one contract for both peers | Accepted |
 | [0056](0056-descriptors-are-checked-too.md) | Descriptors are checked too — and where the rule deliberately stops | Accepted |
 | [0057](0057-the-api-reference-is-published-per-release.md) | The API reference is published per release, and documents only the latest | Accepted |
+| [0058](0058-the-per-function-budget-keeps-its-exceptions-named.md) | The per-function budget keeps its exceptions named, not exempted | Accepted |
