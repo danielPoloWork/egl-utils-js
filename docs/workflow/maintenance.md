@@ -12,6 +12,28 @@ public functions/types/endpoints and any documented compatibility guarantees (in
 where applicable), plus any user-visible configuration knobs and the
 package/target name.
 
+**Made concrete at v1.0.0** (roadmap 17.5). MAJOR-protected from that release on:
+
+- **Every named export** — 113 of them (102 distinct names), across the root and the nine subpath
+  entries.
+- **Every `EGL_*` error code**, and the documented `.code`-not-`instanceof` identity contract
+  ([ADR-0003](../adr/0003-error-taxonomy-stable-codes.md)).
+- **Every `exports`-map path**, so a deep import that resolves today keeps resolving.
+- **The supported-runtime floor** — Node >= 22, Safari >= 16.4
+  ([ADR-0050](../adr/0050-the-1x-runtime-floor.md)). Raising it is breaking, which is why it moved
+  before 1.0 rather than after.
+
+**Deliberately outside the promise**, so it is relied on knowingly rather than discovered:
+
+- **Byte budgets.** A quality gate, not an API; they move with measurement, by ADR
+  ([ADR-0058](../adr/0058-the-per-function-budget-keeps-its-exceptions-named.md)).
+- **Generated `.d.ts` internals.** The public types are stable; the emitted shape of an internal
+  `@typedef` is not.
+- **Error message *text*.** Branch on `.code`; wording is free to improve.
+- **Peer *behaviour*.** The declared range is a compatibility statement, not a security mechanism
+  ([ADR-0051](../adr/0051-the-sanitizer-s-peer-range.md)) — keeping the peer patched is the
+  consumer's, and `SECURITY.md` says so where it is read.
+
 ## Decision tree — which level?
 
 1. **Does the change remove, rename, or alter the signature/semantics of any public symbol,
