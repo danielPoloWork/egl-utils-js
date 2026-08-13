@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-13 — The API reference gets an address (roadmap 17.3)](2026/08/2026-08-13-publish-api-reference.md)
 - [2026-08-13 — Descriptors are checked too (roadmap 17.13)](2026/08/2026-08-13-descriptor-keys.md)
 - [2026-08-12 — The sanitizer's peer is looked up (roadmap 17.6)](2026/08/2026-08-12-sanitize-peer-lookup.md)
 - [2026-08-12 — The `#webcrypto` shim collapses (roadmap 17.14)](2026/08/2026-08-12-webcrypto-shim-collapse.md)

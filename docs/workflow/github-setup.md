@@ -70,11 +70,22 @@ seen their exact names in the first CI run.
 # Enable Discussions (questions/ideas; linked from the issue chooser).
 gh api -X PATCH repos/$OWNER/$REPO -F has_discussions=true
 
-# GitHub Pages from the docs/ folder on the default branch (optional doc site).
-gh api -X POST repos/$OWNER/$REPO/pages \
-  -F "source[branch]=$BRANCH" -F "source[path]=/docs" 2>/dev/null \
-  || echo "Pages already configured or needs the web UI once."
+# GitHub Pages with **GitHub Actions** as the source — where the `docs` workflow
+# deploys the generated API reference (roadmap 17.3, ADR-0057). REQUIRED once,
+# before the first release that should publish docs.
+gh api -X POST repos/$OWNER/$REPO/pages -f build_type=workflow 2>/dev/null \
+  || echo "Pages already configured, or needs the web UI once (Settings > Pages)."
 ```
+
+> **Why this is a manual step.** Enabling Pages needs `administration:write`, which is not a
+> permission `GITHUB_TOKEN` can be granted — only a PAT or App token, and carrying one as a
+> secret is a poor trade for a single setting. `docs.yml` therefore *checks* and fails with
+> this exact command in its error message, rather than deploying into a repository that has
+> Pages switched off.
+>
+> A **branch**-sourced site (`source[branch]`/`source[path]`) is the wrong shape here, and is
+> what this section described before 17.3: `docs/api/` is generated and gitignored, so there
+> is nothing in the tree to serve. The workflow builds and uploads it instead.
 
 Private vulnerability reporting (the SECURITY.md target) is enabled in the web UI:
 **Settings → Code security → Private vulnerability reporting → Enable**.
