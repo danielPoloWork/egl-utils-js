@@ -1,9 +1,17 @@
 # ADR-0012: The curated sanitize profile — deny-by-default, and how DOMPurify is reached
 
-- **Status:** Accepted
+- **Status:** Accepted; the *"how DOMPurify is reached"* half **superseded by
+  [ADR-0055](0055-the-sanitizer-s-peer-is-looked-up.md)** (2026-08-12, roadmap 17.6)
 - **Date:** 2026-07-30
 - **Deciders:** Daniel Polo (owner), agent (tech-lead persona)
 - **Related:** spec §2 item 24 (F24), `.spec` ADR-003 (delegate to DOMPurify — the *whether*), ADR-0004 (TypeError contract), ADR-0011 (secure-by-default precedent), ROADMAP 6.3, 6.5
+
+> **Two subjects, one superseded.** The **curated deny-by-default profile** — the allowlists,
+> the URI-scheme restriction, the `USE_PROFILES` refusal, the documented non-goals — is
+> unchanged and this record remains authoritative for it. What ADR-0055 replaces is the
+> *reach*: `import createDOMPurify from 'dompurify'` at module scope becomes a lookup
+> (`options.dompurify` → `globalThis.DOMPurify` → `EGL_PEER_MISSING`), because a bare
+> specifier cannot resolve on the bundler-free page spec 05 made a first-class consumer.
 
 ## Context
 

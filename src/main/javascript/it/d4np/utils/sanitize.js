@@ -12,8 +12,18 @@
  * entry is kept off the root (NFR-06), and DOMPurify is never a `dependencies`
  * entry.
  *
+ * **DOMPurify is looked up, never imported** (ADR-0055): the
+ * module is read from `options.dompurify`, then from `globalThis.DOMPurify`,
+ * and its absence is the typed `EGL_PEER_MISSING` failure at the call that
+ * needed it. This entry therefore carries no bare specifier, so it **loads on
+ * a plain HTML page with no bundler and no import map** (spec 05 F82) — where
+ * a static `import 'dompurify'` died before any error of ours could speak.
+ * The `/bootstrap` peer follows the same contract (ADR-0041).
+ *
  * Browser-first. In Node the sanitizer needs a real DOM — pass a `jsdom`
- * window via `options.window`. That cost is stated, not implied.
+ * window via `options.window`. That cost is stated, not implied. The two
+ * failures are independent and say so: no module is `EGL_PEER_MISSING`, no DOM
+ * is a `TypeError` naming the jsdom remedy.
  *
  * Every options bag on this entry **rejects a key it does not know** with a
  * `TypeError` naming it: the destructuring is the schema (ADR-0047).
@@ -21,8 +31,7 @@
  * @module egl-utils-js/sanitize
  */
 
-import createDOMPurify from 'dompurify';
-
+import { PeerMissingError } from './errors.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 
 /**
@@ -134,38 +143,84 @@ function buildUriRegExp(schemes) {
 }
 
 /**
- * The DOMPurify instance, resolved lazily and memoized per window. Resolution
- * never happens at module load, so importing this module has no side effects
- * (`sideEffects: false`, NFR-02) and the environment may be prepared after the
- * import.
+ * The DOMPurify instance, resolved lazily and memoized per (module, window)
+ * pair. Resolution never happens at module load, so importing this module has
+ * no side effects (`sideEffects: false`, NFR-02) and the environment — the
+ * peer included — may be prepared after the import.
  *
- * @type {{ target: unknown, instance: { sanitize: (html: string, config: object) => string } } | undefined}
+ * The key is the pair, not the window alone: a caller may inject one DOMPurify
+ * for one window and a different one (a test double, a second copy) for
+ * another, and binding is per pair.
+ *
+ * @type {{ module: unknown, target: unknown, instance: { sanitize: (html: string, config: object) => string } } | undefined}
  */
 let resolved;
 
 /**
+ * Resolve the DOMPurify module: injected first, then ambient, then a typed
+ * failure. Deliberately the same order `/bootstrap` uses for its own peer
+ * (ADR-0041) — and deliberately **not** a dynamic `import()`, which would make
+ * `sanitizeHtml` asynchronous to serve a package a CDN page has already loaded
+ * synchronously.
+ *
+ * Not memoized negatively: a `<script>` that lands after the first failed call
+ * is a normal loading order, not an error to remember.
+ *
+ * @param {unknown} injected
+ * @returns {any}
+ */
+function resolveModule(injected) {
+  const mod = injected ?? /** @type {any} */ (globalThis).DOMPurify;
+  if (mod === undefined || mod === null) {
+    throw new PeerMissingError(
+      'sanitizeHtml requires the DOMPurify peer, which is not reachable. Either ' +
+        'install it and pass it in — `sanitizeHtml(html, { dompurify: DOMPurify })` ' +
+        "— or load a build that defines the global, e.g. `<script src='.../purify.min.js'>`.",
+      { peer: 'dompurify' },
+    );
+  }
+  return mod;
+}
+
+/**
  * @param {Window} [explicitWindow]
+ * @param {unknown} [injectedModule]
  * @returns {{ sanitize: (html: string, config: object) => string }}
  */
-function resolveSanitizer(explicitWindow) {
+function resolveSanitizer(explicitWindow, injectedModule) {
   const ambient = /** @type {any} */ (globalThis).window;
   const target = explicitWindow ?? ambient;
 
-  if (resolved !== undefined && resolved.target === target) {
+  // The peer is resolved before the DOM: without the module there is nothing
+  // to bind a window to, and the two remedies are different.
+  /** @type {any} */
+  const purify = resolveModule(injectedModule);
+
+  if (resolved !== undefined && resolved.module === purify && resolved.target === target) {
     return resolved.instance;
   }
 
-  /** @type {any} */
-  const purify = createDOMPurify;
+  // Two module shapes are legal, and since ADR-0055 a caller can supply either.
+  // A **factory** (the package's default export, and what Node always sees)
+  // needs a DOM to bind to. A **bound instance** — what a browser's
+  // `purify.min.js` leaves on `window.DOMPurify`, or the result of calling the
+  // factory once — already exposes `sanitize` and cannot be rebound, so a
+  // `window` option cannot change its DOM.
+  const isFactory = typeof purify === 'function';
+  const isBound = typeof purify.sanitize === 'function';
 
-  // In a browser DOMPurify's default export is already bound to `window` and
-  // exposes `sanitize` directly. In Node it is only a factory and needs a DOM
-  // to bind to.
+  if (!isFactory && !isBound) {
+    throw new TypeError(
+      'sanitizeHtml: the `dompurify` module is neither a factory nor a bound ' +
+        'sanitizer (no callable export and no `sanitize` method). Is it really DOMPurify?',
+    );
+  }
+
   /** @type {any} */
   let instance;
-  if (explicitWindow !== undefined) {
+  if (isFactory && explicitWindow !== undefined) {
     instance = purify(explicitWindow);
-  } else if (typeof purify.sanitize === 'function') {
+  } else if (isBound) {
     instance = purify;
   } else if (target !== undefined && target !== null && target.document !== undefined) {
     instance = purify(target);
@@ -184,7 +239,7 @@ function resolveSanitizer(explicitWindow) {
     );
   }
 
-  resolved = { target, instance };
+  resolved = { module: purify, target, instance };
   return instance;
 }
 
@@ -220,6 +275,11 @@ function assertStringArray(value, name) {
  * @property {Window} [window] - The DOM to sanitize against. Required in Node
  *   (a `jsdom` window); unnecessary in a browser, where the page's window is
  *   used.
+ * @property {unknown} [dompurify] - The DOMPurify module (ADR-0055). Either the
+ *   package's default export or a browser build's bound instance; both shapes
+ *   are accepted. Omit it and `globalThis.DOMPurify` is used, which is what a
+ *   `<script src=".../purify.min.js">` page already has. With neither, the call
+ *   fails with `EGL_PEER_MISSING` naming `dompurify`.
  */
 
 /**
@@ -243,17 +303,29 @@ function assertStringArray(value, name) {
  * HTML.
  *
  * @example
- * // Browser: zero configuration.
+ * // A page that loaded DOMPurify with a script tag: zero configuration, the
+ * // global is the peer.
  * element.innerHTML = sanitizeHtml(userHtml);
  *
  * @example
- * // Node: an explicit DOM, as documented.
+ * // Bundler: the module is a parameter, never an import of ours (ADR-0055).
+ * import DOMPurify from 'dompurify';
+ * element.innerHTML = sanitizeHtml(userHtml, { dompurify: DOMPurify });
+ *
+ * // Bind it once if every call would repeat it:
+ * const clean = (html) => sanitizeHtml(html, { dompurify: DOMPurify });
+ *
+ * @example
+ * // Node: an explicit DOM as well as the module, as documented.
+ * import DOMPurify from 'dompurify';
  * import { JSDOM } from 'jsdom';
- * sanitizeHtml(userHtml, { window: new JSDOM('').window });
+ * sanitizeHtml(userHtml, { dompurify: DOMPurify, window: new JSDOM('').window });
  *
  * @param {string} html - The untrusted HTML to sanitize.
  * @param {SanitizeOptions} [options]
  * @returns {string} Sanitized HTML, safe to assign to `innerHTML`.
+ * @throws {PeerMissingError} Code `EGL_PEER_MISSING`, `.peer === 'dompurify'`,
+ *   when the peer is neither injected nor global (ADR-0055).
  * @throws {TypeError} If `html` is not a string, an option is invalid, or no
  *   DOM is available (see `options.window`).
  */
@@ -273,6 +345,7 @@ export function sanitizeHtml(html, options = {}) {
     allowedUriSchemes = DEFAULT_ALLOWED_URI_SCHEMES,
     allowDataAttributes = false,
     window: explicitWindow,
+    dompurify: injectedModule,
     ...unknown
   } = options;
   assertNoUnknownOptions(unknown, 'sanitizeHtml');
@@ -303,7 +376,7 @@ export function sanitizeHtml(html, options = {}) {
   // The URI pattern is built before resolving the DOM so an invalid scheme is
   // reported even in an environment that could not sanitize anyway.
   const uriRegExp = buildUriRegExp(allowedUriSchemes);
-  const sanitizer = resolveSanitizer(explicitWindow);
+  const sanitizer = resolveSanitizer(explicitWindow, injectedModule);
 
   // NOTE: USE_PROFILES is deliberately NOT used — inside DOMPurify it
   // *overrides* ALLOWED_TAGS, which would silently replace this curated

@@ -1,11 +1,20 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, beforeAll, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
+import DOMPurify from 'dompurify';
 import { sanitizeHtml } from '../../../../../main/javascript/it/d4np/utils/sanitize.js';
 
 // Node-side contract (roadmap 6.3, ADR-003/ADR-0012). This file deliberately
 // runs in the DEFAULT node environment — no `window` — so it proves the two
 // halves of the documented Node story: without a DOM the call fails loudly
 // with actionable guidance, and with an explicit jsdom window it works.
+//
+// Since ADR-0055 the peer is looked up rather than imported, so these suites
+// publish it as the global once. That keeps every assertion below about the
+// DOM half of the contract, which is what this file is for — the peer half
+// (injected, ambient, absent, precedence) is sanitize-peer.test.js.
+beforeAll(() => {
+  /** @type {any} */ (globalThis).DOMPurify = DOMPurify;
+});
 
 describe('sanitizeHtml — Node without a DOM', () => {
   it('throws TypeError naming the jsdom remedy, rather than failing obscurely', () => {
@@ -62,6 +71,13 @@ describe('sanitizeHtml — Node with an explicit jsdom window', () => {
       '<section>s</section>',
     );
   });
+
+  it('works with the module injected instead of global, DOM and peer together', () => {
+    // The documented Node call in full: both halves supplied explicitly.
+    expect(
+      sanitizeHtml('<p>a</p><script>alert(1)</script>', { dompurify: DOMPurify, window }),
+    ).toBe('<p>a</p>');
+  });
 });
 
 describe('sanitizeHtml — an ambient window installed after import', () => {
@@ -70,9 +86,8 @@ describe('sanitizeHtml — an ambient window installed after import', () => {
   });
 
   // The `global-jsdom` pattern: the app (or a test setup) assigns
-  // globalThis.window *after* this module — and therefore DOMPurify — was
-  // imported, so DOMPurify never auto-bound. sanitizeHtml must still find the
-  // DOM without an explicit `window` option.
+  // globalThis.window *after* this module was imported. sanitizeHtml must still
+  // find the DOM without an explicit `window` option.
   it('binds to globalThis.window with no explicit option', () => {
     vi.stubGlobal('window', new JSDOM('').window);
     expect(sanitizeHtml('<p>a</p><script>alert(1)</script>')).toBe('<p>a</p>');

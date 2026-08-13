@@ -252,7 +252,7 @@ here: it is additive, and additive work belongs in 1.x.
 - [ ] 17.3 Publish the generated API reference: `docs/api/` is built by `pnpm docs:api` and gitignored, so a consumer of a 110-export surface has the README and their editor's JSDoc and nothing navigable. Add a Pages workflow that generates and publishes it per release, and link it from the README _(route: standard/medium)_
 - [ ] 17.4 Close the NFR-01 clause ADR-0015 left open — whether the per-function 1 kB budget exempts composing facades, or keeps naming them one by one as exceptions. Practice has amended it four times over (`httpClient`, `bsTable`, `tablePipeline`, `bindTableControls`); a 1.0 should ship the clause it actually enforces _(route: standard/medium — decision-heavy, and it is written down as the owner's call)_
 - [ ] 17.5 Cut **v1.0.0**: the first release whose version means what SemVer says it means. Changelog prose and release notes as ever, plus a short compatibility statement naming the supported runtimes and what the stability promise covers _(route: standard/high — the release decision stays with the owner)_
-- [ ] 17.6 Decide the `/sanitize` peer-resolution contract before 1.0 freezes it: today `/sanitize` static-imports `dompurify` — fatal at module load on a page with no bundler and no import map — while `/bootstrap` resolves its peer lazily, injected-first, failing typed (ADR-0041). Two optional peers, two contradictory mechanisms, and only one survives a bundler-free page. The decision needs an ADR; if the chosen contract is incompatible with the static import, the flip ships inside this item (the 17.2 breaking-by-construction logic), and the purely additive remainder lands in M18 item 18.1 — spec 05 F82 is written mechanism-neutral and defers to that ADR _(route: frontier-reasoning/high — decision-heavy + security: the contract is the deliverable, and it pre-empts a 17.1 finding)_
+- [x] 17.6 Decide the `/sanitize` peer-resolution contract before 1.0 freezes it: today `/sanitize` static-imports `dompurify` — fatal at module load on a page with no bundler and no import map — while `/bootstrap` resolves its peer lazily, injected-first, failing typed (ADR-0041). Two optional peers, two contradictory mechanisms, and only one survives a bundler-free page. The decision needs an ADR; if the chosen contract is incompatible with the static import, the flip ships inside this item (the 17.2 breaking-by-construction logic), and the purely additive remainder lands in M18 item 18.1 — spec 05 F82 is written mechanism-neutral and defers to that ADR _(route: frontier-reasoning/high — decision-heavy + security: the contract is the deliverable, and it pre-empts a 17.1 finding)_ — decided **lookup, not import**, per [ADR-0055](docs/adr/0055-the-sanitizer-s-peer-is-looked-up.md): `options.dompurify` → `globalThis.DOMPurify` → `EGL_PEER_MISSING`, which is ADR-0041's contract verbatim, so the library now has **one** peer mechanism rather than two. ADR-0041 argued the opposite for this entry and its reasoning was sound — a static import is right for an entry that exists only to use the peer — but the premise was an npm consumer with a bundler, and ADR-0046 made the bundler-free page first-class; no `exports` condition can serve a static import to one and a lookup to the other, so the choice was exclusive. **Breaking for bundler consumers**, who now inject once or per call. The flip landed here, so F82's *load* half already holds and the browser fixture's import map is **deleted** — 18.1 keeps the three-engine proof. Fixing the shape detection also exposed a latent bug (a bound instance passed with `window` hit the factory branch and threw `purify is not a function`). Unusually for this milestone, no budget moved: `/sanitize` 1457 B → 1484 B inside its row
 
 Items 17.7–17.12 were **filed by the 17.1 readiness review**, 17.13 by 17.7 and 17.14 by 17.2 —
 per AGENTS.md §10 and the roadmap 7.6 precedent, findings become items rather than being
@@ -362,7 +362,7 @@ progress · ✅ done · ❎ N/A.
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
 | §1 | Objective & business context | 1.1, 7.6 | ✅ |
-| §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 7.6 | ✅ |
+| §2 | Functional requirements | 1.1, 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 7.6, 17.6 | ✅ |
 | §3 | Non-functional requirements | 1.3, 1.4, 2.6, 3.6, 5.3, 6.4, 7.1, 7.2, 7.3, 7.6, 8.1, 17.2, 17.4, 17.7, 17.10, 17.11, 17.12, 17.14 | ✅ |
 | §4 | Logical architecture | 1.1, 7.6 | ✅ |
 | §5 | Public interface | 1.2, 2.1, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.3, 7.6, 17.1, 17.6, 17.7, 17.12, 17.14 | ✅ |
@@ -409,8 +409,8 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 (05) | Objective & business context | 18.1, 18.2, 18.3, 18.4, 18.5 | ⏳ |
-| §2 (05) | Functional requirements F82–F87 | 18.1, 18.2, 18.3, 18.4, 18.5 | ⏳ |
+| §1 (05) | Objective & business context | 17.6, 18.1, 18.2, 18.3, 18.4, 18.5 | 🚧 |
+| §2 (05) | Functional requirements F82–F87 | 17.6, 18.1, 18.2, 18.3, 18.4, 18.5 | 🚧 |
 | §3 (05) | Non-functional requirements | 18.2, 18.3, 18.5 | ⏳ |
 | §4 (05) | Logical architecture | 18.2, 18.3 | ⏳ |
 | §5 (05) | Public interface | 18.1, 18.2, 18.3 | ⏳ |

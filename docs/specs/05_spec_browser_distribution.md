@@ -33,6 +33,12 @@ wave is their closure:
   contracts; the contract decision is **ROADMAP 17.6** (pre-1.0, because freezing the
   static import and then changing it would break bundler consumers post-1.0), and F82
   states the outcome this wave must deliver under whichever mechanism that ADR picks.
+  - **Resolved (roadmap 17.6, [ADR-0055](../adr/0055-the-sanitizer-s-peer-is-looked-up.md)):**
+    the mechanism is the ADR-0041 lookup — `options.dompurify`, then `globalThis.DOMPurify`,
+    then `EGL_PEER_MISSING` naming `dompurify`. `/sanitize` now carries **no bare specifier**,
+    so the load half of F82 already holds and the browser fixture's import map is deleted.
+    What 18.1 still owns is the **proof**: the same behaviour asserted on three engines from a
+    static server, per F86.
 - **No single-file artifact.** A classic `<script src>` page — no modules at all — has
   nothing to load: the build emits `esm` and `cjs` only.
 - **The bare CDN URL resolves to nothing.** `package.json` names no `unpkg`/`jsdelivr`

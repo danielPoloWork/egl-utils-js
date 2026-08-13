@@ -22,7 +22,7 @@
     "limit": "0.95 kB"
   },
   {
-    "name": "/sanitize (measured 1457 B; DOMPurify is external)",
+    "name": "/sanitize (measured 1484 B; +27 B for the ADR-0055 peer lookup, and DOMPurify is now absent from the module graph entirely rather than external to it)",
     "path": "dist/esm/sanitize.js",
     "limit": "1.55 kB"
   },

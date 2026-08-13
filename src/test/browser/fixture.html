@@ -7,18 +7,21 @@
       The browser smoke suite (roadmap 6.4) loads the BUILT bundles from dist/,
       not the sources: what a consumer actually downloads is what gets checked.
 
-      The import map resolves the one bare specifier the /sanitize bundle
-      carries — DOMPurify, an external optional peer (ADR-0012) — to its
-      browser ESM build. A real consumer's bundler does this job; here the map
-      stands in for it without adding a bundling step to the test harness.
+      THERE IS NO IMPORT MAP, and that absence is now an assertion. Until
+      roadmap 17.6 the /sanitize bundle carried a bare `dompurify` specifier and
+      this fixture needed a map to resolve it — which is precisely the failure
+      spec 05 F82 exists to remove: a browser with no bundler and no map could
+      not load the entry at all. ADR-0055 made the peer a value looked up at
+      first use, so every entry below now resolves with no map, exactly as a
+      plain HTML page would.
+
+      DOMPurify is supplied the way that page would supply it: a classic script
+      that leaves the bound instance on `window.DOMPurify`, which is the ambient
+      half of the ADR-0055 contract. The suite's own peer-absence assertions run
+      in Node (sanitize-peer.test.js); the three-engine no-bundler proof is
+      roadmap 18.1.
     -->
-    <script type="importmap">
-      {
-        "imports": {
-          "dompurify": "/node_modules/dompurify/dist/purify.es.mjs"
-        }
-      }
-    </script>
+    <script src="/node_modules/dompurify/dist/purify.min.js"></script>
   </head>
   <body>
     <div id="host"></div>
@@ -40,6 +43,8 @@
             await Promise.all([
               import('/dist/esm/index.js'),
               import('/dist/esm/storage.js'),
+              // No import map, no bundler: /sanitize resolves because it carries
+              // no bare specifier any more (ADR-0055, spec 05 F82).
               import('/dist/esm/sanitize.js'),
               import('/dist/esm/errors.js'),
               import('/dist/esm/logging.js'),

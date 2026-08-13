@@ -36,6 +36,13 @@ in an incident:
 - **No streaming support** — the whole input is sanitized synchronously per call.
 - **Browser-first.** In Node.js, `sanitizeHtml` requires an explicit DOM (pass a `jsdom`
   window via `options.window`); without one it throws rather than silently no-op'ing.
+- **The peer's *reachability* is checked at the call, not at build time**
+  ([ADR-0055](docs/adr/0055-the-sanitizer-s-peer-is-looked-up.md)). DOMPurify is looked up —
+  `options.dompurify`, then `globalThis.DOMPurify` — so that this entry loads on a page with
+  no bundler. The consequence worth knowing: a packaging mistake that a static import would
+  have failed at build time now surfaces as `EGL_PEER_MISSING` at the first sanitize call.
+  What does **not** change is that the failure is loud and typed — unsanitized HTML is never
+  returned, and there is no configuration in which absence degrades to a pass-through.
 - **DOMPurify version currency is the operator's responsibility.** The security guarantee
   is "DOMPurify within the declared peer range + this profile" — keeping the peer dependency
   updated is part of using this function safely, the same as any other security-relevant

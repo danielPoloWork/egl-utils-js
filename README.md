@@ -673,15 +673,32 @@ current afterwards is yours — the range says what this library is compatible w
 safe forever ([ADR-0051](docs/adr/0051-the-sanitizer-s-peer-range.md),
 [SECURITY.md](SECURITY.md)).
 
+**DOMPurify is looked up, not imported** ([ADR-0055](docs/adr/0055-the-sanitizer-s-peer-is-looked-up.md)):
+`options.dompurify` first, then `globalThis.DOMPurify`, and with neither the call fails with
+the typed `EGL_PEER_MISSING` naming `dompurify` — never a silent pass-through of unsanitized
+HTML. That is what lets this entry load on a plain HTML page with no bundler and no import
+map, where a bare `import 'dompurify'` died before any error of ours could speak.
+
 ```js
+import DOMPurify from 'dompurify';
 import { sanitizeHtml } from 'egl-utils-js/sanitize';
 
-// Browser: zero configuration.
-element.innerHTML = sanitizeHtml(userSuppliedHtml);
+// Bundler: the module is a parameter. Bind it once if every call would repeat it.
+const clean = (html) => sanitizeHtml(html, { dompurify: DOMPurify });
+element.innerHTML = clean(userSuppliedHtml);
 
-// Node: requires an explicit DOM.
+// Node: the DOM is explicit too.
 import { JSDOM } from 'jsdom';
-sanitizeHtml(userSuppliedHtml, { window: new JSDOM('').window });
+sanitizeHtml(userSuppliedHtml, { dompurify: DOMPurify, window: new JSDOM('').window });
+```
+
+```html
+<!-- A page with no bundler: the script tag supplies the peer, and no option is needed. -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script type="module">
+  import { sanitizeHtml } from '/node_modules/egl-utils-js/dist/esm/sanitize.js';
+  element.innerHTML = sanitizeHtml(userSuppliedHtml); // window.DOMPurify is the peer
+</script>
 ```
 
 See [`SECURITY.md`](SECURITY.md#sanitizehtml-non-goals) for what `sanitizeHtml`

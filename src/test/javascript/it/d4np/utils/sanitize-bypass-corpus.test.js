@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
+import DOMPurify from 'dompurify';
 import { sanitizeHtml } from '../../../../../main/javascript/it/d4np/utils/sanitize.js';
 import { BYPASS_CORPUS } from '../../../../fixtures/sanitize-bypass-corpus.js';
+
+// The peer reaches the module ambiently, as on a script-tag page (ADR-0055).
+beforeAll(() => {
+  /** @type {any} */ (globalThis).DOMPurify = DOMPurify;
+});
 
 // Bypass-corpus gates (roadmap 6.5, spec §2 item 24, ADR-003 / ADR-0012).
 //

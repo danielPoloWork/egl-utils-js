@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
+import DOMPurify from 'dompurify';
 import {
   sanitizeHtml,
   defaultSanitizeProfile,
@@ -9,8 +10,15 @@ import {
 //
 // This file runs in the jsdom environment, so `window` exists and DOMPurify's
 // default export is already bound to it — the same code path a browser takes,
-// with no injection. The Node-without-a-DOM contract is covered separately in
-// sanitize-node.test.js, which runs in the default node environment.
+// with no `window` option. The peer itself is published as the global, which is
+// the **ambient** half of the ADR-0055 lookup contract and exactly the shape of
+// a page that loaded `purify.min.js` with a script tag; the injected half is
+// covered in sanitize-peer.test.js. The Node-without-a-DOM contract is covered
+// separately in sanitize-node.test.js, which runs in the default node
+// environment.
+beforeAll(() => {
+  /** @type {any} */ (globalThis).DOMPurify = DOMPurify;
+});
 
 /** Parse sanitized output back into a DOM so assertions are structural. */
 function parse(html) {
