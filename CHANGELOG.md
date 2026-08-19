@@ -12,6 +12,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **Global single-file artifact** `dist/global/egl-utils.global.js` — a minified IIFE with
+  a sourcemap, loadable by a classic `<script src>` and read as the single global `egl`: the
+  root entry's exports at the top level, each subpath as a sub-namespace. Peers stay
+  external and are resolved at use, and a packaging gate asserts the surface, the version
+  lockstep and the absence of a second global against the built file (spec 05 F83,
+  ROADMAP 18.2, [ADR-0059](docs/adr/0059-one-file-one-global-and-a-budget-repinned.md)).
+
 ### Changed
 
 ### Deprecated

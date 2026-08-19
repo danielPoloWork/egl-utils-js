@@ -51,4 +51,38 @@ export default defineConfig([
     // package.json is "type": "module", so CommonJS artifacts must be .cjs/.d.cts.
     outExtension: () => ({ js: '.cjs' }),
   },
+  // Three builds now. The global single-file artifact (spec 05 F83, roadmap
+  // 18.2) is what a plain HTML page loads with a classic `<script src>`: one
+  // file, no modules, no bundler, no npm, read as the single global `egl`.
+  //
+  // It is a separate config rather than a third format on the pair above
+  // because almost nothing it needs is shared: it bundles ONE source
+  // (`global.js`, which exists only to compose the namespace), it is the only
+  // minified output, it emits no declarations (a `<script>` consumer has no
+  // type resolution to satisfy, and the ten entries already ship .d.ts for the
+  // consumer who does), and it must not `clean` — it writes into its own
+  // directory while the pair above owns theirs.
+  //
+  // `globalName` is what performs the assignment, deliberately: no source
+  // module writes to a global, so `sideEffects: false` stays true and loading
+  // the artifact does nothing beyond defining `egl` (F83).
+  {
+    entry: { 'egl-utils': 'src/main/javascript/it/d4np/utils/global.js' },
+    format: 'iife',
+    globalName: 'egl',
+    outDir: 'dist/global',
+    platform: 'browser',
+    target: 'es2022',
+    minify: true,
+    sourcemap: true,
+    dts: false,
+    clean: false,
+    // The optional peers are resolved at use, never imported (ADR-0041,
+    // ADR-0055), so nothing should reference them at bundle time. Naming them
+    // external anyway is a belt-and-braces guard: if a future import slipped in,
+    // the artifact would fail the packaging gate's no-bare-specifier check with
+    // the specifier named, rather than silently inlining a peer the page is
+    // expected to supply itself.
+    external: ['bootstrap', '@popperjs/core', 'dompurify'],
+  },
 ]);
