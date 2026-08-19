@@ -1129,7 +1129,7 @@ inside their declared ranges — keeping those patched is yours. Full detail:
 | 15 | Bootstrap table manager | ✅ done |
 | 16 | Bootstrap interactive wrappers | ✅ done |
 | 17 | v1.0.0 readiness & the first stable release | ✅ done |
-| 18 | Browser distribution | ⏳ planned |
+| 18 | Browser distribution | 🚧 in progress |
 | 19 | Table data & bsTable extras | ⏳ planned |
 | 20 | Application UX utilities | ⏳ planned |
 | 21 | Form engine | ⏳ planned |
