@@ -2,7 +2,7 @@
 
 > Universal JavaScript async, data, and event utilities for Node.js and modern browsers
 
-![Status](https://img.shields.io/badge/Status-v0.9.0-blue)
+![Status](https://img.shields.io/badge/Status-v1.0.0-blue)
 
 A
 library written in **JavaScript (ES2023)**, built and governed to an enterprise quality
@@ -1076,6 +1076,26 @@ try {
 }
 ```
 
+## Stability promise
+
+`egl-utils-js` is **1.x**, and the number is meant literally. MAJOR-protected — these change only
+in a 2.0:
+
+- **Every named export**: 113 across the root and the nine subpath entries (102 distinct names —
+  the error classes are reachable from both the root and `/errors`).
+- **Every `EGL_*` error code**, and the `.code`-not-`instanceof` identity contract.
+- **Every `exports`-map path** — a deep import that resolves today keeps resolving.
+- **The runtime floor**: **Node >= 22**, **Safari >= 16.4**. Raising it is breaking, so it was
+  raised *before* 1.0.
+
+**Minor** adds exports, options and error codes. **Patch** fixes without changing a documented
+contract.
+
+Outside the promise, deliberately: byte budgets (a gate, not an API), the emitted shape of internal
+`.d.ts` typedefs, error message *wording* (branch on `.code`), and what the optional peers do
+inside their declared ranges — keeping those patched is yours. Full detail:
+[`docs/workflow/maintenance.md`](docs/workflow/maintenance.md).
+
 ## How this project is run
 
 | Document | Purpose |
@@ -1108,7 +1128,7 @@ try {
 | 14 | Bootstrap element builders | ✅ done |
 | 15 | Bootstrap table manager | ✅ done |
 | 16 | Bootstrap interactive wrappers | ✅ done |
-| 17 | v1.0.0 readiness & the first stable release | 🚧 in progress |
+| 17 | v1.0.0 readiness & the first stable release | ✅ done |
 | 18 | Browser distribution | ⏳ planned |
 | 19 | Table data & bsTable extras | ⏳ planned |
 | 20 | Application UX utilities | ⏳ planned |

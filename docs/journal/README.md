@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-13 — v1.0.0 prepared, and M17 complete (roadmap 17.5)](2026/08/2026-08-13-release-v1.0.0.md)
 - [2026-08-13 — The per-function budget clause, closed (roadmap 17.4)](2026/08/2026-08-13-per-function-budget-clause.md)
 - [2026-08-13 — The API reference gets an address (roadmap 17.3)](2026/08/2026-08-13-publish-api-reference.md)
 - [2026-08-13 — Descriptors are checked too (roadmap 17.13)](2026/08/2026-08-13-descriptor-keys.md)
