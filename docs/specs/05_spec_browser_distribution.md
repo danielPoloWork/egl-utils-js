@@ -117,6 +117,18 @@ implementation.
   deduplicated single file. When 18.2 lands, the budget is re-pinned to **measured + ≤ 7%**
   (the ADR-0015 practice), and the pinned number amends this clause in that PR. Measured by
   the existing size-limit tooling (§6).
+  - **Amended (roadmap 18.2, [ADR-0059](../adr/0059-one-file-one-global-and-a-budget-repinned.md)):**
+    the artifact measures **31 444 B** and the budget is pinned to **33.6 kB** — measured
+    **+ 6.9%**, inside the ≤ 7% this clause reserved. Two notes on the metric, because the
+    derivation above and the tooling it names do not use the same one. The size-limit rows
+    this project has gated since M7 measure **brotli**, so 31 444 B is the brotli figure and
+    33.6 kB is a brotli budget; the same file is **35 842 B gzipped**. Both are inside the
+    40 kB authoring ceiling, and the ceiling's own ≈ 39.8 kB derivation was itself a sum of
+    brotli entry rows — so the comparison the clause intended is the brotli one, and the
+    wording "min+gzip" was loose rather than the numbers being wrong. The deduplication the
+    derivation predicted is visible, and larger than predicted: the ten entry rows now sum to
+    **41 847 B** (the ≈ 39.8 kB above was the figure when this wave was planned, before the
+    M17 items moved several entries), and the single file is **25% under** that sum.
 - NFR-23 **Bundler-consumer non-regression (hard):** the `exports` map's shape and
   resolution semantics are untouched by this wave; `sideEffects: false` continues to hold
   for every module including the new artifact's source; runtime dependencies stay **zero**

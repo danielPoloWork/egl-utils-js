@@ -582,5 +582,10 @@
     "path": "dist/esm/index.js",
     "import": "{ httpClient }",
     "limit": "1.35 kB"
+  },
+  {
+    "name": "global artifact (F83: the whole public surface in one IIFE — measured 31444 B, re-pinned from the 40 kB authoring ceiling to measured + 6.9% by ADR-0059, NFR-22)",
+    "path": "dist/global/egl-utils.global.js",
+    "limit": "33.6 kB"
   }
 ]
