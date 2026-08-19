@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>egl-utils-js — /sanitize with no bundler, no import map, no peer</title>
+    <!--
+      The spec 05 F82 proof page (roadmap 18.1). Deliberately the most hostile
+      environment the contract has to survive, and every absence below is an
+      assertion rather than an omission:
+
+        - NO import map. ADR-0055 made the DOMPurify module a value looked up
+          rather than a bare `import 'dompurify'`, so the entry resolves from a
+          plain static file server. Until 17.6 this page could not have loaded
+          at all: the module died at "Failed to resolve module specifier", before
+          any typed error of ours could speak.
+        - NO DOMPurify. The shared smoke fixture supplies the peer with a script
+          tag, which makes the *present* half of the contract observable and the
+          *absent* half unobservable. Peer absence is the security-relevant case
+          — it must be a loud typed throw, never a silent pass-through of
+          unsanitized HTML — so it needs a page where the peer was never there.
+        - NO bundler, NO npm, NO other entry. One `<script type="module">`
+          importing one built file, exactly as the target consumer's page does.
+
+      The peer arrives per test, on the route under test: a classic
+      `<script src=purify.min.js>` for the ambient case (which also proves the
+      lookup is not memoized negatively — the script lands after the module),
+      and a dynamically imported module value for the injected case, which
+      reaches `sanitizeHtml` without ever defining a global.
+    -->
+  </head>
+  <body>
+    <div id="host"></div>
+    <script type="module">
+      // The load outcome is captured as DATA, never thrown. A module-resolution
+      // failure and a working entry must be distinguishable by the assertions
+      // rather than by "the page is blank", which is what F82 is about.
+      window.__eglSanitize = (async () => {
+        try {
+          const module = await import('/dist/esm/sanitize.js');
+          window.__eglSanitizeModule = module;
+          return { ok: true, exports: Object.keys(module).sort() };
+        } catch (error) {
+          return {
+            ok: false,
+            message: String(error && error.message ? error.message : error),
+          };
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -286,7 +286,7 @@ identified by the same triage (M19–M21 below, plus unnumbered widget candidate
 recorded in
 [ADR-0046](docs/adr/0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md).
 
-- [ ] 18.1 `/sanitize` no-bundler behavior per the 17.6 ADR: the entry loads with no import map, the peer is reachable per that contract, and absence surfaces as `EGL_PEER_MISSING` naming `dompurify` — never a module-resolution failure at load (spec 05 F82) _(route: standard/high — security: sanitizer reachability is security posture)_
+- [x] 18.1 `/sanitize` no-bundler behavior per the 17.6 ADR: the entry loads with no import map, the peer is reachable per that contract, and absence surfaces as `EGL_PEER_MISSING` naming `dompurify` — never a module-resolution failure at load (spec 05 F82) _(route: standard/high — security: sanitizer reachability is security posture)_ — proved on three engines from a static server by `src/test/browser/no-bundler-sanitize.spec.js`, on a fixture with **no import map and no DOMPurify at all**: the shared smoke fixture supplies the peer in its `<head>`, so the *absent* case — the security-relevant half, whose wrong answer is returning the caller's markup unsanitized — was unobservable there. Seven assertions per engine, including the built entry carrying no bare specifier, absence throwing rather than passing through, and a classic `<script>` landing *after* the module still satisfying the lookup (ADR-0055 needed no change)
 - [ ] 18.2 The global single-file artifact: `dist/global/egl-utils.global.js`, IIFE + sourcemap, `window.egl` namespacing the full public surface, peers external, no load side effects; the budget row lands pinned to measured + ≤ 7% under the 40 kB authoring ceiling (spec 05 F83, NFR-22) _(route: standard/high — sets-pattern: the artifact every CDN consumer scripts against)_
 - [ ] 18.3 CDN resolution and the packaging gates: `unpkg`/`jsdelivr` fields target the artifact, the exports map stays byte-identical, and a packaging test asserts the fields name files present in the packed tarball (spec 05 F84, NFR-23) _(route: standard/medium)_
 - [ ] 18.4 The no-bundler documentation: README "Use from a browser, without npm" — per-entry deep ESM URLs, the artifact route, how each peer is supplied on each route, and the same-version rule for shared chunks; every snippet mirrored by an 18.5 fixture (spec 05 F85) _(route: fast/medium)_
@@ -413,5 +413,5 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 | §2 (05) | Functional requirements F82–F87 | 17.6, 18.1, 18.2, 18.3, 18.4, 18.5 | 🚧 |
 | §3 (05) | Non-functional requirements | 18.2, 18.3, 18.5 | ⏳ |
 | §4 (05) | Logical architecture | 18.2, 18.3 | ⏳ |
-| §5 (05) | Public interface | 18.1, 18.2, 18.3 | ⏳ |
-| §6 (05) | Verification & test strategy | 18.1, 18.5 | ⏳ |
+| §5 (05) | Public interface | 18.1, 18.2, 18.3 | 🚧 |
+| §6 (05) | Verification & test strategy | 18.1, 18.5 | 🚧 |
