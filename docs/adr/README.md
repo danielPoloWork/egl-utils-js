@@ -75,3 +75,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0057](0057-the-api-reference-is-published-per-release.md) | The API reference is published per release, and documents only the latest | Accepted |
 | [0058](0058-the-per-function-budget-keeps-its-exceptions-named.md) | The per-function budget keeps its exceptions named, not exempted | Accepted |
 | [0059](0059-one-file-one-global-and-a-budget-repinned.md) | One file, one global — composed by re-export, and a budget re-pinned | Accepted |
+| [0060](0060-the-cdn-default-and-what-the-tarball-proves.md) | The CDN default is the artifact — and the tarball is what proves it | Accepted |

@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-19 — The CDN default, and what the tarball proves (roadmap 18.3)](2026/08/2026-08-19-cdn-fields.md)
 - [2026-08-19 — One file, one global (roadmap 18.2)](2026/08/2026-08-19-global-artifact.md)
 - [2026-08-19 — /sanitize proved on a page with no bundler (roadmap 18.1)](2026/08/2026-08-19-no-bundler-sanitize.md)
 - [2026-08-13 — v1.0.0 prepared, and M17 complete (roadmap 17.5)](2026/08/2026-08-13-release-v1.0.0.md)
