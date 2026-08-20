@@ -12,6 +12,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **CDN default** — the `unpkg` and `jsdelivr` fields name the global artifact, so the bare
+  package URL (`https://cdn.jsdelivr.net/npm/egl-utils-js`) serves a file a classic
+  `<script src>` can run. The `exports` map is byte-for-byte unchanged and no `main`,
+  `module` or `browser` field was added; a packaging gate asserts every advertised path is
+  present in the packed tarball (spec 05 F84, ROADMAP 18.3,
+  [ADR-0060](docs/adr/0060-the-cdn-default-and-what-the-tarball-proves.md)).
+
 - **Global single-file artifact** `dist/global/egl-utils.global.js` — a minified IIFE with
   a sourcemap, loadable by a classic `<script src>` and read as the single global `egl`: the
   root entry's exports at the top level, each subpath as a sub-namespace. Peers stay
