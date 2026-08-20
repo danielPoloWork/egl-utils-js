@@ -720,7 +720,8 @@ sanitizeHtml(userSuppliedHtml, { dompurify: DOMPurify, window: new JSDOM('').win
 ```
 
 See [`SECURITY.md`](SECURITY.md#sanitizehtml-non-goals) for what `sanitizeHtml`
-deliberately does not cover.
+deliberately does not cover, and [Use from a browser, without
+npm](#use-from-a-browser-without-npm) for the version-pinned CDN URLs.
 
 ### Bootstrap 5 toolkit (`egl-utils-js/bootstrap`)
 
@@ -1075,6 +1076,99 @@ try {
   if (error.code === 'EGL_PEER_MISSING') console.error(`install ${error.peer}`);
 }
 ```
+
+Loading Bootstrap from a CDN `<script>` instead of installing it: [Use from a browser,
+without npm](#use-from-a-browser-without-npm).
+
+## Use from a browser, without npm
+
+No Node, no bundler, no `package.json` — a static file server or a CDN, and a `<script>`
+tag. Nine of the ten entries have loaded this way from day one; `/sanitize` closed the tenth
+once its DOMPurify peer stopped being a bare `import` (ADR-0055). Two routes, both
+build-free:
+
+### Deep ESM — one entry at a time
+
+Each entry is a plain ES module. Load only what you use:
+
+```html
+<script type="module">
+  import { retry, groupBy } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.1.0/dist/esm/index.js';
+  import { truncate } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.1.0/dist/esm/text.js';
+  import { bsButton } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.1.0/dist/esm/bootstrap.js';
+</script>
+```
+
+No import map: every entry's internal imports are **relative paths** to its own directory
+(`./chunk-<hash>.js`), never a bare specifier, so the browser resolves them without help —
+the same property `/sanitize` had to earn (ADR-0055) and the other nine entries had for
+free. Several of those chunks are **shared across entries** — `errors.js`, `table.js` and
+`bootstrap.js` all pull the same `chunk-47ELFAOV.js` today — so two entries from the same
+version and the same CDN share one cached download; that is also why the rule below matters.
+
+**Pin one version for every `egl-utils-js` URL on the page.** Entries share content-hashed
+chunks *within a version*, not across one: a page mixing `@1.1.0` and `@1.2.0` URLs
+downloads the overlapping code twice and can end up running two separate copies of the same
+class (the classic dual-instance hazard ADR-0003 already documents for the ESM/CJS build —
+branch on `.code`, never cross-instance `instanceof`, and that advice applies here too).
+
+Any of the ten entries works this way: swap `index.js` for `storage.js`, `sanitize.js`,
+`errors.js`, `text.js`, `net.js`, `table.js`, `logging.js`, `dom.js`, or `bootstrap.js` —
+the same names the npm `exports` map already uses.
+
+### One `<script>`, the whole surface — the global artifact
+
+For a page that wants more than a couple of functions, or one written with no modules at
+all, `dist/global/egl-utils.global.js` is the whole public surface in one IIFE, read as the
+global `egl` (ROADMAP 18.2, spec 05 F83). This is also what the bare CDN URL resolves to:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/egl-utils-js@1.1.0"></script>
+<!-- equivalently: https://unpkg.com/egl-utils-js@1.1.0 -->
+<script>
+  const rows = egl.table.paginate(data, { page: 1, pageSize: 20 });
+  document.body.append(egl.bootstrap.bsBadge(`${rows.total} results`));
+  egl.retry(() => fetch('/api/status'), { retries: 2 });
+</script>
+```
+
+The root entry's exports sit at the top level (`egl.retry`, `egl.VERSION`); each subpath is
+a sub-namespace named like its `exports` path (`egl.text`, `egl.table`, `egl.bootstrap`, …).
+Nothing is renamed, and loading the file has no effect beyond defining `egl` — no peer is
+bundled into it, and no other global appears alongside it (ADR-0059). The one cost stated
+plainly: you download the whole surface, roughly 31 kB min+brotli today, including
+components you may not use — the trade the deep-ESM route above exists to avoid.
+
+### Supplying the optional peers
+
+Neither `bootstrap` nor `dompurify` ships in either route — they stay **external**, and are
+resolved the same way regardless of which route loaded `egl-utils-js` itself.
+
+**Bootstrap** — a page that already loads Bootstrap's own bundle needs no configuration at
+all; the behaviour wrappers look for `window.bootstrap` at the first call, not at import
+(F68, ADR-0041):
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/js/bootstrap.bundle.min.js"></script>
+```
+
+`bootstrap.bundle.min.js` also carries Popper, which `bsTooltip`/`bsPopover` need; a page
+using the plain `bootstrap.min.js` build must load `@popperjs/core` itself too. Either way,
+a missing peer is a typed `EGL_PEER_MISSING` naming the package at the call that needed it,
+never a load-time failure.
+
+**DOMPurify** — supplied the same way, ambient or injected (ADR-0055):
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script type="module">
+  import { sanitizeHtml } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.1.0/dist/esm/sanitize.js';
+  element.innerHTML = sanitizeHtml(userSuppliedHtml); // window.DOMPurify is the peer
+</script>
+```
+
+Both routes take an injected module instead, `{ dompurify: DOMPurify }`, if the page reaches
+DOMPurify some other way than a bare script tag.
 
 ## Stability promise
 

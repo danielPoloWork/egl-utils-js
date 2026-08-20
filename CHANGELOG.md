@@ -12,6 +12,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **README section "Use from a browser, without npm"** documents both no-bundler routes with
+  copy-pasteable, version-pinned URLs: the deep-ESM route per entry (and why no import map
+  is needed — every entry's internal imports are relative, never a bare specifier), the
+  global artifact route, how each optional peer (`bootstrap`, `dompurify`) is supplied on
+  either route, and the cross-version rule — pin one `egl-utils-js` version for every URL on
+  a page, since entries share content-hashed chunks *within* a version, not across one (spec
+  05 F85, ROADMAP 18.4).
+
 - **CDN default** — the `unpkg` and `jsdelivr` fields name the global artifact, so the bare
   package URL (`https://cdn.jsdelivr.net/npm/egl-utils-js`) serves a file a classic
   `<script src>` can run. The `exports` map is byte-for-byte unchanged and no `main`,

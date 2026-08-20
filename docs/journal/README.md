@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-19 — Documenting the no-bundler routes (roadmap 18.4)](2026/08/2026-08-19-no-bundler-docs.md)
 - [2026-08-19 — The CDN default, and what the tarball proves (roadmap 18.3)](2026/08/2026-08-19-cdn-fields.md)
 - [2026-08-19 — One file, one global (roadmap 18.2)](2026/08/2026-08-19-global-artifact.md)
 - [2026-08-19 — /sanitize proved on a page with no bundler (roadmap 18.1)](2026/08/2026-08-19-no-bundler-sanitize.md)
