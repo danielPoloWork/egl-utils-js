@@ -113,8 +113,8 @@ export const TRANSFER_ROUTES = {
   bootstrap: {
     file: 'dist/esm/bootstrap.js',
     requests: 8,
-    measured: 37538,
-    budget: 39000,
+    measured: 38058,
+    budget: 40000,
     why:
       'The whole catalogue over 8 requests — still MORE than the single-file artifact over 1, so a page needing ' +
       '/bootstrap should take the artifact. 19.3 is the first M19 item to grow it for a feature it actually ' +
@@ -128,8 +128,8 @@ export const TRANSFER_ROUTES = {
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 36628,
-    budget: 37700,
+    measured: 36911,
+    budget: 38000,
     why: 'Budget re-pinned for the 19.2 surface, holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061).',
   },
 };

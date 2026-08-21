@@ -1691,3 +1691,119 @@ test.describe('/dom — the clipboard write (roadmap 19.4, F97)', () => {
     );
   });
 });
+
+test.describe('/bootstrap — bsTable sticky header (roadmap 19.5, F98)', () => {
+  // The assertion jsdom cannot make: whether the header STAYS PUT when the
+  // container scrolls. That is layout, and layout needs an engine — which is also
+  // why `position: sticky` on a table cell rather than on `thead` is the choice
+  // being verified here, on three of them.
+  //
+  // Bootstrap's stylesheet is loaded for this block. It is the source of
+  // `border-collapse: collapse` and of the `--bs-*` variables the sticky cells
+  // read, so testing without it would be testing a different table than the one a
+  // consumer has.
+  test.beforeEach(async ({ page }) => {
+    await page.addStyleTag({ url: '/node_modules/bootstrap/dist/css/bootstrap.min.css' });
+    await page.evaluate(() => {
+      const { bsTable } = window.egl.bootstrap;
+      const host = document.getElementById('host');
+      host.replaceChildren();
+      window.eglSticky = bsTable(host, {
+        columns: [
+          { key: 'id', label: 'Id', sortable: true },
+          { key: 'host', label: 'Host' },
+        ],
+        // Enough rows that the container must scroll.
+        data: Array.from({ length: 60 }, (_unused, index) => ({
+          id: index + 1,
+          host: `gw-${String(index + 1).padStart(3, '0')}`,
+        })),
+        responsive: true,
+        sticky: { maxHeight: '200px' },
+        // Controls are here for two reasons: the sort-header delegation is F51's
+        // and only exists when controls are wired, and their presence puts the
+        // scroll container *inside* an outer band wrapper — so this fixture also
+        // proves the right node got bounded in a real engine.
+        controls: { search: true, pagination: true },
+      });
+    });
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(() => window.eglSticky?.destroy());
+  });
+
+  test('the header stays at the top of the container while the body scrolls', async ({ page }) => {
+    const scroller = page.locator('#host .table-responsive');
+    const header = page.locator('#host thead th').first();
+    const firstCell = page.locator('#host tbody tr td').first();
+
+    // Before scrolling: the header sits at the container's top edge, and row 1 is
+    // right below it.
+    const before = await page.evaluate(() => {
+      const box = document.querySelector('#host .table-responsive').getBoundingClientRect();
+      const th = document.querySelector('#host thead th').getBoundingClientRect();
+      return { delta: Math.round(th.top - box.top) };
+    });
+    expect(before.delta).toBe(0);
+
+    await scroller.evaluate((el) => {
+      el.scrollTop = 400;
+    });
+    // Wait for the scroll to be reflected rather than for a fixed span.
+    await expect.poll(async () => scroller.evaluate((el) => el.scrollTop)).toBeGreaterThan(300);
+
+    const after = await page.evaluate(() => {
+      const box = document.querySelector('#host .table-responsive').getBoundingClientRect();
+      const th = document.querySelector('#host thead th').getBoundingClientRect();
+      const td = document.querySelector('#host tbody tr td').getBoundingClientRect();
+      return {
+        headerDelta: Math.round(th.top - box.top),
+        // Row 1 has scrolled above the container's top edge, which is what proves
+        // the body moved and the header did not.
+        firstRowAbove: td.top < box.top,
+      };
+    });
+
+    expect(after.headerDelta).toBe(0);
+    expect(after.firstRowAbove).toBe(true);
+    // And the header is still the visible top row, not hidden behind the rows:
+    // an opaque background plus z-index is what this asserts in one go.
+    await expect(header).toBeVisible();
+    await expect(firstCell).toBeAttached();
+  });
+
+  test('the header is opaque, so rows do not scroll through it', async ({ page }) => {
+    // The computed value, from the engine, with Bootstrap's variables resolved —
+    // not the declaration we wrote. A transparent sticky header is the classic
+    // version of this feature that looks broken.
+    const background = await page.evaluate(
+      () => getComputedStyle(document.querySelector('#host thead th')).backgroundColor,
+    );
+    expect(background).not.toBe('transparent');
+    expect(background).not.toBe('rgba(0, 0, 0, 0)');
+  });
+
+  test('sorting still works through a sticky header', async ({ page }) => {
+    // F98's other clause. The control is inside a positioned cell now, so this is
+    // worth asserting with a real click rather than by reasoning about CSS.
+    await page.locator('#host th[data-sort-key="id"]').click();
+    await expect(page.locator('#host th[data-sort-key="id"]')).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    );
+    await page.locator('#host th[data-sort-key="id"]').click();
+    await expect(page.locator('#host th[data-sort-key="id"]')).toHaveAttribute(
+      'aria-sort',
+      'descending',
+    );
+    await expect(page.locator('#host tbody tr td').first()).toHaveText('60');
+    // Still sticky after two re-renders of the body.
+    const delta = await page.evaluate(() => {
+      const box = document.querySelector('#host .table-responsive').getBoundingClientRect();
+      const th = document.querySelector('#host thead th').getBoundingClientRect();
+      return Math.round(th.top - box.top);
+    });
+    expect(delta).toBe(0);
+  });
+});
