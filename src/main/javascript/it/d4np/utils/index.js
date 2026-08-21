@@ -35,6 +35,7 @@ export {
   DurationParseError,
   DomContractError,
   PeerMissingError,
+  ClipboardError,
 } from './errors.js';
 
 // Async combinators (spec §2 items 1–5), signal-first per ADR-0004.

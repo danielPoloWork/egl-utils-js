@@ -48,6 +48,10 @@ export { tableStateFromParams, tableStateToParams } from './table-url.js';
 // sibling — or a caller with no pipeline at all.
 export { tableSelection } from './table-selection.js';
 
+// CSV serialization (spec 06 F96). Pure and DOM-free — the clipboard half of the
+// same feature is `copyToClipboard` on `egl-utils-js/dom` (F97).
+export { tableCsv } from './table-csv.js';
+
 /**
  * Expressions longer than this stop being parsed as a grammar and are matched
  * literally (NFR-09). No realistic filter is this long; a pathological one

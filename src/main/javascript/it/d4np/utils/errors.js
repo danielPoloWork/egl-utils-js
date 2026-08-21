@@ -232,6 +232,56 @@ export class DomContractError extends EglError {
 }
 
 /**
+ * Raised when a clipboard write could not be performed (spec 06 §2 item F97).
+ * Code: `EGL_CLIPBOARD`.
+ *
+ * The clipboard is permission-gated and secure-context-only, and both refusals
+ * are ordinary rather than exceptional: a page served over plain HTTP has no
+ * `navigator.clipboard` at all, and a user or a policy can deny the permission on
+ * a page that does. F97 exists because those two outcomes must not look like
+ * success — "nothing happened" and "it worked" are indistinguishable to a user
+ * staring at a button, and a swallowed rejection is how a copy feature ships
+ * broken.
+ *
+ * `reason` says which wall was hit, so a caller can tell a fixable problem
+ * (`'insecure'` — serve over HTTPS) from one that is the user's to allow
+ * (`'denied'`) from one that is neither (`'failed'`).
+ *
+ * @example
+ * try {
+ *   await copyToClipboard(tableCsv(rows, { columns }));
+ *   toast('Copied');
+ * } catch (error) {
+ *   if (error.code === 'EGL_CLIPBOARD') toast(hint(error.reason));
+ *   else throw error;
+ * }
+ */
+export class ClipboardError extends EglError {
+  name = 'ClipboardError';
+  code = 'EGL_CLIPBOARD';
+
+  /**
+   * @param {string} message
+   * @param {ErrorOptions & { reason?: 'unsupported' | 'insecure' | 'denied' | 'failed' }} [options]
+   *   `reason` classifies the refusal; `cause` carries the platform's own error
+   *   where there was one.
+   */
+  constructor(message, options) {
+    super(message, options);
+
+    /**
+     * Why the write did not happen: `'unsupported'` (no clipboard API at all),
+     * `'insecure'` (present but the context is not secure), `'denied'` (the
+     * permission was refused), or `'failed'` (the platform rejected for its own
+     * reason, in `cause`).
+     *
+     * @type {'unsupported' | 'insecure' | 'denied' | 'failed'}
+     */
+    this.reason = options?.reason ?? 'failed';
+  }
+}
+
+/**
  * Raised when an **optional peer dependency** a wrapper needs is not reachable
  * (spec 04 §2 item F68). Code: `EGL_PEER_MISSING`.
  *

@@ -81,3 +81,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0063](0063-the-url-is-the-state-and-the-page-goes-last.md) | The URL is the state — and the page goes last | Accepted |
 | [0064](0064-the-gate-that-was-watching-nothing.md) | The gate that was watching nothing — a scanner with a test suite | Accepted |
 | [0065](0065-a-set-of-keys-and-the-page-it-can-see.md) | A set of keys, and the page it can see | Accepted |
+| [0066](0066-a-csv-is-not-an-inert-document.md) | A CSV is not an inert document | Accepted |

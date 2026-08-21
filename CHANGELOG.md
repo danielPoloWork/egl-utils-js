@@ -49,6 +49,19 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   `data-egl-selected` plus `.table-active` on each selected row so CSS can style it without the
   caller re-rendering. `instance.selection` exposes the model (spec 06 F95, ROADMAP 19.3,
   ADR-0065).
+- **`tableCsv` on `egl-utils-js/table`** — RFC 4180 CSV from the rows you pass, zero-dependency
+  and SSR-safe: quoting only where the grammar requires it, CRLF by default with LF as an
+  option, a configurable delimiter. **Formula injection is neutralized by default**, because a
+  cell beginning `=`, `+`, `-` or `@` is executable in every mainstream spreadsheet — with the
+  one exception that keeps the mitigation liveable, a field whose whole text is a number.
+  `neutralizeFormulas: false` for callers whose consumer is a parser (spec 06 F96, ROADMAP 19.4,
+  [ADR-0066](docs/adr/0066-a-csv-is-not-an-inert-document.md)).
+- **`copyToClipboard` on `egl-utils-js/dom`**, and **`ClipboardError`** (`EGL_CLIPBOARD`) on
+  `egl-utils-js/errors` and the root — a clipboard write whose every refusal is typed and
+  classified: `'insecure'` (serve over HTTPS), `'denied'` (the user's to grant),
+  `'unsupported'`, `'failed'`. No `execCommand` fallback, deliberately: a copy button that
+  quietly did nothing looks exactly like one that worked (spec 06 F97, ROADMAP 19.4,
+  ADR-0066).
 
 ### Changed
 

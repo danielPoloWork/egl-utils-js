@@ -77,37 +77,43 @@
  */
 export const TRANSFER_ROUTES = {
   // --- The deep-ESM route, one row per entry (F85's per-entry URLs) ---------
-  index: { file: 'dist/esm/index.js', requests: 7, measured: 13449, budget: 14400 },
-  storage: { file: 'dist/esm/storage.js', requests: 4, measured: 4246, budget: 4540 },
+  index: { file: 'dist/esm/index.js', requests: 7, measured: 13571, budget: 14400 },
+  storage: { file: 'dist/esm/storage.js', requests: 4, measured: 4342, budget: 4540 },
   sanitize: {
     file: 'dist/esm/sanitize.js',
     requests: 3,
-    measured: 2914,
+    measured: 3012,
     budget: 3110,
     why: 'DOMPurify is looked up, never imported (ADR-0055), so the peer costs this route nothing until the page loads it itself.',
   },
-  errors: { file: 'dist/esm/errors.js', requests: 2, measured: 1074, budget: 1140 },
+  errors: {
+    file: 'dist/esm/errors.js',
+    requests: 2,
+    measured: 1178,
+    budget: 1260,
+    why: '+104 B in 19.4 for ClipboardError and its reason vocabulary (spec 06 F97, ADR-0066). Eleven classes over two requests; a route this small moves in percentage terms on any addition, which is why the figure and not the percentage is the thing to read.',
+  },
   text: { file: 'dist/esm/text.js', requests: 3, measured: 1674, budget: 1790 },
   net: { file: 'dist/esm/net.js', requests: 2, measured: 1340, budget: 1430 },
   table: {
     file: 'dist/esm/table.js',
     requests: 5,
-    measured: 11088,
-    budget: 11800,
+    measured: 11821,
+    budget: 12600,
     why: "+1170 B in 19.3 for the F94 selection model, on top of 19.2's state pair and 19.1's remotePipeline — three siblings behind one entry, and this route pays for the whole file each lives in. That is the trade the deep-ESM route makes, and the reason F87 counts served bytes rather than imported ones: a bundler consumer pays the 1433 B tableSelection size row, and only if they import it.",
   },
   logging: { file: 'dist/esm/logging.js', requests: 3, measured: 3063, budget: 3270 },
   dom: {
     file: 'dist/esm/dom.js',
     requests: 8,
-    measured: 13532,
-    budget: 14400,
+    measured: 13955,
+    budget: 15000,
     why: '+2683 B and an eighth request for bindTableHistory (spec 06 F93, roadmap 19.2, ADR-0063) and the F92 pair it composes. The largest single-item growth this route has taken; the per-function size-limit rows are what bound what an individual import costs, and they did not move.',
   },
   bootstrap: {
     file: 'dist/esm/bootstrap.js',
     requests: 8,
-    measured: 36698,
+    measured: 37538,
     budget: 39000,
     why:
       'The whole catalogue over 8 requests — still MORE than the single-file artifact over 1, so a page needing ' +
@@ -122,8 +128,8 @@ export const TRANSFER_ROUTES = {
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 35729,
-    budget: 36900,
+    measured: 36628,
+    budget: 37700,
     why: 'Budget re-pinned for the 19.2 surface, holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061).',
   },
 };

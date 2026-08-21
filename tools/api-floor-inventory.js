@@ -186,6 +186,41 @@ export const MEMBERS = {
     guarded: 'same in-memory fallback as localStorage (ADR-0010)',
   },
 
+  // --- the async Clipboard API (spec 06 F97/NFR-28, roadmap 19.4) ---
+  //
+  // Caught by the gate on the first run, which is worth recording: the read is
+  // `navigator?.clipboard?.writeText`, and optional chaining was invisible to this
+  // scan until 19.8 fixed it (ADR-0064). A wave earlier, this entry would have
+  // been owed and nothing would have asked for it.
+  //
+  // Safari 13.1 for all three, so the version question is trivial and the real one
+  // is context: the clipboard exists only in a **secure context**, which is why
+  // `copyToClipboard` distinguishes 'insecure' from 'unsupported' rather than
+  // reporting one failure for two different problems.
+  'navigator.clipboard': {
+    guardReason: 'context',
+    bcd: 'api.Navigator.clipboard',
+    guarded:
+      'dom-clipboard.js reads it off `options.window ?? globalThis` through optional chaining and throws a typed ClipboardError when it is absent — reason `insecure` where isSecureContext is false, `unsupported` otherwise. Never a swallowed rejection: F97 exists because "nothing happened" and "it worked" look identical to a user (ADR-0066)',
+  },
+  // Declared by hand, like `EventTarget.addEventListener` and `Window.popstate`
+  // before it: the scanner matches `Global.member`, and `clipboard` is not itself
+  // a policed global, so `clipboard.writeText` is not a shape it can see. This
+  // entry therefore serves check 2 — the BCD floor comparison — for the method
+  // whose availability actually matters.
+  'Clipboard.writeText': {
+    guardReason: 'context',
+    bcd: 'api.Clipboard.writeText',
+    guarded:
+      'reached only after `typeof writeText === "function"` and called through the clipboard it came from; a rejection is classified (NotAllowedError/SecurityError → `denied`) rather than passed on raw (ADR-0066)',
+  },
+  isSecureContext: {
+    guardReason: 'context',
+    bcd: 'api.isSecureContext',
+    guarded:
+      'read only to tell an HTTP page (fixable: serve over HTTPS) from an engine with no clipboard at all (not fixable), and only when the clipboard is already known to be missing. `undefined` means we do not know, and the honest answer is then `unsupported` rather than a guess. Declared by hand: it is read off the injected window, so the scanner cannot see it',
+  },
+
   // --- the History API (spec 06 F93/NFR-28, roadmap 19.2) ---
   //
   // The first amendment this inventory has taken for a new capability rather than

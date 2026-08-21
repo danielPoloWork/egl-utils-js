@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-21 — A CSV is not an inert document (roadmap 19.4)](2026/08/2026-08-21-csv-export.md)
 - [2026-08-21 — A set of keys, and the page it can see (roadmap 19.3)](2026/08/2026-08-21-row-selection.md)
 - [2026-08-21 — The gate that was watching nothing (roadmap 19.8)](2026/08/2026-08-21-api-floor-scanner.md)
 - [2026-08-21 — The URL is the state, and the page goes last (roadmap 19.2)](2026/08/2026-08-21-table-state-url.md)
