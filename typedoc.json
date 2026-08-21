@@ -93,6 +93,8 @@
     "SetVisibleOptions",
     "TableBindings",
     "TableQuery",
+    "TableSelection",
+    "TableSelectionOptions",
     "TableState",
     "TableStateFromParamsOptions",
     "TableStateToParamsOptions",

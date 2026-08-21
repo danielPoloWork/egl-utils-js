@@ -130,6 +130,16 @@ terms that requirement states.
   checkbox that is not "checkbox". Selection is reflected on the row element in a way CSS can
   target without the caller re-rendering. Off by default: a table nobody selects in pays
   nothing (the NFR-02 rule).
+  - **Corrected (roadmap 19.3).** "Pays nothing" is true of the runtime and false of the
+    bundle. NFR-02 is about one *export* pulling zero unrelated modules, and `bsTable` is one
+    export: an option cannot be tree-shaken out of a function, so the column's code and the
+    F94 model it composes land on `{bsTable}` whether the option is used or not — measured at
+    **+2222 B** in 19.3, 1433 B of it the model. What "off by default" buys is real and is
+    what the clause was reaching for: no column rendered, no listener attached, no selection
+    constructed, and no change to a table that does not ask. The byte cost is recorded on the
+    size row with its reason, per NFR-30, and the alternative — refusing to construct the
+    model and requiring the caller to pass one — is recorded as the rejected option in
+    [ADR-0065](../adr/0065-a-set-of-keys-and-the-page-it-can-see.md).
 
 ### Export — `egl-utils-js/table` and `egl-utils-js/dom`
 

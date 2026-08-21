@@ -1489,3 +1489,99 @@ test.describe('the Popper-backed overlays (roadmap 16.4)', () => {
     await expect(page.locator('.popover')).toHaveCount(0);
   });
 });
+
+test.describe('/bootstrap — bsTable row selection (roadmap 19.3, F94-F95)', () => {
+  // The three things spec 06 §6 asks for in real engines, because jsdom cannot
+  // establish any of them: `indeterminate` as a rendered tri-state, a checkbox
+  // driven by an actual keyboard, and an accessible name the engine's own
+  // accessibility tree reports rather than one read back off an attribute.
+  test.beforeEach(async ({ page }) => {
+    await page.evaluate(() => {
+      const { bsTable } = window.egl.bootstrap;
+      const host = document.getElementById('host');
+      host.replaceChildren();
+      window.eglSel = bsTable(host, {
+        columns: [
+          { key: 'host', label: 'Host' },
+          { key: 'ip', label: 'Address' },
+        ],
+        data: [
+          { id: 1, host: 'gw-01', ip: '192.168.1.1' },
+          { id: 2, host: 'gw-02', ip: '192.168.1.2' },
+          { id: 3, host: 'srv-01', ip: '10.0.0.7' },
+        ],
+        rowKey: 'id',
+        selection: true,
+      });
+    });
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(() => window.eglSel?.destroy());
+  });
+
+  test('the header control renders all three states', async ({ page }) => {
+    const header = page.locator('#host thead input[type="checkbox"]');
+    const rows = page.locator('#host tbody input[type="checkbox"]');
+
+    // Empty: neither checked nor indeterminate.
+    expect(await header.isChecked()).toBe(false);
+    expect(await header.evaluate((el) => el.indeterminate)).toBe(false);
+
+    // One of three: indeterminate, and NOT checked. This is the state F95 names,
+    // and it exists only as a property — there is no `indeterminate=""` to read,
+    // so nothing short of a real engine can show it was rendered.
+    await rows.nth(0).check();
+    expect(await header.evaluate((el) => el.indeterminate)).toBe(true);
+    expect(await header.isChecked()).toBe(false);
+
+    // All three: checked, determinate.
+    await rows.nth(1).check();
+    await rows.nth(2).check();
+    expect(await header.isChecked()).toBe(true);
+    expect(await header.evaluate((el) => el.indeterminate)).toBe(false);
+  });
+
+  test('the whole column is operable from the keyboard', async ({ page }) => {
+    // Tab to the header control, Space it, and the page is selected — no pointer
+    // anywhere in this test. A selection column reachable only by mouse is a
+    // control only some users have (NFR-21).
+    await page.locator('#host thead input[type="checkbox"]').focus();
+    await page.keyboard.press('Space');
+
+    expect(await page.evaluate(() => window.eglSel.selection.getSelection())).toEqual([
+      '1',
+      '2',
+      '3',
+    ]);
+
+    // Tab moves into the body's controls in document order; Space unticks one.
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Space');
+
+    expect(await page.evaluate(() => window.eglSel.selection.getSelection())).toEqual(['2', '3']);
+    // And the header followed the page down to partial.
+    expect(
+      await page.locator('#host thead input[type="checkbox"]').evaluate((el) => el.indeterminate),
+    ).toBe(true);
+  });
+
+  test('every control has an accessible name that is not "checkbox"', async ({ page }) => {
+    // Asked of the engine's accessibility tree rather than of the attribute we
+    // wrote, which is the only version of this assertion worth making.
+    const header = page.locator('#host thead input[type="checkbox"]');
+    await expect(header).toHaveAccessibleName('Select all');
+
+    const rows = page.locator('#host tbody input[type="checkbox"]');
+    await expect(rows.nth(0)).toHaveAccessibleName('1');
+    await expect(rows.nth(2)).toHaveAccessibleName('3');
+  });
+
+  test('a selected row is styleable without a re-render', async ({ page }) => {
+    await page.locator('#host tbody input[type="checkbox"]').nth(1).check();
+
+    const row = page.locator('#host tbody tr').nth(1);
+    await expect(row).toHaveAttribute('data-egl-selected', '');
+    await expect(row).toHaveClass(/table-active/);
+  });
+});

@@ -92,9 +92,9 @@ export const TRANSFER_ROUTES = {
   table: {
     file: 'dist/esm/table.js',
     requests: 5,
-    measured: 9918,
-    budget: 10500,
-    why: "+1457 B and a fifth request for the F92 state pair (spec 06 F92, roadmap 19.2, ADR-0063), on top of 19.1's remotePipeline. The pair is two small pure functions; what this route pays for is the whole file they live in, which is the trade the deep-ESM route makes and the reason F87 counts served bytes rather than imported ones.",
+    measured: 11088,
+    budget: 11800,
+    why: "+1170 B in 19.3 for the F94 selection model, on top of 19.2's state pair and 19.1's remotePipeline — three siblings behind one entry, and this route pays for the whole file each lives in. That is the trade the deep-ESM route makes, and the reason F87 counts served bytes rather than imported ones: a bundler consumer pays the 1433 B tableSelection size row, and only if they import it.",
   },
   logging: { file: 'dist/esm/logging.js', requests: 3, measured: 3063, budget: 3270 },
   dom: {
@@ -107,22 +107,23 @@ export const TRANSFER_ROUTES = {
   bootstrap: {
     file: 'dist/esm/bootstrap.js',
     requests: 8,
-    measured: 34406,
-    budget: 36500,
+    measured: 36698,
+    budget: 39000,
     why:
       'The whole catalogue over 8 requests — still MORE than the single-file artifact over 1, so a page needing ' +
-      '/bootstrap should take the artifact. It grew again in 19.2 without gaining a feature, for the same reason it ' +
-      'did in 19.1: bsTable pulls the shared table chunk, and that chunk now carries the F92 pair as well as ' +
-      'remotePipeline. A bundler shakes both away; this route downloads whole files, which is exactly the cost F87 ' +
-      'exists to keep visible instead of silent.',
+      '/bootstrap should take the artifact. 19.3 is the first M19 item to grow it for a feature it actually ' +
+      'gained: bsTable renders the F95 selection column. 19.1 and 19.2 grew it for features it did not, because ' +
+      'bsTable pulls the shared table chunk and that chunk carries remotePipeline and the F92 pair too. A bundler ' +
+      'shakes those away; this route downloads whole files, which is exactly the cost F87 exists to keep visible ' +
+      'instead of silent.',
   },
 
   // --- The artifact route (F83) --------------------------------------------
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 34038,
-    budget: 35100,
+    measured: 35729,
+    budget: 36900,
     why: 'Budget re-pinned for the 19.2 surface, holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061).',
   },
 };

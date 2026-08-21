@@ -35,6 +35,20 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - **`pageSize` on the `tablePipeline` read model** — `view()` already reported `pageCount`,
   which is derived from a page size the caller could not read back. Additive; the remote
   sibling's view has carried it since 19.1 (ADR-0063).
+- **`tableSelection` on `egl-utils-js/table`** — a row selection held as a set of **row keys**,
+  so it survives a re-sort, a re-page and a server round-trip, and costs O(selected) memory
+  rather than O(source). `rowKey` is required: keying by index or identity is what breaks
+  silently. Select-all means **the rows you hand it** — the current page of a derived view —
+  and `stats(rows)` reports `offPage`, the count of selected rows that are not among them,
+  which under an active filter includes the ones the filter hides. Rows leaving the source are
+  **kept**, with `prune()` as the named opt-out (spec 06 F94, ROADMAP 19.3,
+  [ADR-0065](docs/adr/0065-a-set-of-keys-and-the-page-it-can-see.md)).
+- **`bsTable({ selection })`** — an opt-in selection column over that model: checkboxes or
+  radios, a select-all header with a real **indeterminate** state, keyboard operability, an
+  accessible name per row that is the row's key rather than "checkbox", and
+  `data-egl-selected` plus `.table-active` on each selected row so CSS can style it without the
+  caller re-rendering. `instance.selection` exposes the model (spec 06 F95, ROADMAP 19.3,
+  ADR-0065).
 
 ### Changed
 
