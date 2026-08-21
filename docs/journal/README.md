@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-21 — Planning the table-data wave (spec 06, M19)](2026/08/2026-08-21-spec-06-planning.md)
 - [2026-08-21 — v1.1.0 prepared, and M18 ships](2026/08/2026-08-21-release-v1.1.0.md)
 - [2026-08-19 — The routes proved and priced, and M18 closes (roadmap 18.5)](2026/08/2026-08-19-no-bundler-smoke.md)
 - [2026-08-19 — Documenting the no-bundler routes (roadmap 18.4)](2026/08/2026-08-19-no-bundler-docs.md)

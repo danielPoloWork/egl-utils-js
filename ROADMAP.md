@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-09 — planning the browser distribution wave`](docs/journal/2026/08/2026-08-09-browser-distribution-planning.md).
+  [`2026-08-21 — planning the table-data wave`](docs/journal/2026/08/2026-08-21-spec-06-planning.md).
 
 ## Model & effort routing
 
@@ -297,22 +297,30 @@ recorded in
 
 ## Milestone 19 — Table data & bsTable extras
 
-Provisional wave ([ADR-0046](docs/adr/0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md)):
-items are planned now by owner decision; the wave's spec (06) is authored in its own
-planning PR before implementation starts — refining wording where needed, never
-renumbering — and will own the wave's F-numbers. Execution order among M19–M21 is the
-owner's post-1.0 call: numbering fixes identity, not sequence. Scope: the spec 04 §1
-backlog quoted verbatim — *"CSV/Excel export, sticky headers, column resize and reorder"*
-— plus the two capabilities the ADR-0046 triage found absent and highest-value:
-asynchronous data and row selection.
+Adopted wave ([ADR-0046](docs/adr/0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md)).
+Spec: [`docs/specs/06_spec_table_data.md`](docs/specs/06_spec_table_data.md), authored in
+its own planning PR before implementation — **F88–F100 and NFR-25–NFR-30**. Scope: the spec
+04 §1 backlog quoted verbatim — *"CSV/Excel export, sticky headers, column resize and
+reorder"* — plus the two capabilities the ADR-0046 triage found absent and highest-value:
+asynchronous data and row selection. Execution order among M19–M21 was the owner's post-1.0
+call; M19 was chosen first.
 
-- [ ] 19.1 Async/remote data for the pipeline: a source contract (`load(query, signal)`) with abort/latest-request-wins, loading/error reflected in the derived view, and serialization of pipeline state for a server — composing `httpClient`/`createResource`/`urlSearchParams` without importing them _(route: frontier-reasoning/high — sets-pattern + decision-heavy: the data contract every later data-driven component reuses)_
-- [ ] 19.2 Pipeline state ↔ URL: serialize/restore filters, search, sort and page to the query string, with history integration (api-floor amendment: `history.pushState`/`popstate`) _(route: standard/high)_
-- [ ] 19.3 Row selection: single/multi/checkbox column, `getSelection()`, selection events, select-all-on-page; `bsTable` wiring _(route: standard/high)_
-- [ ] 19.4 Export: CSV and clipboard from the derived view — client-side and zero-dep; Excel stays out of core, a caller callback being the extension point (the zero-runtime-deps rule) _(route: standard/medium)_
-- [ ] 19.5 Sticky header (spec 04 backlog) _(route: standard/medium)_
-- [ ] 19.6 Column resize (spec 04 backlog) _(route: standard/medium)_
-- [ ] 19.7 Column reorder (spec 04 backlog; spec 03's drag-and-drop non-goal is superseded by the wave spec if drag is the chosen mechanism) _(route: standard/high)_
+**This is the first wave planned after 1.0, and that governs it.** Spec 06 NFR-25 makes
+*additive-only* a hard, mechanically-proved requirement: no existing export, option name,
+error code or exports-map path moves, because all 113 are MAJOR-protected. Where a
+capability could have been delivered by changing `tablePipeline`, it is delivered beside it
+instead — which is why §4 attaches async and selection *around* the F42 derivation rather
+than inside it. Two shapes for the async adapter remain defensible, so F88–F91 fix the
+**observable contract** and defer the mechanism to an ADR in 19.1, the way spec 05 F82
+deferred to ADR-0055.
+
+- [ ] 19.1 Async/remote data for the pipeline (spec 06 **F88–F91**): a source contract `{load(query, signal)}`, latest-request-wins with the losing load **aborted** (not merely ignored), a transport-neutral query serialization, and load status in the derived view where a failure **leaves the previous rows in place**. Composes `httpClient`/`createResource`/`urlSearchParams` by injection, importing them nowhere. The adapter-vs-option mechanism is deliberately left to this item's ADR; the spec fixes only the observable contract _(route: frontier-reasoning/high — sets-pattern + decision-heavy: the data contract every later data-driven component reuses)_
+- [ ] 19.2 Pipeline state ↔ URL (spec 06 **F92–F93**): a pure, SSR-safe round-trip that **preserves unknown query parameters** and degrades malformed input to defaults rather than throwing, plus a `/dom` history binding that restores in **one** `batch` transaction — four restored commands firing four `change`s would land back on page 1. Api-floor amendment: `history.pushState`/`popstate` _(route: standard/high)_
+- [ ] 19.3 Row selection (spec 06 **F94–F95**): keyed by `rowKey`, never by identity or index, so a selection survives a server round-trip and a re-sort; single/multiple, `getSelection()`, the F6 observer shape, and select-all-on-page whose **meaning under an active filter is specified** rather than left to the reader. `bsTable` checkbox column with the indeterminate header state, keyboard operability and a real accessible name _(route: standard/high)_
+- [ ] 19.4 Export (spec 06 **F96–F97**): RFC 4180 CSV from the derived view or the selection, client-side and zero-dep, with **formula injection neutralized by default** — a CSV opened in a spreadsheet is a code-execution surface, and the default is documented and defeatable. Clipboard on `/dom` with the permission failure typed, so "nothing happened" is distinguishable from success. Excel stays out of core, a caller callback being the extension point (the zero-runtime-deps rule) _(route: standard/medium — security: the export is an injection surface)_
+- [ ] 19.5 Sticky header (spec 04 backlog; spec 06 **F98**) — within a caller-owned scroll container, without per-frame layout measurement, and without breaking the header's existing `aria-sort` and sort controls _(route: standard/medium)_
+- [ ] 19.6 Column resize (spec 04 backlog; spec 06 **F99**) — pointer-driven **with a keyboard-operable alternative**, widths readable and restorable so a caller can persist them, minimum widths enforced, and no row re-render _(route: standard/medium)_
+- [ ] 19.7 Column reorder (spec 04 backlog; spec 06 **F100**) — spec 03 §1's drag-and-drop non-goal is **superseded**, on the condition F100 states: drag is permitted as *an* affordance, never the only one, and the authoritative interface is the programmatic order, so a caller can build their own affordance and persist order without touching the DOM _(route: standard/high)_
 
 
 ---
@@ -415,3 +423,14 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 | §4 (05) | Logical architecture | 18.2, 18.3 | ✅ |
 | §5 (05) | Public interface | 18.1, 18.2, 18.3 | ✅ |
 | §6 (05) | Verification & test strategy | 18.1, 18.5 | ✅ |
+
+### Spec 06 — table data, selection & column ergonomics (F88–F100)
+
+| Spec § | Requirement | Roadmap items | Status |
+|--------|-------------|---------------|--------|
+| §1 (06) | Objective & business context | 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7 | ⏳ |
+| §2 (06) | Functional requirements F88–F100 | 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7 | ⏳ |
+| §3 (06) | Non-functional requirements | 19.1, 19.2, 19.3, 19.4, 19.6, 19.7 | ⏳ |
+| §4 (06) | Logical architecture | 19.1, 19.3 | ⏳ |
+| §5 (06) | Public interface | 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7 | ⏳ |
+| §6 (06) | Verification & test strategy | 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7 | ⏳ |
