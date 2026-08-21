@@ -81,6 +81,7 @@ export const GLOBALS = {
     bcd: 'api.Window.history',
     guarded:
       'dom-history.js never reads the ambient global: `bindTableHistory` resolves `options.window ?? globalThis` and throws DomContractError naming the contract when the result has no history/location/addEventListener, so a server render or a detached document fails by contract rather than on an undefined read (spec 06 F93, ADR-0028/ADR-0063). The pure half of the same feature — the F92 state ↔ query-string pair — reaches no platform API but URLSearchParams, which is why it stays on the Node-safe /table entry (NFR-29)',
+    why: 'A member reached off a local that holds the injected window still scans as this global, because a text scanner cannot tell `view.history` from the ambient one — and should not try, since the API being reached is the same either way (ADR-0064)',
   },
   document: {
     guardReason: 'context',
@@ -194,10 +195,13 @@ export const MEMBERS = {
   // the one BCD cannot answer: none of these exists in Node, and `/dom` is an
   // entry a server-side render legitimately loads.
   //
-  // Reached off the injected `window` (`options.window ?? globalThis`), so these
-  // entries also exist to keep the scan honest: `history` is now POLICED in
-  // check-api-floor.mjs, which is what makes a future `history.foo` fail rather
-  // than pass unseen.
+  // Reached off the injected `window` (`options.window ?? globalThis`). 19.2
+  // believed these entries existed only for check 2, because the scanner could not
+  // see a member read inside a template literal; 19.8 fixed the scanner
+  // (ADR-0064), and check 3 now enforces every one of them — proved by deleting an
+  // entry and watching the gate fail. `history` is POLICED in
+  // ./api-floor-scan.js, so a future `history.foo` fails rather than passing
+  // unseen.
   'history.pushState': {
     guardReason: 'context',
     bcd: 'api.History.pushState',
@@ -222,6 +226,12 @@ export const MEMBERS = {
     guarded:
       'same presence check, which asserts `typeof location.search === "string"` specifically, since that is the member every read here depends on',
   },
+  'location.protocol': {
+    guardReason: 'context',
+    bcd: 'api.Location.protocol',
+    guarded:
+      'storage.js reads it through `globalThis.location?.protocol` inside a try/catch, only to decide whether a cookie defaults to Secure; absent or throwing means not-https, which is the safe read for localhost development (ADR-0011). Present since M6 and scanned for the first time in 19.8: optional chaining was invisible to the old member pattern, which is the defect ADR-0064 fixes rather than a use that slipped past review.',
+  },
   'location.pathname': {
     guardReason: 'context',
     bcd: 'api.Location.pathname',
@@ -234,9 +244,11 @@ export const MEMBERS = {
       'same presence check; read so a write preserves the fragment, which is a different page concern than the table state and must survive it',
   },
   // Declared by hand, like `EventTarget.addEventListener` above and for the same
-  // reason: the scanner strips string literals, so `addEventListener('popstate',
-  // …)` is invisible to it. This entry therefore exists for check 2 — the BCD
-  // floor comparison — rather than to satisfy the deny-by-default scan.
+  // reason: an event name is a string, and strings are exactly what the scanner
+  // must keep dropping — prose in a comment or a message must never read as a
+  // platform call. So this entry exists for check 2, the BCD floor comparison,
+  // rather than for the deny-by-default scan, and that remains true after the
+  // 19.8 rewrite (ADR-0064). It is the one shape a source scanner cannot own.
   'Window.popstate': {
     guardReason: 'context',
     bcd: 'api.Window.popstate_event',
