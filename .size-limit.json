@@ -1,8 +1,8 @@
 [
   {
-    "name": "root - full import (NFR-01: measured 6072 B, ceiling amended to 6.1 kB by ADR-0053; +138 B for withUrlParams (17.10, ADR-0052) then +70 B for DomContractError/PeerMissingError (17.12, ADR-0053))",
+    "name": "root - full import (NFR-01: measured 6100 B, ceiling amended to 6.25 kB in 19.4; the 6.1 kB of ADR-0053 left 0 B of headroom once ClipboardError reached the root, which is not a margin to ship on. The +28 B is the ADR-0053 contract doing what it says: the full EGL_* taxonomy is reachable from the root, so a new code costs this row)",
     "path": "dist/esm/index.js",
-    "limit": "6.1 kB"
+    "limit": "6.25 kB"
   },
   {
     "name": "/storage - full import (2.15 kB - documented NFR-01 divergence, ADR-0024, amended by ADR-0047: measured 2106 B)",
@@ -27,9 +27,9 @@
     "limit": "1.55 kB"
   },
   {
-    "name": "/errors (measured 351 B; +34 B for PeerMissingError, F68 - still far inside the 0.4 kB clause, spec 02 NFR-08)",
+    "name": "/errors (measured 377 B; +26 B for ClipboardError, spec 06 F97 / ADR-0066, on top of F68's PeerMissingError. Eleven classes and eleven codes, still inside the 0.4 kB clause of spec 02 NFR-08)",
     "path": "dist/esm/errors.js",
-    "limit": "376 B"
+    "limit": "400 B"
   },
   {
     "name": "/text (NFR-08: measured 924 B, clause 1 kB; +87 B for the ADR-0047 option-key contract)",
@@ -60,9 +60,9 @@
     "limit": "0.8 kB"
   },
   {
-    "name": "/table - full import (NFR-12: measured 6276 B; +823 B for tableSelection, spec 06 F94 / ADR-0065, on top of 19.1 and 19.2. Four siblings now live behind this entry and the per-function rows below are what bound each one)",
+    "name": "/table - full import (NFR-12: measured 6861 B; +585 B for tableCsv, spec 06 F96 / ADR-0066, on top of 19.1-19.3. Five siblings behind one entry now, and the per-function rows below are what bound each one)",
     "path": "dist/esm/table.js",
-    "limit": "6.7 kB"
+    "limit": "7.3 kB"
   },
   {
     "name": "/table - query primitives only (NFR-08/NFR-12: measured 1780 B, 6 B BELOW the 1786 B of 19.1 - the entry gained a second sibling module and this import got marginally smaller, which is the shakeability claim (NFR-02) holding rather than being asserted)",
@@ -125,9 +125,15 @@
     "limit": "1.53 kB"
   },
   {
-    "name": "/dom - full import (NFR-12: measured 6448 B; +1458 B for bindTableHistory and the F92 pair it composes, spec 06 F93 / ADR-0063. This is the first row to pass ADR-0035's 5 kB clause, and it does so knowingly: NFR-30 as corrected in 19.1 moves the ROWS per PR and restates the spec-03 NFR-12 prose clause once, at wave end. A consumer who imports one helper still pays for one helper - the single: rows below are the numbers that bound that promise)",
+    "name": "single: tableCsv (spec 06 F96: measured 796 B — the RFC 4180 grammar and the formula-injection guard. What a consumer pays for an export, with no DOM anywhere in it)",
+    "path": "dist/esm/table.js",
+    "import": "{ tableCsv }",
+    "limit": "850 B"
+  },
+  {
+    "name": "/dom - full import (NFR-12: measured 6724 B; +276 B for copyToClipboard, spec 06 F97 / ADR-0066. Past ADR-0035's 5 kB clause since 19.2 and knowingly so: NFR-30 as corrected in 19.1 moves the rows per PR and restates the spec-03 prose clause once, at wave end)",
     "path": "dist/esm/dom.js",
-    "limit": "6.9 kB"
+    "limit": "7.15 kB"
   },
   {
     "name": "single: bindElements (NFR-12 <= 1 kB / NFR-02)",
@@ -212,6 +218,12 @@
     "path": "dist/esm/dom.js",
     "import": "{ bindTableHistory }",
     "limit": "2.05 kB"
+  },
+  {
+    "name": "single: copyToClipboard (spec 06 F97: measured 477 B — a permission-gated write and four classified refusals. Most of it is the classification, which is the whole requirement)",
+    "path": "dist/esm/dom.js",
+    "import": "{ copyToClipboard }",
+    "limit": "510 B"
   },
   {
     "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column — measured 22032 B, up 2869 B in 19.3. Entry clause 25 kB per ADR-0041, untouched since M14 and still holding with 3 kB to spare)",
@@ -620,8 +632,8 @@
     "limit": "1.35 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 35671 B, re-pinned again for 19.3 and again held to +3% rather than the +7% NFR-30 allows. Worth reading as a trajectory rather than a number: 31444 B at M18, 33982 B after 19.2, 35671 B now, against NFR-22 authoring ceiling of 40 kB. Three more items at this rate crosses it, which is a decision to take deliberately in the item that gets there - see ADR-0065)",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 36541 B, re-pinned for 19.4 at +3% as in 19.2 and 19.3. **The trajectory is now the story**: 31444 B at M18, 33982 B (19.2), 35671 B (19.3), 36541 B (19.4) - which is 91% of NFR-22's 40 kB authoring ceiling with three items left (19.5-19.7), all of them bsTable features that land in this file. The item that crosses it owes a decision with a measured argument - amend the clause, or split the artifact - and ADR-0065 and ADR-0066 both say so rather than leaving it to be met as a red build)",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "36.8 kB"
+    "limit": "37.6 kB"
   }
 ]

