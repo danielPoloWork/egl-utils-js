@@ -36,6 +36,7 @@
 
 import { controllerFor, isAbortSignal, isElement } from './dom-helpers.js';
 import { assertNoUnknownOptions } from './option-keys.js';
+import { tableSelection } from './table-selection.js';
 import { bindTableControls } from './dom-table.js';
 import { tablePipeline } from './table.js';
 import { bsPagination } from './bootstrap-composites.js';
@@ -47,6 +48,7 @@ import {
   closestWithin,
   documentOf,
   isNode,
+  uniqueId,
 } from './bootstrap-elements.js';
 
 /**
@@ -110,6 +112,14 @@ import {
  *   row, which is how an application finds its record from an event.
  * @property {(row: Row, event: Event) => void} [onRowClick] - Row activation,
  *   bound through **one** delegated listener and reachable from the keyboard.
+ * @property {boolean | BsTableSelectionOptions<Row>} [selection] - Opt-in row
+ *   selection (F95): a leading column of checkboxes, a select-all header with a
+ *   real **indeterminate** state, and `data-egl-selected` plus `table-active` on
+ *   each selected row so CSS can style it without the caller re-rendering.
+ *   `true` takes every default. **Requires `rowKey`** — a selection keyed by
+ *   anything else breaks on the first sort (F94), so its absence is a `TypeError`
+ *   rather than a fallback. Off by default: a table nobody selects in pays
+ *   nothing (NFR-02).
  * @property {BsTableControls<Row>} [controls] - Filter row, search box,
  *   page-size select and pagination bar, wired to the pipeline through F51
  *   (F67). Omitted, the table renders alone and the caller drives the pipeline.
@@ -181,6 +191,42 @@ import {
  */
 
 /**
+ * @typedef {object} BsTableSelectionLabels
+ * @property {string} [selectAll='Select all'] - Accessible name of the header
+ *   control. English by default, like `bsCloseButton`'s `'Close'` and
+ *   `bsSpinner`'s `'Loading…'`: a checkbox's purpose cannot be spelled in digits
+ *   the way a page number can, so the default is a word and the word is
+ *   injectable.
+ * @property {string} [column='Select'] - Accessible name of the header cell in
+ *   `'single'` mode, where there is no select-all control to name.
+ * @property {(row: any, key: string) => string} [select] - Accessible name per
+ *   row control. Defaults to the row's **key**, which is language-neutral and
+ *   identifies the row — F95 forbids a name that is merely "checkbox", and a
+ *   record id is a real name. Pass this to get a phrase.
+ */
+
+/**
+ * @template Row
+ * @typedef {object} BsTableSelectionOptions
+ * @property {'single' | 'multiple'} [mode='multiple'] - `'multiple'` renders
+ *   checkboxes and a select-all header; `'single'` renders radios and no header
+ *   control, because "select all" has no meaning for one.
+ * @property {import('./table-selection.js').TableSelection<Row>} [selection] - An
+ *   existing F94 selection to render. **Borrowed, not owned**: `destroy()`
+ *   unsubscribes and leaves it alive, exactly as an injected `pipeline` is
+ *   treated. Omitted, this table creates and owns one.
+ * @property {readonly (string | number)[]} [initial] - Keys selected from the
+ *   start. Only for a selection this table creates; passing both is a
+ *   `TypeError`, since it would be two answers to one question.
+ * @property {boolean} [selectAll=true] - Render the header select-all control.
+ *   `false` keeps per-row selection and drops the bulk control, for a table where
+ *   acting on a whole page is not something to make easy.
+ * @property {BsTableSelectionLabels} [labels]
+ * @property {ClassOption} [class] - Extra classes for the selection cells, header
+ *   and body alike — a width, usually.
+ */
+
+/**
  * @template Row
  * @typedef {object} BsTableInstance
  * @property {Element} element - The node this instance owns inside the
@@ -195,6 +241,10 @@ import {
  *   instance. Commands issued on it re-render the table; nothing is hidden.
  * @property {(rows: readonly Row[]) => void} setData - Replace the row set —
  *   `pipeline.setSource` with the render already wired.
+ * @property {import('./table-selection.js').TableSelection<Row>} [selection] - The
+ *   F94 selection this table renders, present only when `options.selection` asked
+ *   for one. Read it, command it, subscribe to it: the table reflects every change
+ *   without re-rendering a row (F95).
  * @property {() => void} destroy
  */
 
@@ -275,6 +325,7 @@ export function bsTable(container, options) {
     pipeline: injected,
     rowKey,
     onRowClick,
+    selection: selectionOption,
     controls,
     empty,
     caption,
@@ -342,6 +393,62 @@ export function bsTable(container, options) {
   if (rowKey !== undefined && typeof rowKey !== 'string' && typeof rowKey !== 'function') {
     throw new TypeError(`${api}: options.rowKey must be a string or a function`);
   }
+
+  // --- selection (F95) ------------------------------------------------------
+  /** @type {BsTableSelectionOptions<Row>} */
+  let selectionConfig = {};
+  if (selectionOption !== undefined && selectionOption !== false) {
+    if (selectionOption !== true) {
+      assertPlainObject(selectionOption, 'options.selection', api);
+      selectionConfig = selectionOption;
+    }
+  }
+  const wantsSelection = selectionOption !== undefined && selectionOption !== false;
+  const {
+    mode: selectionMode = 'multiple',
+    selection: borrowedSelection,
+    initial: selectionInitial,
+    selectAll: wantsSelectAll = true,
+    labels: selectionLabels = {},
+    class: selectionClass,
+    ...unknownSelection
+  } = selectionConfig;
+  if (wantsSelection) {
+    assertNoUnknownOptions(unknownSelection, `${api}.selection`);
+    assertPlainObject(selectionLabels, 'options.selection.labels', api);
+    if (rowKey === undefined) {
+      throw new TypeError(
+        `${api}: options.selection requires options.rowKey — a selection keyed by index or identity does not survive a sort (F94)`,
+      );
+    }
+    if (borrowedSelection !== undefined && selectionInitial !== undefined) {
+      throw new TypeError(
+        `${api}: pass options.selection.initial or an existing options.selection.selection, not both`,
+      );
+    }
+    if (typeof wantsSelectAll !== 'boolean') {
+      throw new TypeError(`${api}: options.selection.selectAll must be a boolean`);
+    }
+    if (borrowedSelection !== undefined) {
+      for (const method of ['keyOf', 'toggle', 'selectAll', 'stats', 'on']) {
+        if (typeof (/** @type {any} */ (borrowedSelection)[method]) !== 'function') {
+          throw new TypeError(
+            `${api}: options.selection.selection must be a tableSelection — ${method}() is missing`,
+          );
+        }
+      }
+    }
+  }
+  const selection = !wantsSelection
+    ? undefined
+    : (borrowedSelection ??
+      tableSelection({
+        rowKey: /** @type {string | ((row: Row, index: number) => string | number)} */ (rowKey),
+        mode: selectionMode,
+        ...(selectionInitial === undefined ? {} : { initial: selectionInitial }),
+      }));
+  /** A borrowed selection outlives this table, exactly as a borrowed pipeline does. */
+  const ownsSelection = wantsSelection && borrowedSelection === undefined;
   if (variant !== undefined) assertToken(variant, 'options.variant', api);
   if (typeof responsive === 'string') assertToken(responsive, 'options.responsive', api);
   if (signal !== undefined && !isAbortSignal(signal)) {
@@ -437,6 +544,47 @@ export function bsTable(container, options) {
   // The header is built once: it depends on the columns, which are fixed for
   // the life of the instance. Only the body answers to the pipeline.
   const headRow = doc.createElement('tr');
+
+  /**
+   * The header's select-all control, when there is one (F95). `null` in single
+   * mode and when `selectAll: false` — a bulk control a table does not want is
+   * not rendered at all rather than rendered disabled.
+   *
+   * @type {Element | null}
+   */
+  let selectAllBox = null;
+  /**
+   * Radios need a group name, and two single-select tables on one page must not
+   * share it — the same `name` makes them one group, so selecting in the second
+   * silently clears the first.
+   *
+   * Minted with {@link uniqueId} and then **stamped on the header cell as its
+   * `id`**, which is what makes the uniqueness real: `uniqueId` proves a string
+   * is free by asking the document for that id, so a name never written into the
+   * document would be handed out again to the next table (ADR-0042's registry is
+   * the document, not a counter). Found by the two-tables test, which is the
+   * only place it shows.
+   */
+  const selectionName = selection === undefined ? '' : uniqueId(doc, 'egl-sel');
+  if (selection !== undefined) {
+    const th = doc.createElement('th');
+    th.setAttribute('scope', 'col');
+    th.setAttribute('id', selectionName);
+    applyClasses(th, [], selectionClass, api);
+    if (selectionMode === 'multiple' && wantsSelectAll) {
+      selectAllBox = doc.createElement('input');
+      selectAllBox.setAttribute('type', 'checkbox');
+      selectAllBox.setAttribute('class', 'form-check-input');
+      selectAllBox.setAttribute('aria-label', selectionLabels.selectAll ?? 'Select all');
+      th.append(selectAllBox);
+    } else {
+      // No control, but the column still needs a name: an unlabelled header cell
+      // is announced as nothing at all (NFR-21).
+      th.setAttribute('aria-label', selectionLabels.column ?? 'Select');
+    }
+    headRow.append(th);
+  }
+
   for (const column of columns) {
     const th = doc.createElement('th');
     th.setAttribute('scope', 'col');
@@ -464,6 +612,31 @@ export function bsTable(container, options) {
 
   const controller = controllerFor(container);
   const interactive = onRowClick !== undefined;
+
+  /**
+   * Write one row's selected state — the control, the attribute and the class.
+   *
+   * `data-egl-selected` and Bootstrap's own `.table-active` are both set, which
+   * is what lets CSS style a selected row **without the caller re-rendering**
+   * (F95): selection changes touch three attributes per affected row and nothing
+   * else.
+   *
+   * @param {Element} tr
+   * @param {Element | null} box
+   * @param {boolean} isSelected
+   * @returns {void}
+   */
+  function applyRowState(tr, box, isSelected) {
+    if (isSelected) tr.setAttribute('data-egl-selected', '');
+    else tr.removeAttribute('data-egl-selected');
+    tr.classList.toggle('table-active', isSelected);
+    if (box === null) return;
+    // `any` rather than a structural cast: these are native control properties,
+    // and `setValue` (F45) reaches them the same way for the same reason — a
+    // narrower type would be a claim about the element that the DOM lib does not
+    // make for `Element`.
+    /** @type {any} */ (box).checked = isSelected;
+  }
   /** @type {readonly Row[]} */
   let rendered = [];
 
@@ -482,7 +655,9 @@ export function bsTable(container, options) {
       if (empty !== undefined) {
         const tr = doc.createElement('tr');
         const td = doc.createElement('td');
-        td.setAttribute('colspan', String(columns.length));
+        // The selection column counts: a colspan short by one leaves the empty
+        // message hanging under the wrong headers.
+        td.setAttribute('colspan', String(columns.length + (selection === undefined ? 0 : 1)));
         appendContent(td, empty, contentOptions({ html, sanitize }, undefined), api);
         tr.append(td);
         fragment.append(tr);
@@ -516,6 +691,29 @@ export function bsTable(container, options) {
     // some users have (NFR-21). Where a row carries real actions, put a real
     // control in a cell instead — this covers the "open the record" case.
     if (interactive) tr.setAttribute('tabindex', '0');
+
+    if (selection !== undefined) {
+      const key = selection.keyOf(row, index);
+      const cell = doc.createElement('td');
+      applyClasses(cell, [], selectionClass, api);
+      const box = doc.createElement('input');
+      // A radio in single mode, a checkbox in multiple: the native control is
+      // keyboard-operable by construction, which is most of what F95 asks for,
+      // and it is the control a user already knows how to read.
+      box.setAttribute('type', selectionMode === 'single' ? 'radio' : 'checkbox');
+      box.setAttribute('class', 'form-check-input');
+      box.setAttribute('data-egl-select', '');
+      if (selectionMode === 'single') box.setAttribute('name', selectionName);
+      // The key, not "checkbox" (F95). A record id is language-neutral and names
+      // the row; a phrase is one option away.
+      box.setAttribute(
+        'aria-label',
+        selectionLabels.select === undefined ? key : selectionLabels.select(row, key),
+      );
+      cell.append(box);
+      tr.append(cell);
+      applyRowState(tr, box, selection.hasKey(key));
+    }
 
     for (const column of columns) {
       const td = doc.createElement('td');
@@ -599,6 +797,91 @@ export function bsTable(container, options) {
     );
   }
 
+  /**
+   * Rows this table currently shows, paired with their control. Rebuilt on every
+   * body render; read on every selection change, which is what makes reflection
+   * O(page) and free of a re-render.
+   *
+   * @returns {{ tr: Element, box: Element | null, row: Row, index: number }[]}
+   */
+  const renderedRows = () =>
+    [...tbody.children].flatMap((tr) => {
+      const index = Number(tr.getAttribute('data-egl-index'));
+      // A malformed marker makes `index` NaN, and `rendered[NaN]` is undefined,
+      // so the same line that rejects a foreign row rejects an unreadable one —
+      // no separate NaN branch, which coverage proved unreachable.
+      const row = rendered[index];
+      if (row === undefined) return [];
+      return [{ tr, box: tr.querySelector('input[data-egl-select]'), row, index }];
+    });
+
+  /**
+   * Push the selection into the markup: each row's control and class, then the
+   * header's tri-state.
+   *
+   * The header is the interesting part. `indeterminate` is a **property, not an
+   * attribute** — there is no `indeterminate=""` in HTML — so it can only be set
+   * from script, which is exactly why F95 names it: a partially-selected page
+   * whose header shows an empty box tells the user "nothing here is selected",
+   * and the next click selects a page they thought was untouched.
+   *
+   * @returns {void}
+   */
+  const reflectSelection = () => {
+    if (selection === undefined) return;
+    const visible = renderedRows();
+    for (const { tr, box, row, index } of visible) {
+      applyRowState(tr, box, selection.isSelected(row, index));
+    }
+    if (selectAllBox === null) return;
+    const { all, some } = selection.stats(visible.map((entry) => entry.row));
+    /** @type {any} */ (selectAllBox).checked = all;
+    /** @type {any} */ (selectAllBox).indeterminate = some;
+  };
+
+  if (selection !== undefined) {
+    tbody.addEventListener(
+      'change',
+      (event) => {
+        const target = /** @type {Element | null} */ (event.target);
+        if (target === null || !target.hasAttribute?.('data-egl-select')) return;
+        const tr = target.closest('tr[data-egl-index]');
+        // Direct children only, for the same reason row activation checks it: a
+        // nested table's controls carry our marker and would resolve against our
+        // rows — silently the wrong record.
+        if (tr === null || tr.parentElement !== tbody) return;
+        const index = Number(tr.getAttribute('data-egl-index'));
+        const row = rendered[index];
+        if (row === undefined) return;
+        // The control's own state is authoritative: the browser has already
+        // flipped it, and fighting that is how a checkbox starts feeling broken.
+        if (/** @type {any} */ (target).checked) selection.select(row, index);
+        else selection.deselect(row, index);
+      },
+      { signal: controller.signal },
+    );
+
+    if (selectAllBox !== null) {
+      selectAllBox.addEventListener(
+        'change',
+        () => {
+          const rows = renderedRows().map((entry) => entry.row);
+          // **This page, and only this page** (F94). Never "everything matching
+          // the filter" and never "everything in the source": both are guesses
+          // about intent, and both have shipped as data-loss bugs. What the user
+          // cannot see, this control does not touch — and `selection.stats()`
+          // keeps the rest countable.
+          if (/** @type {any} */ (selectAllBox).checked) {
+            selection.selectAll(rows);
+          } else {
+            selection.deselectAll(rows);
+          }
+        },
+        { signal: controller.signal },
+      );
+    }
+  }
+
   // Controls wrap the table rather than reaching into it: `element` stays "the
   // node this instance owns", which is now the wrapper (F66/F67, ADR-0040).
   const wired =
@@ -617,8 +900,14 @@ export function bsTable(container, options) {
   if (wired !== null) element = wired.element;
 
   renderBody(pipeline.view());
+  reflectSelection();
+  const unsubscribeSelection =
+    selection === undefined ? null : selection.on('change', reflectSelection);
   const unsubscribe = pipeline.on('change', (view) => {
     renderBody(view);
+    // Rows are new nodes; their controls start from the selection, and the header
+    // re-reads a page that has just changed underneath it.
+    reflectSelection();
     // The pager rides the subscription the body already needs: one 'change'
     // listener for everything this instance draws, rather than one per part.
     wired?.reflect(view);
@@ -636,6 +925,11 @@ export function bsTable(container, options) {
     // its own debounces and detaches its listeners, and the pager disposes its
     // delegated click.
     wired?.destroy();
+    unsubscribeSelection?.();
+    // Same borrowed/owned rule as the pipeline: a selection handed to us keeps
+    // its keys and its other subscribers, because the caller may well be
+    // rendering it somewhere else too. One we made goes with us.
+    if (ownsSelection) selection?.destroy();
     element.remove();
     // An injected pipeline is borrowed: unsubscribing is the whole of our
     // claim on it. One we built dies with us, having no timers to stop.
@@ -649,6 +943,7 @@ export function bsTable(container, options) {
     table,
     pipeline,
     ...(wired === null ? {} : { controls: wired.parts }),
+    ...(selection === undefined ? {} : { selection }),
     setData: (rows) => {
       if (destroyed) throw new TypeError(`${api}: setData() was called after destroy()`);
       pipeline.setSource(rows);

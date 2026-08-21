@@ -461,6 +461,71 @@ A parameter naming a column that no longer exists — a link shared before a ren
 rather than fatal, and the following write removes it from the URL. Pass `onIgnored` to hear
 about it.
 
+### Row selection (`egl-utils-js/table`, `egl-utils-js/bootstrap`)
+
+A selection is a set of **row keys** — not a flag on a row, not an index, not an object
+reference. Keys survive a re-sort, a re-page and a server round-trip; the other three do not
+([ADR-0065](docs/adr/0065-a-set-of-keys-and-the-page-it-can-see.md)).
+
+```js
+import { tableSelection } from 'egl-utils-js/table';
+
+const picked = tableSelection({ rowKey: 'id' }); // required: index and identity break
+picked.select(rows[0]);
+picked.getSelection(); // ['7'] — keys, insertion-ordered
+picked.toggle(rows[0]); // false, the state after the toggle
+```
+
+**Select-all means the rows you hand it**, which for a table is the current page of the derived
+view. Never "everything matching the filter", never "everything in the source" — both are
+guesses about intent, and both have shipped as data-loss bugs. What the user cannot see, this
+does not touch:
+
+```js
+picked.selectAll(table.view().rows); // this page
+
+const { onPage, offPage, total } = picked.stats(table.view().rows);
+// offPage: selected rows NOT among the ones passed — other pages, and, under an
+// active filter, the rows it hides. The number a confirmation owes the user.
+if (offPage > 0) confirm(`${total} selected, ${offPage} not shown`);
+```
+
+**Rows leaving the source are kept, not pruned.** A selection is the user's intent: they ticked
+forty rows, and filtering or reloading must not quietly turn that into eleven. `prune(rows)` is
+the named opt-out for when the rows really are gone.
+
+`'single'` mode keeps one key and **refuses** `selectAll()` rather than picking a row for you.
+A re-select of an already-selected row emits nothing, and `'change'` carries `{keys, added,
+removed}` so a renderer can update what changed:
+
+```js
+const off = picked.on('change', ({ keys, added, removed }) => paint(added, removed));
+```
+
+On a Bootstrap table it is one option — off by default, because a table nobody selects in
+renders no column and attaches no listener:
+
+```js
+import { bsTable } from 'egl-utils-js/bootstrap';
+
+const table = bsTable(host, {
+  columns,
+  data: rows,
+  rowKey: 'id', // required with selection, for the reason above
+  selection: true, // or { mode: 'single', selectAll: false, labels, initial }
+});
+
+table.selection.getSelection();
+```
+
+You get checkboxes (radios in `'single'` mode), a select-all header with a real **indeterminate**
+state when the page is partly selected, keyboard operability from the native control, an
+accessible name per row that is the row's key rather than "checkbox", and `data-egl-selected`
+plus `.table-active` on each selected row — so CSS styles the selection **without the caller
+re-rendering**. Pass an existing `tableSelection` as `selection: { selection }` and the table
+borrows it: `destroy()` unsubscribes and leaves it alive, exactly as it treats an injected
+pipeline.
+
 ### IPv4 & CIDR (`egl-utils-js/net`)
 
 Strict by design (ADR-0020): four decimal octets, no leading zeros, none of the legacy
@@ -1290,11 +1355,11 @@ own response:
 | `/sanitize` | 3 | 2.91 kB |
 | `/logging` | 3 | 3.06 kB |
 | `/storage` | 4 | 4.25 kB |
-| `/table` | 5 | 9.92 kB |
-| `/dom` | 8 | 13.53 kB |
+| `/table` | 5 | 11.09 kB |
+| `/dom` | 8 | 13.51 kB |
 | root (`index.js`) | 7 | 13.45 kB |
-| `/bootstrap` | 8 | 34.41 kB |
-| **the global artifact** | **1** | **34.04 kB** |
+| `/bootstrap` | 8 | 36.70 kB |
+| **the global artifact** | **1** | **35.73 kB** |
 
 Two things worth reading off it. **If you need `/bootstrap`, take the artifact** — the whole
 surface in one request now costs *less* than that one entry costs in seven, because
@@ -1308,7 +1373,7 @@ downloads whole files. Both are real; they just belong to different consumers.
 `egl-utils-js` is **1.x**, and the number is meant literally. MAJOR-protected — these change only
 in a 2.0:
 
-- **Every named export**: 118 across the root and the nine subpath entries (107 distinct names —
+- **Every named export**: 119 across the root and the nine subpath entries (108 distinct names —
   the error classes are reachable from both the root and `/errors`).
 - **Every `EGL_*` error code**, and the `.code`-not-`instanceof` identity contract.
 - **Every `exports`-map path** — a deep import that resolves today keeps resolving.

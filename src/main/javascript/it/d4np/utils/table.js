@@ -43,6 +43,11 @@ export { remotePipeline, tableQuery } from './table-remote.js';
 // lives (NFR-29).
 export { tableStateFromParams, tableStateToParams } from './table-url.js';
 
+// The keyed selection model (spec 06 F94). Owned beside the pipeline and
+// importing none of it, which is what lets the same selection serve either
+// sibling — or a caller with no pipeline at all.
+export { tableSelection } from './table-selection.js';
+
 /**
  * Expressions longer than this stop being parsed as a grammar and are matched
  * literally (NFR-09). No realistic filter is this long; a pathological one
