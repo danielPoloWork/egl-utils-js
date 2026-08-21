@@ -203,6 +203,13 @@ const POLICED = [
   'cancelAnimationFrame',
   'getComputedStyle',
   'requestAnimationFrame',
+  // Added for spec 06 F93 (roadmap 19.2). `location` was already policed; its
+  // members were not inventoried, because the one pre-existing read reaches it
+  // through optional chaining (`globalThis.location?.protocol`) and the member
+  // pattern needs a bare `.`. The history binding reads several members plainly,
+  // so they are declared — and `history` joins the list so a future
+  // `history.anything` cannot enter unseen either.
+  'history',
 ];
 
 /** Strip comments and strings so documentation prose is not scanned as code. */

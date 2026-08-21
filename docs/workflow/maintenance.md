@@ -14,7 +14,7 @@ package/target name.
 
 **Made concrete at v1.0.0** (roadmap 17.5). MAJOR-protected from that release on:
 
-- **Every named export** — 113 of them (102 distinct names), across the root and the nine subpath
+- **Every named export** — 118 of them (107 distinct names), across the root and the nine subpath
   entries.
 - **Every `EGL_*` error code**, and the documented `.code`-not-`instanceof` identity contract
   ([ADR-0003](../adr/0003-error-taxonomy-stable-codes.md)).

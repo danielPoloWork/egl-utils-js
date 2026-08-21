@@ -340,7 +340,7 @@ table.toggleSort('seen'); //       asc -> desc -> unsorted
 // Neither command discarded the other: both are still in effect.
 
 table.view();
-// { rows, total, totalFiltered, page, pageCount, sort, filters, search }
+// { rows, total, totalFiltered, page, pageCount, sort, filters, search, pageSize }
 table.view() === table.view(); // true — memoized until the next command
 
 // One re-render instead of three:
@@ -401,6 +401,65 @@ table.view();
 empty table that does not say why is not. And a filter here is a string, never a predicate: a
 function cannot be sent to a server, so passing one is a `TypeError` rather than a query that
 quietly asks something else.
+
+### Table state in the URL (`egl-utils-js/table`, `egl-utils-js/dom`)
+
+A table's state is the question a user asked, and a URL is the only part of a page they can
+bookmark, reload, or send to a colleague. Two pure functions move a state between those forms;
+one `/dom` binding keeps a pipeline and the address bar in step
+([ADR-0063](docs/adr/0063-the-url-is-the-state-and-the-page-goes-last.md)).
+
+```js
+import { tableStateToParams, tableStateFromParams } from 'egl-utils-js/table';
+
+// A view is a superset of the state, so this is the whole call:
+tableStateToParams(table.view());
+// 'filter.status=active&q=ann&sort=score%3Adesc&page=3&size=25'
+
+// Defaults are absent, not spelled out — a table at rest has a clean URL:
+tableStateToParams({}); // ''
+
+// Merge into a URL you do not own: parameters that are not ours are preserved.
+tableStateToParams(table.view(), { base: location.search });
+
+tableStateFromParams('?q=ann&page=3');
+// { filters: {}, search: 'ann', sort: [], page: 3, pageSize: null }
+```
+
+**Pure and SSR-safe**, so a server render reads the request's query string and derives page 3
+before any script exists. **Nothing throws on the input**: `?page=abc` is page 1, `size=0` is
+unpaginated, a malformed sort entry is dropped while the ones around it survive. A hand-edited
+URL is untrusted input, and a table that refuses to render because a stranger typed `page=abc`
+is worse than one that shows page 1.
+
+```js
+import { bindTableHistory } from 'egl-utils-js/dom';
+
+const unbind = bindTableHistory(table);
+// The URL is now the table's state, and Back and Forward move through table states.
+
+// Two tables on one page, and no history trail:
+bindTableHistory(orders, { prefix: 'orders', mode: 'replace' });
+bindTableHistory(invoices, { prefix: 'invoices', mode: 'replace' });
+
+unbind(); // or abort the signal you passed
+```
+
+Works with `remotePipeline` too — same command vocabulary — and there a four-part restore is
+**one** request, not four, because the restore is one `batch`. Two things worth knowing before
+you bind:
+
+- **The URL is the whole state, not a patch on the current one.** A pipeline constructed with
+  `pageSize: 25` and bound to a URL naming no size becomes unpaginated. Put the default in the
+  URL, or accept that the URL decides.
+- **A predicate filter cannot be bound.** `setFilter(key, fn)` is fine on an unbound pipeline
+  and has no URL representation, so binding one is a `TypeError` naming the column rather than
+  a URL that quietly stopped describing the table. Filter expressions are strings for exactly
+  this reason.
+
+A parameter naming a column that no longer exists — a link shared before a rename — is skipped
+rather than fatal, and the following write removes it from the URL. Pass `onIgnored` to hear
+about it.
 
 ### IPv4 & CIDR (`egl-utils-js/net`)
 
@@ -1231,11 +1290,11 @@ own response:
 | `/sanitize` | 3 | 2.91 kB |
 | `/logging` | 3 | 3.06 kB |
 | `/storage` | 4 | 4.25 kB |
-| `/table` | 4 | 8.46 kB |
-| `/dom` | 7 | 10.85 kB |
+| `/table` | 5 | 9.92 kB |
+| `/dom` | 8 | 13.53 kB |
 | root (`index.js`) | 7 | 13.45 kB |
-| `/bootstrap` | 7 | 32.98 kB |
-| **the global artifact** | **1** | **32.71 kB** |
+| `/bootstrap` | 8 | 34.41 kB |
+| **the global artifact** | **1** | **34.04 kB** |
 
 Two things worth reading off it. **If you need `/bootstrap`, take the artifact** — the whole
 surface in one request now costs *less* than that one entry costs in seven, because
@@ -1249,7 +1308,7 @@ downloads whole files. Both are real; they just belong to different consumers.
 `egl-utils-js` is **1.x**, and the number is meant literally. MAJOR-protected — these change only
 in a 2.0:
 
-- **Every named export**: 113 across the root and the nine subpath entries (102 distinct names —
+- **Every named export**: 118 across the root and the nine subpath entries (107 distinct names —
   the error classes are reachable from both the root and `/errors`).
 - **Every `EGL_*` error code**, and the `.code`-not-`instanceof` identity contract.
 - **Every `exports`-map path** — a deep import that resolves today keeps resolving.

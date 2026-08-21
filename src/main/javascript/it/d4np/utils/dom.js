@@ -37,3 +37,7 @@ export { inlineAlert, loadingOverlay } from './dom-components.js';
 
 // The bridge to the /table pipeline (spec 03 §2 item F51, ADR-0035).
 export { bindTableControls } from './dom-table.js';
+
+// The bridge to the address bar (spec 06 §2 item F93, ADR-0063). The pure half
+// of the same feature — state ↔ query string — is on `egl-utils-js/table`.
+export { bindTableHistory } from './dom-history.js';

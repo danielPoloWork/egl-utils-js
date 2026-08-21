@@ -21,6 +21,24 @@ const ROWS = [
 /** @param {object} [options] */
 const make = (options = {}) => tablePipeline({ source: ROWS, ...options });
 
+// Regression for BUG-0004 (roadmap 19.2): the view's filter map was built by
+// assignment, which routes through `Object.prototype`'s `__proto__` setter — so a
+// column keyed `'__proto__'` was filtered for real and reported by the view as no
+// filter at all. Found by the F92 round-trip property suite, whose key generator
+// produces the key no example test would have.
+describe('a column keyed __proto__ (BUG-0004)', () => {
+  it('is reported by the view like any other filter', () => {
+    const pipeline = tablePipeline({ source: [{ __proto__x: 1 }] });
+    pipeline.setFilter('__proto__', 'a');
+    const { filters } = pipeline.view();
+    expect(Object.hasOwn(filters, '__proto__')).toBe(true);
+    expect(filters.__proto__).toBe('a');
+    // And the prototype of the map itself is untouched, which is the other half of
+    // what assignment got wrong.
+    expect(Object.getPrototypeOf(filters)).toBe(Object.prototype);
+  });
+});
+
 describe('tablePipeline — construction', () => {
   it('starts with every row, unfiltered and unsorted', () => {
     const view = make().view();

@@ -91,31 +91,38 @@ export const TRANSFER_ROUTES = {
   net: { file: 'dist/esm/net.js', requests: 2, measured: 1340, budget: 1430 },
   table: {
     file: 'dist/esm/table.js',
-    requests: 4,
-    measured: 8461,
-    budget: 8968,
-    why: '+1710 B for remotePipeline (spec 06 F88-F91, roadmap 19.1). A bundler consumer who does not import it pays nothing - the {tablePipeline} size row is unchanged - but this route downloads whole files, which is the trade the deep-ESM route makes.',
+    requests: 5,
+    measured: 9918,
+    budget: 10500,
+    why: "+1457 B and a fifth request for the F92 state pair (spec 06 F92, roadmap 19.2, ADR-0063), on top of 19.1's remotePipeline. The pair is two small pure functions; what this route pays for is the whole file they live in, which is the trade the deep-ESM route makes and the reason F87 counts served bytes rather than imported ones.",
   },
   logging: { file: 'dist/esm/logging.js', requests: 3, measured: 3063, budget: 3270 },
-  dom: { file: 'dist/esm/dom.js', requests: 7, measured: 10849, budget: 11600 },
+  dom: {
+    file: 'dist/esm/dom.js',
+    requests: 8,
+    measured: 13532,
+    budget: 14400,
+    why: '+2683 B and an eighth request for bindTableHistory (spec 06 F93, roadmap 19.2, ADR-0063) and the F92 pair it composes. The largest single-item growth this route has taken; the per-function size-limit rows are what bound what an individual import costs, and they did not move.',
+  },
   bootstrap: {
     file: 'dist/esm/bootstrap.js',
-    requests: 7,
-    measured: 32979,
-    budget: 34957,
+    requests: 8,
+    measured: 34406,
+    budget: 36500,
     why:
-      'The whole catalogue over 7 requests — now MORE than the single-file artifact over 1, so a page needing ' +
-      '/bootstrap should take the artifact. It grew +1703 B in 19.1 without gaining a feature: bsTable pulls the ' +
-      'table chunk, and that chunk now carries remotePipeline. A bundler shakes it away; this route downloads whole ' +
-      'files, which is exactly the cost F87 exists to keep visible instead of silent.',
+      'The whole catalogue over 8 requests — still MORE than the single-file artifact over 1, so a page needing ' +
+      '/bootstrap should take the artifact. It grew again in 19.2 without gaining a feature, for the same reason it ' +
+      'did in 19.1: bsTable pulls the shared table chunk, and that chunk now carries the F92 pair as well as ' +
+      'remotePipeline. A bundler shakes both away; this route downloads whole files, which is exactly the cost F87 ' +
+      'exists to keep visible instead of silent.',
   },
 
   // --- The artifact route (F83) --------------------------------------------
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 32706,
-    budget: 33600,
-    why: 'Budget is NFR-22 as pinned by ADR-0059. The size-limit row for the same file reports 31 444 B because it re-bundles through esbuild first; this figure is the file served as-is, which is what a CDN sends.',
+    measured: 34038,
+    budget: 35100,
+    why: 'Budget re-pinned for the 19.2 surface, holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061).',
   },
 };
