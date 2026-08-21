@@ -1170,6 +1170,33 @@ never a load-time failure.
 Both routes take an injected module instead, `{ dompurify: DOMPurify }`, if the page reaches
 DOMPurify some other way than a bare script tag.
 
+### What each route costs
+
+Measured, and gated in CI so these numbers cannot drift silently
+([ADR-0061](docs/adr/0061-served-bytes-are-their-own-accounting.md)). Bytes are what the
+browser actually transfers — every file in the entry's chunk graph, each compressed as its
+own response:
+
+| Route | Requests | Transferred |
+|---|---:|---:|
+| `/errors` | 2 | 1.07 kB |
+| `/net` | 2 | 1.34 kB |
+| `/text` | 3 | 1.67 kB |
+| `/sanitize` | 3 | 2.91 kB |
+| `/logging` | 3 | 3.06 kB |
+| `/storage` | 4 | 4.25 kB |
+| `/table` | 4 | 6.75 kB |
+| `/dom` | 7 | 10.85 kB |
+| root (`index.js`) | 7 | 13.46 kB |
+| `/bootstrap` | 7 | 31.28 kB |
+| **the global artifact** | **1** | **31.61 kB** |
+
+Two things worth reading off it. **If you need `/bootstrap`, take the artifact** — it is the
+whole surface in one request for within 1% of what that one entry costs in seven. And these
+figures are larger than the per-function budgets quoted elsewhere in this README, which is
+not a contradiction: those measure what a *bundler* ships after tree-shaking, while a static
+page downloads whole files. Both are real; they just belong to different consumers.
+
 ## Stability promise
 
 `egl-utils-js` is **1.x**, and the number is meant literally. MAJOR-protected — these change only
@@ -1223,7 +1250,7 @@ inside their declared ranges — keeping those patched is yours. Full detail:
 | 15 | Bootstrap table manager | ✅ done |
 | 16 | Bootstrap interactive wrappers | ✅ done |
 | 17 | v1.0.0 readiness & the first stable release | ✅ done |
-| 18 | Browser distribution | 🚧 in progress |
+| 18 | Browser distribution | ✅ done |
 | 19 | Table data & bsTable extras | ⏳ planned |
 | 20 | Application UX utilities | ⏳ planned |
 | 21 | Form engine | ⏳ planned |

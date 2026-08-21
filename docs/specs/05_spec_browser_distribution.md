@@ -211,6 +211,19 @@ surface, and the error taxonomy.
   the entry file plus its chunk imports as served bytes, and one for
   `dist/global/egl-utils.global.js` with the NFR-22 budget. The rows live in
   `.size-limit.json` beside the existing 98 and fail CI on regression like any other.
+  - **Amended (roadmap 18.5, [ADR-0061](../adr/0061-served-bytes-are-their-own-accounting.md)):**
+    the served-bytes rows live in **their own gate** — `tools/transfer-budgets.js` declares
+    them, `tools/check-transfer-budgets.mjs` verifies them inside `check:package` — not in
+    `.size-limit.json`. Two reasons, the first mechanical: a deep-ESM route is a set of
+    **content-hashed** chunk files, and appending one comment line to `errors.js` renames
+    four of the nine (measured, then reverted), so a static row naming a chunk would need
+    re-editing on most PRs that touch any source. The gate is keyed by **entry name** —
+    stable public API — and resolves the closure at run time. Second, a size-limit row
+    measures the *bundled, tree-shaken* output a bundler consumer ships, which is a
+    different and much smaller number than the served waterfall (`/index`: 6 068 B bundled,
+    **13 461 B** served); both accountings are kept because they answer different questions
+    for different consumers. The artifact keeps the NFR-22 budget ADR-0059 pinned and is
+    additionally measured here as a one-request route.
 - **NFR-23** — `pnpm check:package` (publint, attw, size, agadoo, no-runtime-deps)
   unchanged and green; the `exports` map is asserted untouched by the packaging test.
 - **NFR-24** — `pnpm check:api-floor` passes with an unchanged inventory; the PR diff for
