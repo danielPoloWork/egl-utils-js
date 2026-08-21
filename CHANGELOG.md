@@ -1,5 +1,60 @@
 # Changelog
 
+## 1.1.0
+
+### Minor Changes
+
+- 630ebf4: The package declares its **CDN default**: the `unpkg` and `jsdelivr` fields point at the
+  global artifact, so the bare package URL serves something a classic `<script src>` can run
+  (ROADMAP 18.3, spec 05 F84, ADR-0060).
+
+  ```html
+  <script src="https://cdn.jsdelivr.net/npm/egl-utils-js@1.1.0"></script>
+  <script src="https://unpkg.com/egl-utils-js@1.1.0"></script>
+  ```
+
+  Both resolve to `dist/global/egl-utils.global.js`. Pin the version: entries share
+  content-hashed chunks, so mixing versions on one page double-loads shared code.
+
+  The deep `dist/esm/<entry>.js` paths remain the module-consumer route and are unchanged. So
+  is everything else a bundler sees: the `exports` map is byte-for-byte identical, and no
+  `main`, `module` or `browser` field was added — a packaging gate now asserts their absence,
+  because `browser` in particular would silently redirect bundler consumers onto the
+  single-file artifact.
+
+  That same gate reads the **packed tarball's own file list** and asserts every advertised
+  path is in it — both CDN fields, all 41 exports-map targets, and the artifact's sourcemap.
+  `files` and the fields that name files are set independently, and nothing else in the
+  toolchain compares them.
+
+- 4d8090e: The package ships a **global single-file artifact**: `dist/global/egl-utils.global.js`, a
+  minified IIFE with a sourcemap, loadable by a classic `<script src>` — no modules, no
+  bundler, no npm (ROADMAP 18.2, spec 05 F83, ADR-0059).
+
+  It reads as the single global `egl`: the root entry's exports at the top level, and each
+  subpath as a sub-namespace named after its exports path.
+
+  ```html
+  <script src="https://unpkg.com/egl-utils-js@1.0.0/dist/global/egl-utils.global.js"></script>
+  <script>
+    const rows = egl.table.paginate(data, { page: 1, pageSize: 20 });
+    document.body.append(egl.bootstrap.bsBadge(`${rows.total} results`));
+  </script>
+  ```
+
+  The whole public surface is there and nothing is renamed — asserted against the built file
+  by a new packaging gate rather than promised, along with `egl.VERSION` matching
+  `package.json`, no second global being defined, and no optional peer being bundled. Peers
+  stay external and are resolved at use exactly as on the ESM path, so a page that already
+  loads Bootstrap or DOMPurify keeps the copy it has.
+
+  Nothing changes for a bundler consumer: the `exports` map, `sideEffects: false` and the zero
+  runtime dependencies are untouched, and re-bundling produces the same graph as before.
+
+  The artifact measures **31 444 B** (min+brotli, the metric every size row in this project
+  uses), gated at 33.6 kB — 25% under the sum of the ten individual entries, which is the
+  deduplication a single file buys.
+
 All notable changes to `egl-utils-js` are documented here, following
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning 2.0.0](https://semver.org/).
@@ -24,7 +79,7 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   is needed — every entry's internal imports are relative, never a bare specifier), the
   global artifact route, how each optional peer (`bootstrap`, `dompurify`) is supplied on
   either route, and the cross-version rule — pin one `egl-utils-js` version for every URL on
-  a page, since entries share content-hashed chunks *within* a version, not across one (spec
+  a page, since entries share content-hashed chunks _within_ a version, not across one (spec
   05 F85, ROADMAP 18.4).
 
 - **CDN default** — the `unpkg` and `jsdelivr` fields name the global artifact, so the bare
