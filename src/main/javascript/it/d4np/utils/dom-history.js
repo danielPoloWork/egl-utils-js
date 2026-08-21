@@ -206,13 +206,7 @@ export function bindTableHistory(pipeline, options = {}) {
       location.search.startsWith('?') ? location.search.slice(1) : location.search,
     ).toString();
     if (next === current) return;
-    // Concatenated rather than interpolated, deliberately: the api-floor gate
-    // strips template literals whole, so a member read inside one is invisible to
-    // its deny-by-default scan. Writing these plainly is what puts
-    // `location.pathname` and `location.hash` under the gate that is supposed to
-    // be watching them (the blind spot itself is filed as roadmap 19.8).
-    const query = next === '' ? '' : '?' + next;
-    const url = location.pathname + query + location.hash;
+    const url = `${location.pathname}${next === '' ? '' : `?${next}`}${location.hash}`;
     // `history.state` is carried through rather than replaced with null: an
     // application may have stored its own state on this entry, and a table
     // changing page is no reason to lose it.

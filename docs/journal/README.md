@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-21 — The gate that was watching nothing (roadmap 19.8)](2026/08/2026-08-21-api-floor-scanner.md)
 - [2026-08-21 — The URL is the state, and the page goes last (roadmap 19.2)](2026/08/2026-08-21-table-state-url.md)
 - [2026-08-21 — The remote pipeline, and the wrapper that would have been wrong (roadmap 19.1)](2026/08/2026-08-21-remote-pipeline.md)
 - [2026-08-21 — Planning the table-data wave (spec 06, M19)](2026/08/2026-08-21-spec-06-planning.md)

@@ -33,6 +33,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GLOBALS, MEMBERS, SUPPORT_MATRIX } from './api-floor-inventory.js';
+import { codeOf, platformUses, POLICED } from './api-floor-scan.js';
 
 // BCD's ESM entry re-exports data.json without an import attribute, which Node
 // refuses; `require` sidesteps it and also works on the Node 18 floor, where
@@ -144,146 +145,55 @@ for (const [name, entry] of [...Object.entries(GLOBALS), ...Object.entries(MEMBE
 const KNOWN_GLOBALS = new Set(Object.keys(GLOBALS));
 const KNOWN_MEMBERS = new Set(Object.keys(MEMBERS));
 
-// Platform globals worth policing. ES built-ins are deliberately absent (see
-// the inventory's SCOPE note) — `target`/`lib` govern those.
-//
-// The DOM block was added for spec 03 NFR-16. Until then this list held
-// `document` and `window` but none of the DOM *types*, so `x instanceof Element`
-// or `new CustomEvent(...)` passed the gate in silence — ADR-0017 promised
-// deny-by-default and delivered it only for the globals someone had thought to
-// list. A wave that touches the DOM has to close that, or the gate would be
-// weakest exactly where it is needed most.
-const POLICED = [
-  'AbortController',
-  'AbortSignal',
-  'AggregateError',
-  'Blob',
-  'BroadcastChannel',
-  'DOMException',
-  'FormData',
-  'Headers',
-  'ReadableStream',
-  'Request',
-  'Response',
-  'TextDecoder',
-  'TextEncoder',
-  'URL',
-  'URLSearchParams',
-  'WebSocket',
-  'Worker',
-  'atob',
-  'btoa',
-  'clearTimeout',
-  'crypto',
-  'document',
-  'fetch',
-  'localStorage',
-  'location',
-  'navigator',
-  'performance',
-  'queueMicrotask',
-  'sessionStorage',
-  'setTimeout',
-  'structuredClone',
-  'window',
-  // --- DOM surface (spec 03 NFR-16) ---
-  'CustomEvent',
-  'DocumentFragment',
-  'Element',
-  'Event',
-  'EventTarget',
-  'HTMLElement',
-  'HTMLInputElement',
-  'HTMLSelectElement',
-  'HTMLTextAreaElement',
-  'MutationObserver',
-  'Node',
-  'NodeFilter',
-  'ResizeObserver',
-  'cancelAnimationFrame',
-  'getComputedStyle',
-  'requestAnimationFrame',
-  // Added for spec 06 F93 (roadmap 19.2). `location` was already policed; its
-  // members were not inventoried, because the one pre-existing read reaches it
-  // through optional chaining (`globalThis.location?.protocol`) and the member
-  // pattern needs a bare `.`. The history binding reads several members plainly,
-  // so they are declared — and `history` joins the list so a future
-  // `history.anything` cannot enter unseen either.
-  'history',
-];
-
-/** Strip comments and strings so documentation prose is not scanned as code. */
-function stripNonCode(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/\/\/[^\n]*/g, ' ')
-    .replace(/'(?:\\.|[^'\\])*'/g, "''")
-    .replace(/"(?:\\.|[^"\\])*"/g, '""')
-    .replace(/`(?:\\.|[^`\\])*`/g, '``');
-}
+// The scan itself — the tokenizer, the POLICED list and the four reference
+// shapes — lives in ./api-floor-scan.js, which is pure and therefore testable.
+// It was split out by roadmap 19.8 after two evasions were found by removing an
+// inventory entry and watching this gate stay green: a member read inside a
+// template literal, and one behind optional chaining. `api-floor-scanner.test.js`
+// now asserts each shape is seen, because a regex fixed without a test is only
+// the next blind spot (ADR-0064).
+const WHAT_TO_ADD = 'Add it to tools/api-floor-inventory.js with its BCD path (deny-by-default).';
 
 for (const file of jsFiles(SOURCE_DIR)) {
-  const code = stripNonCode(readFileSync(file, 'utf8'));
+  const code = codeOf(readFileSync(file, 'utf8'));
   const short = file.slice(ROOT.length + 1).replace(/\\/g, '/');
 
-  for (const global of POLICED) {
-    // `Global.member` first, so a member hit is attributed precisely.
-    const memberPattern = new RegExp(`\\b${global}\\s*\\.\\s*([A-Za-z_$][\\w$]*)`, 'g');
-    let match;
-    while ((match = memberPattern.exec(code)) !== null) {
-      const key = `${global}.${match[1]}`;
+  for (const use of platformUses(code, POLICED)) {
+    if (use.kind === 'member') {
       // Storage members are inventoried under one representative key: the
       // availability question is the storage object, not each method.
       const normalized =
-        global === 'localStorage' || global === 'sessionStorage' ? `${global}.getItem` : key;
+        use.global === 'localStorage' || use.global === 'sessionStorage'
+          ? `${use.global}.getItem`
+          : use.name;
       // A GLOBALS entry authorizes reading the global itself, never its members:
       // `document` being declared says nothing about whether `document.fooBar`
       // exists at the floor. Consulting KNOWN_GLOBALS here would have let one
       // bare-global entry blanket-authorize every member reached off it.
       if (!KNOWN_MEMBERS.has(normalized)) {
+        failures.push(`  ✗ ${short}: uses \`${use.name}\` — not in the inventory. ${WHAT_TO_ADD}`);
+      }
+      continue;
+    }
+
+    if (use.kind === 'computed') {
+      // A computed key is unresolvable by a scanner, so it is refused rather than
+      // waved through — the alternative is an evasion one bracket wide. Dot
+      // access, or an explicit inventory entry for the global, is the way past.
+      if (!KNOWN_GLOBALS.has(use.global) && !KNOWN_MEMBERS.has(use.global)) {
         failures.push(
-          `  ✗ ${short}: uses \`${key}\` — not in the inventory. Add it to ` +
-            'tools/api-floor-inventory.js with its BCD path (deny-by-default).',
+          `  ✗ ${short}: reaches \`${use.global}\` through a computed key, which this gate ` +
+            `cannot resolve. Use dot access so the member is scannable, or inventory the global. ` +
+            WHAT_TO_ADD,
         );
       }
+      continue;
     }
 
-    // Bare usage: `structuredClone(`, `new Headers(`, `fetch(`.
-    const barePattern = new RegExp(`\\b${global}\\s*\\(`, 'g');
-    if (barePattern.test(code) && !KNOWN_GLOBALS.has(global) && !KNOWN_MEMBERS.has(global)) {
-      failures.push(
-        `  ✗ ${short}: calls \`${global}()\` — not in the inventory. Add it to ` +
-          'tools/api-floor-inventory.js with its BCD path (deny-by-default).',
-      );
-    }
-
-    // Two reference forms neither pattern above can see, because the member one
-    // needs a `.` on the right and the call one needs a `(` (NFR-16):
-    //
-    //   `x instanceof Element`   — a DOM *type* used as a value, which is how a
-    //                             type dependency normally enters this codebase;
-    //   `globalThis.document`    — the safe way to read a possibly-absent global,
-    //                             and therefore the form every guarded use takes.
-    //
-    // Deliberately NOT flagged: `typeof X` (a feature test is a declaration that
-    // absence is handled, not an unguarded dependency) and object/destructuring
-    // property keys — `{ fetch: impl }` and `const { window } = options` name a
-    // property, not a global. An earlier draft matched any bare identifier and
-    // reported exactly those two shapes in web.js and sanitize.js, which are not
-    // uses at all.
-    const referencePatterns = [
-      new RegExp(`\\binstanceof\\s+${global}\\b`),
-      new RegExp(`\\bglobalThis\\s*\\.\\s*${global}\\b`),
-    ];
-    if (
-      referencePatterns.some((pattern) => pattern.test(code)) &&
-      !KNOWN_GLOBALS.has(global) &&
-      !KNOWN_MEMBERS.has(global)
-    ) {
-      failures.push(
-        `  ✗ ${short}: references \`${global}\` — not in the inventory. Add it to ` +
-          'tools/api-floor-inventory.js with its BCD path (deny-by-default).',
-      );
+    if (!KNOWN_GLOBALS.has(use.global) && !KNOWN_MEMBERS.has(use.global)) {
+      const how =
+        use.kind === 'bare' ? `calls \`${use.global}()\`` : `references \`${use.global}\``;
+      failures.push(`  ✗ ${short}: ${how} — not in the inventory. ${WHAT_TO_ADD}`);
     }
   }
 }
