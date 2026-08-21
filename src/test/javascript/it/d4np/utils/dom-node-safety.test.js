@@ -233,7 +233,14 @@ describe('the /dom entry with no DOM present', () => {
     const release = overlay.acquire();
     expect(overlay.isShown()).toBe(true);
     release();
-    await new Promise((resolve) => setTimeout(resolve, 5));
+    // Wait for the cycle to settle rather than for a fixed 5 ms. The hide is two
+    // turns away — `onShow` has to settle before the minimum-visible clock starts
+    // (ADR-0032) — and on a loaded CI runner two turns can outlast 5 ms, which is
+    // how this test flaked on the Node 22 cell while 24 and 26 passed. Polling
+    // asserts the same thing without asserting the machine's speed.
+    for (let i = 0; i < 100 && calls.length < 2; i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
 
     expect(calls).toEqual(['show', 'hide']);
     expect(overlay.isShown()).toBe(false);

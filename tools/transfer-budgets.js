@@ -89,22 +89,32 @@ export const TRANSFER_ROUTES = {
   errors: { file: 'dist/esm/errors.js', requests: 2, measured: 1074, budget: 1140 },
   text: { file: 'dist/esm/text.js', requests: 3, measured: 1674, budget: 1790 },
   net: { file: 'dist/esm/net.js', requests: 2, measured: 1340, budget: 1430 },
-  table: { file: 'dist/esm/table.js', requests: 4, measured: 6751, budget: 7220 },
+  table: {
+    file: 'dist/esm/table.js',
+    requests: 4,
+    measured: 8461,
+    budget: 8968,
+    why: '+1710 B for remotePipeline (spec 06 F88-F91, roadmap 19.1). A bundler consumer who does not import it pays nothing - the {tablePipeline} size row is unchanged - but this route downloads whole files, which is the trade the deep-ESM route makes.',
+  },
   logging: { file: 'dist/esm/logging.js', requests: 3, measured: 3063, budget: 3270 },
   dom: { file: 'dist/esm/dom.js', requests: 7, measured: 10849, budget: 11600 },
   bootstrap: {
     file: 'dist/esm/bootstrap.js',
     requests: 7,
-    measured: 31276,
-    budget: 33400,
-    why: 'The whole catalogue over 7 requests — within 1% of the single-file artifact over 1. A page that needs /bootstrap should prefer the artifact route; the deep-ESM route pays off for the smaller entries.',
+    measured: 32979,
+    budget: 34957,
+    why:
+      'The whole catalogue over 7 requests — now MORE than the single-file artifact over 1, so a page needing ' +
+      '/bootstrap should take the artifact. It grew +1703 B in 19.1 without gaining a feature: bsTable pulls the ' +
+      'table chunk, and that chunk now carries remotePipeline. A bundler shakes it away; this route downloads whole ' +
+      'files, which is exactly the cost F87 exists to keep visible instead of silent.',
   },
 
   // --- The artifact route (F83) --------------------------------------------
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 31507,
+    measured: 32706,
     budget: 33600,
     why: 'Budget is NFR-22 as pinned by ADR-0059. The size-limit row for the same file reports 31 444 B because it re-bundles through esbuild first; this figure is the file served as-is, which is what a CDN sends.',
   },

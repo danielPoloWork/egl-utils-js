@@ -85,10 +85,13 @@
     "LoadingOverlayOptions",
     "MeasureResult",
     "PopperOverlayInstance",
+    "RemotePipelineOptions",
     "Resource",
     "ResourceOptions",
     "RetryAttempt",
     "SetVisibleOptions",
-    "TableBindings"
+    "TableBindings",
+    "TableQuery",
+    "TableState"
   ]
 }

@@ -77,3 +77,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0059](0059-one-file-one-global-and-a-budget-repinned.md) | One file, one global — composed by re-export, and a budget re-pinned | Accepted |
 | [0060](0060-the-cdn-default-and-what-the-tarball-proves.md) | The CDN default is the artifact — and the tarball is what proves it | Accepted |
 | [0061](0061-served-bytes-are-their-own-accounting.md) | Served bytes are their own accounting — keyed by entry, not by chunk | Accepted |
+| [0062](0062-a-sibling-not-a-wrapper.md) | A sibling, not a wrapper — where remote rows enter the table | Accepted |

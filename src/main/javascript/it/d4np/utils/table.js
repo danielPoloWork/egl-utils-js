@@ -33,6 +33,11 @@
 import { EventEmitter } from './events.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 
+// The remote sibling (spec 06 F88–F91, ADR-0062). Kept in its own module so this
+// one stays the local pipeline it has always been, and re-exported here because
+// `/table` is the entry a consumer imports either from.
+export { remotePipeline, tableQuery } from './table-remote.js';
+
 /**
  * Expressions longer than this stop being parsed as a grammar and are matched
  * literally (NFR-09). No realistic filter is this long; a pathological one
