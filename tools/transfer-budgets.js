@@ -40,6 +40,15 @@
  * size rows are also brotli (see ADR-0059 on NFR-22's loose "min+gzip"
  * wording), so the two accountings stay comparable.
  *
+ * ## Expect two rows to move on every version bump
+ *
+ * `root` and `artifact` are the routes that carry the `VERSION` string, and
+ * brotli is sensitive enough that changing `1.0.0` to `1.1.0` moved them by
+ * −12 B and −98 B respectively — the other nine were byte-identical. That is
+ * real, it is not noise to suppress, and it is why the check prints the drift
+ * on every run: re-baselining these two at each release is reading one line,
+ * and the alternative is a permanent drift note people learn to scroll past.
+ *
  * @module tools/transfer-budgets
  */
 
@@ -68,7 +77,7 @@
  */
 export const TRANSFER_ROUTES = {
   // --- The deep-ESM route, one row per entry (F85's per-entry URLs) ---------
-  index: { file: 'dist/esm/index.js', requests: 7, measured: 13461, budget: 14400 },
+  index: { file: 'dist/esm/index.js', requests: 7, measured: 13449, budget: 14400 },
   storage: { file: 'dist/esm/storage.js', requests: 4, measured: 4246, budget: 4540 },
   sanitize: {
     file: 'dist/esm/sanitize.js',
@@ -95,7 +104,7 @@ export const TRANSFER_ROUTES = {
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 31605,
+    measured: 31507,
     budget: 33600,
     why: 'Budget is NFR-22 as pinned by ADR-0059. The size-limit row for the same file reports 31 444 B because it re-bundles through esbuild first; this figure is the file served as-is, which is what a CDN sends.',
   },

@@ -10,6 +10,7 @@ README badge.
 
 | Version | Date | Highlights | Notes |
 |---------|------|------------|-------|
+| v1.1.0 | 2026-08-21 | The plain HTML page becomes a first-class consumer — a global single-file artifact read as `egl`, a CDN default the bare package URL resolves to, both no-bundler routes documented with version-pinned URLs, and what each one transfers measured and gated | [v1.1.0.md](v1.1.0.md) |
 | v1.0.0 | 2026-08-13 | **The first release whose version means what SemVer says it means** — no new capability, seven breaking changes taken *before* the freeze rather than after it: the Node 22 / Safari 16.4 floor, unknown-key strictness on options and descriptors, one word one meaning, commands-throw-queries-answer, and a sanitizer peer that is looked up rather than imported. Carries the compatibility statement and the stability promise | [v1.0.0.md](v1.0.0.md) |
 | v0.9.0 | 2026-08-09 | The Bootstrap 5 catalogue complete at 24/24 components — the behaviour wrappers over an optional peer this entry imports nowhere, resolved at first use and failing typed when absent; navigation managers that mint their own ARIA ids; one sanitizer, the caller's, for content handed to Bootstrap to render | [v0.9.0.md](v0.9.0.md) |
 | v0.8.0 | 2026-08-09 | `bsTable` — a complete Bootstrap 5 table over the `tablePipeline` it keeps **public**, so the facade is a shortcut you can step out of; with an optional controls band whose defaults render digits rather than a language | [v0.8.0.md](v0.8.0.md) |

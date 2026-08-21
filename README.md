@@ -2,7 +2,7 @@
 
 > Universal JavaScript async, data, and event utilities for Node.js and modern browsers
 
-![Status](https://img.shields.io/badge/Status-v1.0.0-blue)
+![Status](https://img.shields.io/badge/Status-v1.1.0-blue)
 
 A
 library written in **JavaScript (ES2023)**, built and governed to an enterprise quality
@@ -1187,9 +1187,9 @@ own response:
 | `/storage` | 4 | 4.25 kB |
 | `/table` | 4 | 6.75 kB |
 | `/dom` | 7 | 10.85 kB |
-| root (`index.js`) | 7 | 13.46 kB |
+| root (`index.js`) | 7 | 13.45 kB |
 | `/bootstrap` | 7 | 31.28 kB |
-| **the global artifact** | **1** | **31.61 kB** |
+| **the global artifact** | **1** | **31.51 kB** |
 
 Two things worth reading off it. **If you need `/bootstrap`, take the artifact** — it is the
 whole surface in one request for within 1% of what that one entry costs in seven. And these
