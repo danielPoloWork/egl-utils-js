@@ -62,6 +62,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   `'unsupported'`, `'failed'`. No `execCommand` fallback, deliberately: a copy button that
   quietly did nothing looks exactly like one that worked (spec 06 F97, ROADMAP 19.4,
   ADR-0066).
+- **`bsTable({ sticky })`** — the header stays visible while the body scrolls, with
+  `position: sticky` as the entire implementation: no scroll listener, no
+  `requestAnimationFrame`, nothing measured in JavaScript. `sticky.maxHeight` bounds the
+  responsive wrapper so the body has something to scroll inside; passing it without `responsive`
+  is a `TypeError` rather than a header that never sticks. The styles land per `<th>`, so the
+  selection column sticks with the rest, and each cell takes a `--bs-*`-derived background and an
+  inset bottom rule because a sticky cell otherwise loses its collapsed border. Sorting and
+  `aria-sort` are untouched (spec 06 F98, ROADMAP 19.5,
+  [ADR-0067](docs/adr/0067-five-declarations-and-no-scroll-listener.md)).
 
 ### Changed
 

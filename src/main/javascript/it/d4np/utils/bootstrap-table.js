@@ -112,6 +112,13 @@ import {
  *   row, which is how an application finds its record from an event.
  * @property {(row: Row, event: Event) => void} [onRowClick] - Row activation,
  *   bound through **one** delegated listener and reachable from the keyboard.
+ * @property {boolean | BsTableStickyOptions} [sticky] - Opt-in sticky header
+ *   (F98): the header row stays visible while the body scrolls. `position:
+ *   sticky` and nothing else — **no scroll listener, no `requestAnimationFrame`,
+ *   no layout measured in JavaScript**, which is what the requirement asks for
+ *   and what makes this the cheapest option on this bag. `true` takes every
+ *   default; `{ maxHeight }` also bounds the F71 wrapper so the body has something
+ *   to scroll inside.
  * @property {boolean | BsTableSelectionOptions<Row>} [selection] - Opt-in row
  *   selection (F95): a leading column of checkboxes, a select-all header with a
  *   real **indeterminate** state, and `data-egl-selected` plus `table-active` on
@@ -203,6 +210,23 @@ import {
  *   row control. Defaults to the row's **key**, which is language-neutral and
  *   identifies the row — F95 forbids a name that is merely "checkbox", and a
  *   record id is a real name. Pass this to get a phrase.
+ */
+
+/**
+ * @typedef {object} BsTableStickyOptions
+ * @property {string} [top='0px'] - Where the header comes to rest, as a CSS length,
+ *   relative to the scroll container. Non-zero for a table under something else
+ *   that is already sticky inside the same container.
+ * @property {string} [maxHeight] - A height for the scroll container, which is
+ *   what makes the body scroll at all. Given, the F71 responsive wrapper becomes
+ *   the scroll container and gets this height — so `{ responsive: true, sticky: {
+ *   maxHeight: '400px' } }` is a working sticky table in one option. Omitted, the
+ *   caller owns the container entirely and the header sticks to whichever
+ *   scrolling ancestor they built. **Requires `responsive`**: without it there is
+ *   no node of ours to put a height on, and quietly doing nothing is the failure
+ *   this refuses.
+ * @property {number} [zIndex=2] - Stacking order against the body cells. Raise it
+ *   only against something else in the same container that overlaps.
  */
 
 /**
@@ -326,6 +350,7 @@ export function bsTable(container, options) {
     rowKey,
     onRowClick,
     selection: selectionOption,
+    sticky: stickyOption,
     controls,
     empty,
     caption,
@@ -392,6 +417,43 @@ export function bsTable(container, options) {
   }
   if (rowKey !== undefined && typeof rowKey !== 'string' && typeof rowKey !== 'function') {
     throw new TypeError(`${api}: options.rowKey must be a string or a function`);
+  }
+
+  // --- sticky header (F98) --------------------------------------------------
+  /** @type {BsTableStickyOptions} */
+  let stickyConfig = {};
+  const wantsSticky = stickyOption !== undefined && stickyOption !== false;
+  if (wantsSticky && stickyOption !== true) {
+    assertPlainObject(stickyOption, 'options.sticky', api);
+    stickyConfig = /** @type {BsTableStickyOptions} */ (stickyOption);
+  }
+  const {
+    // `'0px'` rather than `'0'`, which is equally valid CSS: the DOM normalizes
+    // the shorthand to `0px` when read back, and a documented default that does
+    // not match what an inspector shows is a papercut for no gain.
+    top: stickyTop = '0px',
+    maxHeight: stickyMaxHeight,
+    zIndex: stickyZIndex = 2,
+    ...unknownSticky
+  } = stickyConfig;
+  if (wantsSticky) {
+    assertNoUnknownOptions(unknownSticky, `${api}.sticky`);
+    if (typeof stickyTop !== 'string' || stickyTop === '') {
+      throw new TypeError(`${api}: options.sticky.top must be a non-empty CSS length`);
+    }
+    if (stickyMaxHeight !== undefined) {
+      if (typeof stickyMaxHeight !== 'string' || stickyMaxHeight === '') {
+        throw new TypeError(`${api}: options.sticky.maxHeight must be a non-empty CSS length`);
+      }
+      if (responsive === false) {
+        throw new TypeError(
+          `${api}: options.sticky.maxHeight needs options.responsive — without the wrapper there is no scroll container of ours to bound, and a height applied nowhere would leave the header not sticking with nothing to say why`,
+        );
+      }
+    }
+    if (!Number.isInteger(stickyZIndex)) {
+      throw new TypeError(`${api}: options.sticky.zIndex must be an integer`);
+    }
   }
 
   // --- selection (F95) ------------------------------------------------------
@@ -530,6 +592,17 @@ export function bsTable(container, options) {
 
   /** @type {Element} */
   let element = table;
+  /**
+   * The node that scrolls, when this instance owns one.
+   *
+   * Kept as its own reference rather than read off `element`: with `controls`,
+   * `element` becomes the outer band wrapper, and bounding *that* would scroll the
+   * filter row and the pager out of view along with the rows — the opposite of
+   * what a sticky header is for.
+   *
+   * @type {Element | null}
+   */
+  let scrollContainer = null;
   if (responsive !== false) {
     element = doc.createElement('div');
     applyClasses(
@@ -539,6 +612,7 @@ export function bsTable(container, options) {
       api,
     );
     element.append(table);
+    scrollContainer = element;
   }
 
   // The header is built once: it depends on the columns, which are fixed for
@@ -609,6 +683,39 @@ export function bsTable(container, options) {
     headRow.append(th);
   }
   thead.append(headRow);
+
+  if (wantsSticky) {
+    // Every `th` in the row, not the `thead` and not the `tr`. Sticky on a table
+    // *section* is the tidier stylesheet and the worse bet: engines disagreed about
+    // it for years, and a cell is the one place every engine has always honoured
+    // it. Applying it per cell also means the F95 selection column sticks with the
+    // rest, because it is simply another `th` in this row.
+    //
+    // Two properties beyond `position` are not decoration. `border-collapse:
+    // collapse` — Bootstrap's default — draws cell borders on a shared edge that
+    // does NOT travel with a sticky cell, so a scrolled header loses its bottom
+    // rule; an inset shadow redraws it inside the cell, where it does travel. And
+    // a table cell's background is transparent by default, so without one the rows
+    // scroll visibly *through* the header. Both are read from Bootstrap's own
+    // custom properties, so a theme (including `data-bs-theme="dark"`) keeps its
+    // colours instead of being overridden by ours.
+    for (const cell of headRow.children) {
+      const style = /** @type {any} */ (cell).style;
+      style.setProperty('position', 'sticky');
+      style.setProperty('top', stickyTop);
+      style.setProperty('z-index', String(stickyZIndex));
+      style.setProperty('background-color', 'var(--bs-table-bg, var(--bs-body-bg, inherit))');
+      style.setProperty('box-shadow', 'inset 0 -1px 0 var(--bs-border-color, currentColor)');
+    }
+    if (stickyMaxHeight !== undefined && scrollContainer !== null) {
+      // `overflow-y` is set explicitly rather than left to `.table-responsive`,
+      // which only asks for `overflow-x`. A height with nothing to scroll it is a
+      // header that never sticks and never says why.
+      const style = /** @type {any} */ (scrollContainer).style;
+      style.setProperty('max-height', stickyMaxHeight);
+      style.setProperty('overflow-y', 'auto');
+    }
+  }
 
   const controller = controllerFor(container);
   const interactive = onRowClick !== undefined;
