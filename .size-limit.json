@@ -60,21 +60,33 @@
     "limit": "0.8 kB"
   },
   {
-    "name": "/table - full import (NFR-12: measured 3291 B with the pipeline, +18 B for the operators vocabulary in 15.2; clause 3.5 kB per ADR-0034)",
+    "name": "/table - full import (NFR-12: measured 4666 B; +1375 B for remotePipeline, spec 06 F88-F91 / ADR-0062. A consumer who does not import it pays none of that - the tablePipeline-only row below is unchanged)",
     "path": "dist/esm/table.js",
-    "limit": "3.5 kB"
+    "limit": "4.95 kB"
   },
   {
-    "name": "/table - query primitives only (NFR-08/NFR-12: measured 1714 B, pipeline shaken out)",
+    "name": "/table - query primitives only (NFR-08/NFR-12: measured 1786 B, up 72 B from 1714 B - the cost of the re-export wiring for a module this import does not use. Stated rather than rounded away: NFR-02 says an export pulls zero UNRELATED modules, and 72 B of graph is the honest price of the entry gaining a sibling)",
     "path": "dist/esm/table.js",
     "import": "{ compileFilter, comparator, paginate }",
-    "limit": "1.8 kB"
+    "limit": "1.9 kB"
   },
   {
     "name": "single: tablePipeline (3.4 kB - documented NFR-12 composing-facade row, ADR-0034; measured 3275 B)",
     "path": "dist/esm/table.js",
     "import": "{ tablePipeline }",
     "limit": "3.4 kB"
+  },
+  {
+    "name": "single: remotePipeline (spec 06 F88-F91: measured 1939 B. Owns query state, the F89 race rules and the F91 status - the transport is injected, so no fetch/httpClient is in this figure, ADR-0062)",
+    "path": "dist/esm/table.js",
+    "import": "{ remotePipeline }",
+    "limit": "2.05 kB"
+  },
+  {
+    "name": "single: tableQuery (spec 06 F90: measured 194 B - a pure serializer, and the cache key F89 compares)",
+    "path": "dist/esm/table.js",
+    "import": "{ tableQuery }",
+    "limit": "205 B"
   },
   {
     "name": "single: compileFilter (1.03 kB - named NFR-08 exception per ADR-0047: measured 1010 B, ten bytes over the 1 kB clause, all of it the option-key check)",

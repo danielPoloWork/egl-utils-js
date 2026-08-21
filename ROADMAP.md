@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-21 — planning the table-data wave`](docs/journal/2026/08/2026-08-21-spec-06-planning.md).
+  [`2026-08-21 — the remote pipeline`](docs/journal/2026/08/2026-08-21-remote-pipeline.md).
 
 ## Model & effort routing
 
@@ -314,7 +314,7 @@ than inside it. Two shapes for the async adapter remain defensible, so F88–F91
 **observable contract** and defer the mechanism to an ADR in 19.1, the way spec 05 F82
 deferred to ADR-0055.
 
-- [ ] 19.1 Async/remote data for the pipeline (spec 06 **F88–F91**): a source contract `{load(query, signal)}`, latest-request-wins with the losing load **aborted** (not merely ignored), a transport-neutral query serialization, and load status in the derived view where a failure **leaves the previous rows in place**. Composes `httpClient`/`createResource`/`urlSearchParams` by injection, importing them nowhere. The adapter-vs-option mechanism is deliberately left to this item's ADR; the spec fixes only the observable contract _(route: frontier-reasoning/high — sets-pattern + decision-heavy: the data contract every later data-driven component reuses)_
+- [x] 19.1 Async/remote data for the pipeline (spec 06 **F88–F91**): a source contract `{load(query, signal)}`, latest-request-wins with the losing load **aborted** (not merely ignored), a transport-neutral query serialization, and load status in the derived view where a failure **leaves the previous rows in place**. Composes `httpClient`/`createResource`/`urlSearchParams` by injection, importing them nowhere. The adapter-vs-option mechanism is deliberately left to this item's ADR; the spec fixes only the observable contract _(route: frontier-reasoning/high — sets-pattern + decision-heavy: the data contract every later data-driven component reuses)_ — **emotePipeline is a sibling of `tablePipeline`, not a wrapper around it** ([ADR-0062](docs/adr/0062-a-sibling-not-a-wrapper.md)): a binder that fed the server's already-filtered page into a pipeline that filters again would have reused the most code and shipped a silent double-derivation, so the two share a command vocabulary and no implementation. The race rule compares identity **at apply time**, not just at abort — a property test over randomized interleavings fails after one case when that check is removed. Surface diff: **+2 exports, 113 → 115 bindings, root unchanged** (NFR-25's proof); `{tablePipeline}` unchanged at 3 389 B, so a consumer who does not import the new one pays none of it. Spec 06 NFR-30 corrected here: entry rows move per PR, because the size gate runs per PR
 - [ ] 19.2 Pipeline state ↔ URL (spec 06 **F92–F93**): a pure, SSR-safe round-trip that **preserves unknown query parameters** and degrades malformed input to defaults rather than throwing, plus a `/dom` history binding that restores in **one** `batch` transaction — four restored commands firing four `change`s would land back on page 1. Api-floor amendment: `history.pushState`/`popstate` _(route: standard/high)_
 - [ ] 19.3 Row selection (spec 06 **F94–F95**): keyed by `rowKey`, never by identity or index, so a selection survives a server round-trip and a re-sort; single/multiple, `getSelection()`, the F6 observer shape, and select-all-on-page whose **meaning under an active filter is specified** rather than left to the reader. `bsTable` checkbox column with the indeterminate header state, keyboard operability and a real accessible name _(route: standard/high)_
 - [ ] 19.4 Export (spec 06 **F96–F97**): RFC 4180 CSV from the derived view or the selection, client-side and zero-dep, with **formula injection neutralized by default** — a CSV opened in a spreadsheet is a code-execution surface, and the default is documented and defeatable. Clipboard on `/dom` with the permission failure typed, so "nothing happened" is distinguishable from success. Excel stays out of core, a caller callback being the extension point (the zero-runtime-deps rule) _(route: standard/medium — security: the export is an injection surface)_
@@ -428,9 +428,9 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 (06) | Objective & business context | 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7 | ⏳ |
-| §2 (06) | Functional requirements F88–F100 | 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7 | ⏳ |
-| §3 (06) | Non-functional requirements | 19.1, 19.2, 19.3, 19.4, 19.6, 19.7 | ⏳ |
-| §4 (06) | Logical architecture | 19.1, 19.3 | ⏳ |
-| §5 (06) | Public interface | 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7 | ⏳ |
-| §6 (06) | Verification & test strategy | 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7 | ⏳ |
+| §1 (06) | Objective & business context | 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7 | 🚧 |
+| §2 (06) | Functional requirements F88–F100 | 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7 | 🚧 |
+| §3 (06) | Non-functional requirements | 19.1, 19.2, 19.3, 19.4, 19.6, 19.7 | 🚧 |
+| §4 (06) | Logical architecture | 19.1, 19.3 | 🚧 |
+| §5 (06) | Public interface | 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7 | 🚧 |
+| §6 (06) | Verification & test strategy | 19.1, 19.2, 19.3, 19.4, 19.5, 19.6, 19.7 | 🚧 |

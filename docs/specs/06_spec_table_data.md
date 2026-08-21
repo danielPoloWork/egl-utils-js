@@ -203,11 +203,17 @@ terms that requirement states.
   where the temptation to break it is real — the URL and the clipboard both look like data.
 - NFR-30 **Budgets (hard).** Every new entry point and function gets a size-limit row on the
   existing gate, in the same min+brotli metric, pinned at measured + ≤ 7% (the ADR-0015
-  practice). The `/table` entry ceiling and the `/bootstrap` entry ceiling are re-derived
-  once at the end of the wave rather than amended per item, and the no-bundler transfer
-  routes (spec 05 F87, `tools/transfer-budgets.js`) are re-pinned in the same PR — this wave
-  grows two of the routes M18 measured, and a budget that is not updated is a gate that
-  starts lying.
+  practice). The no-bundler transfer routes (spec 05 F87, `tools/transfer-budgets.js`) are
+  re-pinned in the same PR that moves them — this wave grows routes M18 measured, and a
+  budget that is not updated is a gate that starts lying.
+  - **Corrected (roadmap 19.1).** This clause first said the `/table` and `/bootstrap`
+    **entry ceilings** would be "re-derived once at the end of the wave rather than amended
+    per item". That is not implementable: the size gate runs on **every** PR, so an entry row
+    left at its pre-wave number simply fails the build of the first item that grows it, and
+    "we will fix the number later" is not a state CI has. What the clause was reaching for
+    is real and is kept: the **spec-03 NFR-12 prose clause** gets its final figure once, at
+    wave end, rather than being amended seven times. The **rows** move per PR, each pinned at
+    measured + ≤ 7% and each naming what grew them.
 
 ## 4. Logical Architecture & Core Algorithm
 

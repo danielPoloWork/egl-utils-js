@@ -356,6 +356,52 @@ table.batch(() => {
 off(); // and `emit` was never yours to call — subscribers observe, they don't announce
 ```
 
+### Remote table data (`egl-utils-js/table`)
+
+When the rows live on a server, `remotePipeline` holds the same *question* — filters, search,
+sort, page — and asks the server to answer it. **Same command vocabulary as `tablePipeline`**,
+so moving a table from local to remote changes where the data comes from and nothing you have
+to relearn ([ADR-0062](docs/adr/0062-a-sibling-not-a-wrapper.md)).
+
+The transport is **injected, never imported**: `load` is any function, so `/table` still pulls
+in no `fetch` and still runs on a server.
+
+```js
+import { remotePipeline } from 'egl-utils-js/table';
+
+const table = remotePipeline({
+  pageSize: 20,
+  columns: [{ key: 'city' }, { key: 'total' }],
+  // `query` is plain and JSON-safe; translating it to your endpoint's parameter
+  // names is yours, because yours is the only code that knows them.
+  load: (query, signal) => api.post('orders/search', { json: query, signal }),
+});
+
+table.on('change', (view) => {
+  render(view.rows, { loading: view.loading, error: view.error });
+});
+
+table.setSearch('mil'); // issues a load
+table.setSearch('mila'); // aborts the previous one and issues the next
+table.setSearch('milan'); // …and again: only the last one may apply its rows
+```
+
+**Out-of-order responses cannot show the wrong page.** A superseded load is aborted *and* its
+result is discarded even if it arrives first — because `AbortSignal` stops a `fetch` but
+cannot un-resolve a promise that already settled. An identical query does not re-issue;
+`refresh()` is how you ask the same question again, and how you retry after a failure.
+
+```js
+table.view();
+// { rows, total, page, pageCount, sort, filters, search, pageSize,
+//   loading, error, query }
+```
+
+**A failed load keeps the previous rows** — an error banner over stale data is recoverable, an
+empty table that does not say why is not. And a filter here is a string, never a predicate: a
+function cannot be sent to a server, so passing one is a `TypeError` rather than a query that
+quietly asks something else.
+
 ### IPv4 & CIDR (`egl-utils-js/net`)
 
 Strict by design (ADR-0020): four decimal octets, no leading zeros, none of the legacy
@@ -1185,17 +1231,18 @@ own response:
 | `/sanitize` | 3 | 2.91 kB |
 | `/logging` | 3 | 3.06 kB |
 | `/storage` | 4 | 4.25 kB |
-| `/table` | 4 | 6.75 kB |
+| `/table` | 4 | 8.46 kB |
 | `/dom` | 7 | 10.85 kB |
 | root (`index.js`) | 7 | 13.45 kB |
-| `/bootstrap` | 7 | 31.28 kB |
-| **the global artifact** | **1** | **31.51 kB** |
+| `/bootstrap` | 7 | 32.98 kB |
+| **the global artifact** | **1** | **32.71 kB** |
 
-Two things worth reading off it. **If you need `/bootstrap`, take the artifact** — it is the
-whole surface in one request for within 1% of what that one entry costs in seven. And these
-figures are larger than the per-function budgets quoted elsewhere in this README, which is
-not a contradiction: those measure what a *bundler* ships after tree-shaking, while a static
-page downloads whole files. Both are real; they just belong to different consumers.
+Two things worth reading off it. **If you need `/bootstrap`, take the artifact** — the whole
+surface in one request now costs *less* than that one entry costs in seven, because
+`/bootstrap` pulls the shared table chunk whether or not it uses all of it. And these figures
+are larger than the per-function budgets quoted elsewhere in this README, which is not a
+contradiction: those measure what a *bundler* ships after tree-shaking, while a static page
+downloads whole files. Both are real; they just belong to different consumers.
 
 ## Stability promise
 
@@ -1251,7 +1298,7 @@ inside their declared ranges — keeping those patched is yours. Full detail:
 | 16 | Bootstrap interactive wrappers | ✅ done |
 | 17 | v1.0.0 readiness & the first stable release | ✅ done |
 | 18 | Browser distribution | ✅ done |
-| 19 | Table data & bsTable extras | ⏳ planned |
+| 19 | Table data & bsTable extras | 🚧 in progress |
 | 20 | Application UX utilities | ⏳ planned |
 | 21 | Form engine | ⏳ planned |
 

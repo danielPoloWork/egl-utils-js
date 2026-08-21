@@ -12,6 +12,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **`remotePipeline` and `tableQuery` on `egl-utils-js/table`** — a table pipeline whose rows
+  come from a server, sharing `tablePipeline`'s command vocabulary so moving a table from
+  local to remote data changes where the rows come from and nothing the calling code has to
+  relearn. A superseded load is aborted *and* its result discarded even if it arrives first,
+  an identical query does not re-issue (`refresh()` asks again on purpose), and a failed load
+  leaves the previous rows in place with the error beside them. The transport is injected,
+  never imported, so `/table` still pulls in no `fetch` (spec 06 F88–F91, ROADMAP 19.1,
+  [ADR-0062](docs/adr/0062-a-sibling-not-a-wrapper.md)).
+
 ### Changed
 
 ### Deprecated
