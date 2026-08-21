@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>egl-utils-js — the global artifact, loaded by a classic script tag</title>
+    <!--
+      Spec 05 F86, the artifact half (roadmap 18.5). This page is the README's
+      "One <script>, the whole surface" snippet made executable:
+
+        <script src="https://cdn.jsdelivr.net/npm/egl-utils-js@1.1.0"></script>
+        <script> egl.table.paginate(...) </script>
+
+      The bare CDN URL resolves to `dist/global/egl-utils.global.js` through the
+      `unpkg`/`jsdelivr` fields (F84, ADR-0060); this page loads that same file
+      from the static server, which is the URL shape CI can honestly prove.
+
+      NO `type="module"` anywhere below. That is the point of the artifact: a
+      page with no module support, no bundler and no npm gets the whole public
+      surface from one classic <script src>. An ESM file in this position would
+      be a syntax error at its first `import` — which is why the CDN fields name
+      the IIFE and why `tools/assert-packaged-files.mjs` gates that.
+
+      NO peer script either: `bootstrap` is looked up at first use (ADR-0041) and
+      is never bundled into the artifact, so the file loads and its builders work
+      on a page that has none. The peer arrives per test.
+    -->
+    <script>
+      // F83 promises loading the artifact has no side effect beyond defining
+      // `egl`. The only way to measure that rather than assert it is to diff the
+      // window's own property names across the load.
+      //
+      // Both snapshots hang off ONE object created before the first of them, so
+      // the probe appears in both lists and cancels out of the diff. A pair of
+      // separate `window.__before` / `window.__after` bindings would not: the
+      // second is absent from the first snapshot and would show up as a phantom
+      // new global, which is precisely the thing being measured.
+      window.__eglProbe = {};
+      window.__eglProbe.before = Object.getOwnPropertyNames(window);
+    </script>
+    <script src="/dist/global/egl-utils.global.js"></script>
+    <script>
+      window.__eglProbe.after = Object.getOwnPropertyNames(window);
+    </script>
+  </head>
+  <body>
+    <div id="host"></div>
+  </body>
+</html>

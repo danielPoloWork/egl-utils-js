@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>egl-utils-js — the deep-ESM route, exactly as the README documents it</title>
+    <!--
+      Spec 05 F86, the deep-ESM half (roadmap 18.5). This page is the README's
+      "Deep ESM — one entry at a time" snippet, made executable:
+
+        <script type="module">
+          import { retry, groupBy } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.1.0/dist/esm/index.js';
+          import { truncate }       from '.../dist/esm/text.js';
+          import { bsButton }       from '.../dist/esm/bootstrap.js';
+        </script>
+
+      The URLs point at this repo's static server rather than a CDN, and that is
+      the only difference. CI cannot reach jsDelivr for a version that is not
+      published yet, so what an F86 fixture can honestly prove is the **URL
+      shape** — a deep `/dist/esm/<entry>.js` path, no import map, no bundler,
+      no npm — which is exactly the correspondence spec 05 §6 asks F85's
+      snippets to have.
+
+      NO IMPORT MAP, and no peer script. Both absences are assertions: the
+      entries resolve their own chunks by relative path (`./chunk-<hash>.js`),
+      and the `bootstrap` peer is looked up at first use rather than imported
+      (ADR-0041), so the whole catalogue loads on a page that has never heard of
+      it. The peer arrives per test, from a classic <script> the spec injects.
+    -->
+  </head>
+  <body>
+    <div id="host"></div>
+    <script type="module">
+      // The load outcome is DATA, never a throw: a module-resolution failure and
+      // a working page must be distinguishable by assertion rather than by the
+      // page silently going blank.
+      window.__eglEsm = (async () => {
+        try {
+          const [root, text, table, bootstrap] = await Promise.all([
+            import('/dist/esm/index.js'),
+            import('/dist/esm/text.js'),
+            import('/dist/esm/table.js'),
+            import('/dist/esm/bootstrap.js'),
+          ]);
+          window.__eglModules = { root, text, table, bootstrap };
+          return { ok: true, entries: ['root', 'text', 'table', 'bootstrap'] };
+        } catch (error) {
+          return {
+            ok: false,
+            message: String(error && error.message ? error.message : error),
+          };
+        }
+      })();
+    </script>
+  </body>
+</html>

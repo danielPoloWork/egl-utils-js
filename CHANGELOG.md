@@ -12,6 +12,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **Measured route costs** in that README section: what each no-bundler route actually
+  transfers, per entry and for the artifact, gated in CI so the figures cannot drift
+  (`pnpm check:transfer`). Notably `/bootstrap` costs 31.28 kB over 7 requests where the
+  whole single-file artifact costs 31.61 kB over 1 — so a page needing `/bootstrap` should
+  prefer the artifact (spec 05 F87, ROADMAP 18.5,
+  [ADR-0061](docs/adr/0061-served-bytes-are-their-own-accounting.md)).
+
 - **README section "Use from a browser, without npm"** documents both no-bundler routes with
   copy-pasteable, version-pinned URLs: the deep-ESM route per entry (and why no import map
   is needed — every entry's internal imports are relative, never a bare specifier), the
