@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   bindElements,
   bindTableControls,
+  bindTableHistory,
   delegate,
   injectFragment,
   inlineAlert,
@@ -24,7 +25,11 @@ import {
   withUrlParams,
 } from '../../../../../main/javascript/it/d4np/utils/dom.js';
 import { DomContractError } from '../../../../../main/javascript/it/d4np/utils/errors.js';
-import { tablePipeline } from '../../../../../main/javascript/it/d4np/utils/table.js';
+import {
+  tablePipeline,
+  tableStateFromParams,
+  tableStateToParams,
+} from '../../../../../main/javascript/it/d4np/utils/table.js';
 
 describe('the /dom entry with no DOM present', () => {
   it('imports without throwing, so a server render can load the module', () => {
@@ -263,6 +268,35 @@ describe('the /dom entry with no DOM present', () => {
     expect(() =>
       bindTableControls(pipeline, {}, { root: /** @type {never} */ ({}) }),
     ).not.toThrow();
+  });
+
+  it('bindTableHistory names its contract when there is no address bar (NFR-29)', () => {
+    // The whole point of the split: the F92 pair below runs here, in plain Node
+    // with no document and no window, while the binding that uses it refuses —
+    // and refuses by naming what is missing rather than by reading `undefined`.
+    const pipeline = tablePipeline({ source: [{ name: 'ada' }] });
+    let thrown;
+    try {
+      bindTableHistory(pipeline);
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toBeInstanceOf(DomContractError);
+    expect(thrown.code).toBe('EGL_DOM_CONTRACT');
+    expect(thrown.message).toMatch(/options.window/);
+  });
+
+  it('the F92 state pair needs no DOM at all — the server-render path (NFR-29)', () => {
+    const pipeline = tablePipeline({ source: [{ name: 'ada' }, { name: 'bob' }] });
+    // A request's query string, restored and derived before any script exists.
+    const state = tableStateFromParams('?q=ad&page=1');
+    pipeline.batch(() => {
+      pipeline.setSearch(state.search);
+      pipeline.setPageSize(state.pageSize);
+      pipeline.setPage(state.page);
+    });
+    expect(pipeline.view().rows).toEqual([{ name: 'ada' }]);
+    expect(tableStateToParams(pipeline.view())).toBe('q=ad');
   });
 
   it('bindTableControls validates its arguments before reaching for the document', () => {

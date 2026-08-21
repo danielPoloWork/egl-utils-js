@@ -21,3 +21,4 @@ a `fixed` record names its `fixed-in`) is enforced by the consistency lint's `bu
 | [BUG-0001](2026/08/BUG-0001-webkit-row-click-intercepted.md) | WebKit browser smoke fails — a `<tr>` click target is intercepted by `<table>` | low | fixed | v0.6.0 |
 | [BUG-0002](2026/08/BUG-0002-lockfile-out-of-date-with-the-bootstrap-peer.md) | Every CI job fails at install — the lockfile was never updated for the `bootstrap` peer | high | fixed | v0.7.0 |
 | [BUG-0003](2026/08/BUG-0003-cross-realm-abort-signal-in-composites.md) | Composites that own a listener fail against a foreign document — a cross-realm `AbortSignal` | medium | fixed | v0.8.0 |
+| [BUG-0004](2026/08/BUG-0004-view-filters-lose-a-proto-column.md) | A column keyed `__proto__` is filtered for real and reported by the view as no filter | low | fixed | v1.2.0 |

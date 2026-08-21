@@ -60,21 +60,21 @@
     "limit": "0.8 kB"
   },
   {
-    "name": "/table - full import (NFR-12: measured 4666 B; +1375 B for remotePipeline, spec 06 F88-F91 / ADR-0062. A consumer who does not import it pays none of that - the tablePipeline-only row below is unchanged)",
+    "name": "/table - full import (NFR-12: measured 5453 B; +787 B for the F92 state pair, spec 06 F92 / ADR-0063, on top of 19.1's remotePipeline. Per-function rows below show what an individual import actually costs)",
     "path": "dist/esm/table.js",
-    "limit": "4.95 kB"
+    "limit": "5.85 kB"
   },
   {
-    "name": "/table - query primitives only (NFR-08/NFR-12: measured 1786 B, up 72 B from 1714 B - the cost of the re-export wiring for a module this import does not use. Stated rather than rounded away: NFR-02 says an export pulls zero UNRELATED modules, and 72 B of graph is the honest price of the entry gaining a sibling)",
+    "name": "/table - query primitives only (NFR-08/NFR-12: measured 1780 B, 6 B BELOW the 1786 B of 19.1 - the entry gained a second sibling module and this import got marginally smaller, which is the shakeability claim (NFR-02) holding rather than being asserted)",
     "path": "dist/esm/table.js",
     "import": "{ compileFilter, comparator, paginate }",
     "limit": "1.9 kB"
   },
   {
-    "name": "single: tablePipeline (3.4 kB - documented NFR-12 composing-facade row, ADR-0034; measured 3275 B)",
+    "name": "single: tablePipeline (3.45 kB - documented NFR-12 composing-facade row, ADR-0034; measured 3397 B, +8 B for the BUG-0004 fix - building the view's filter map through Object.fromEntries instead of by assignment. The row had 11 B of headroom, which is not a margin to ship on, so it is re-pinned rather than squeezed)",
     "path": "dist/esm/table.js",
     "import": "{ tablePipeline }",
-    "limit": "3.4 kB"
+    "limit": "3.45 kB"
   },
   {
     "name": "single: remotePipeline (spec 06 F88-F91: measured 1939 B. Owns query state, the F89 race rules and the F91 status - the transport is injected, so no fetch/httpClient is in this figure, ADR-0062)",
@@ -107,9 +107,21 @@
     "limit": "1 kB"
   },
   {
-    "name": "/dom - full import (NFR-12: measured 4990 B; +264 B for the ADR-0056 descriptor-key checks on the table bindings. Clause 5 kB per ADR-0035 - still inside it)",
+    "name": "single: tableStateToParams (spec 06 F92: measured 780 B - the serializer, including the ownership rule that lets it merge into a URL it does not own)",
+    "path": "dist/esm/table.js",
+    "import": "{ tableStateToParams }",
+    "limit": "835 B"
+  },
+  {
+    "name": "single: tableStateFromParams (spec 06 F92: measured 539 B - the parser, which never throws on its input and therefore carries a default for every field)",
+    "path": "dist/esm/table.js",
+    "import": "{ tableStateFromParams }",
+    "limit": "575 B"
+  },
+  {
+    "name": "/dom - full import (NFR-12: measured 6448 B; +1458 B for bindTableHistory and the F92 pair it composes, spec 06 F93 / ADR-0063. This is the first row to pass ADR-0035's 5 kB clause, and it does so knowingly: NFR-30 as corrected in 19.1 moves the ROWS per PR and restates the spec-03 NFR-12 prose clause once, at wave end. A consumer who imports one helper still pays for one helper - the single: rows below are the numbers that bound that promise)",
     "path": "dist/esm/dom.js",
-    "limit": "5 kB"
+    "limit": "6.9 kB"
   },
   {
     "name": "single: bindElements (NFR-12 <= 1 kB / NFR-02)",
@@ -188,6 +200,12 @@
     "path": "dist/esm/dom.js",
     "import": "{ loadingOverlay }",
     "limit": "1.1 kB"
+  },
+  {
+    "name": "single: bindTableHistory (2.05 kB - NFR-12 composing-facade row, ADR-0063: measured 1920 B, which includes the F92 pair it composes. Named and measured, per the ADR-0058 rule for this clause)",
+    "path": "dist/esm/dom.js",
+    "import": "{ bindTableHistory }",
+    "limit": "2.05 kB"
   },
   {
     "name": "/bootstrap - full import (NFR-17: the COMPLETE Bootstrap 5 catalogue - 27 managers + both presets - measured 19163 B; entry clause 25 kB per ADR-0041, never moved across all of M14-M16)",
@@ -596,8 +614,8 @@
     "limit": "1.35 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE — measured 31444 B, re-pinned from the 40 kB authoring ceiling to measured + 6.9% by ADR-0059, NFR-22)",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 33982 B, re-pinned from ADR-0059's 33.6 kB for the 19.2 surface (spec 06 F92/F93). Held to +3% rather than the +7% NFR-30 allows: five M19 items remain, and slack this row does not need is slack that stops it catching a surprise. Still 5 kB inside NFR-22's 40 kB authoring ceiling)",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "33.6 kB"
+    "limit": "35 kB"
   }
 ]

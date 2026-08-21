@@ -30,6 +30,7 @@
     "BehaviourWrapper",
     "BindElementsOptions",
     "BindTableControlsOptions",
+    "BindTableHistoryOptions",
     "BoundElements",
     "BsAccordionInstance",
     "BsAccordionOptions",
@@ -92,6 +93,9 @@
     "SetVisibleOptions",
     "TableBindings",
     "TableQuery",
-    "TableState"
+    "TableState",
+    "TableStateFromParamsOptions",
+    "TableStateToParamsOptions",
+    "TableUrlState"
   ]
 }

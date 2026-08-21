@@ -76,6 +76,12 @@ export const GLOBALS = {
     guarded:
       'webcrypto.js reads globalThis.crypto once, as the single surface the crypto group draws entropy through, and `undefined` is a legal value there: uuid/hashString throw naming the missing surface rather than degrading to Math.random (F18, ADR-0054). The global is within the 1.x matrix — Node 19, Safari 11 — so this is no longer a floor fallback but the exotic-runtime case; 17.14 deleted the node:crypto shim the Node 18 floor needed',
   },
+  history: {
+    guardReason: 'context',
+    bcd: 'api.Window.history',
+    guarded:
+      'dom-history.js never reads the ambient global: `bindTableHistory` resolves `options.window ?? globalThis` and throws DomContractError naming the contract when the result has no history/location/addEventListener, so a server render or a detached document fails by contract rather than on an undefined read (spec 06 F93, ADR-0028/ADR-0063). The pure half of the same feature — the F92 state ↔ query-string pair — reaches no platform API but URLSearchParams, which is why it stays on the Node-safe /table entry (NFR-29)',
+  },
   document: {
     guardReason: 'context',
     bcd: 'api.Window.document',
@@ -177,6 +183,65 @@ export const MEMBERS = {
     guardReason: 'context',
     bcd: 'api.Window.sessionStorage',
     guarded: 'same in-memory fallback as localStorage (ADR-0010)',
+  },
+
+  // --- the History API (spec 06 F93/NFR-28, roadmap 19.2) ---
+  //
+  // The first amendment this inventory has taken for a new capability rather than
+  // for a gap in its own coverage. All four floors are ancient on the browser side
+  // — Safari 5 for the History API, Safari 1 for `window.history` — so the version
+  // question is trivial; what needs declaring is the *context* question, which is
+  // the one BCD cannot answer: none of these exists in Node, and `/dom` is an
+  // entry a server-side render legitimately loads.
+  //
+  // Reached off the injected `window` (`options.window ?? globalThis`), so these
+  // entries also exist to keep the scan honest: `history` is now POLICED in
+  // check-api-floor.mjs, which is what makes a future `history.foo` fail rather
+  // than pass unseen.
+  'history.pushState': {
+    guardReason: 'context',
+    bcd: 'api.History.pushState',
+    guarded:
+      'bindTableHistory proves history/location/addEventListener are all present and throws DomContractError naming the contract otherwise; the default write mode is push because Back moving through table states is the requirement (F93)',
+  },
+  'history.replaceState': {
+    guardReason: 'context',
+    bcd: 'api.History.replaceState',
+    guarded:
+      'same presence check; used for the bind-time normalization, because binding a table is not a navigation and must not add an entry (F93)',
+  },
+  'history.state': {
+    guardReason: 'context',
+    bcd: 'api.History.state',
+    guarded:
+      'same presence check. Read only to carry whatever history state the application stored through a write rather than replacing it with null — a table changing page is no reason to lose it',
+  },
+  'location.search': {
+    guardReason: 'context',
+    bcd: 'api.Location.search',
+    guarded:
+      'same presence check, which asserts `typeof location.search === "string"` specifically, since that is the member every read here depends on',
+  },
+  'location.pathname': {
+    guardReason: 'context',
+    bcd: 'api.Location.pathname',
+    guarded: 'same presence check; used to rebuild the URL a write targets',
+  },
+  'location.hash': {
+    guardReason: 'context',
+    bcd: 'api.Location.hash',
+    guarded:
+      'same presence check; read so a write preserves the fragment, which is a different page concern than the table state and must survive it',
+  },
+  // Declared by hand, like `EventTarget.addEventListener` above and for the same
+  // reason: the scanner strips string literals, so `addEventListener('popstate',
+  // …)` is invisible to it. This entry therefore exists for check 2 — the BCD
+  // floor comparison — rather than to satisfy the deny-by-default scan.
+  'Window.popstate': {
+    guardReason: 'context',
+    bcd: 'api.Window.popstate_event',
+    guarded:
+      'the listener is attached to the injected window and detached explicitly on teardown; no internal AbortController is created, which is how this binding avoids the BUG-0003 cross-realm signal trap rather than working around it (ADR-0045, ADR-0063)',
   },
 };
 

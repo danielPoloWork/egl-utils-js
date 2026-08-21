@@ -38,6 +38,11 @@ import { assertNoUnknownOptions } from './option-keys.js';
 // `/table` is the entry a consumer imports either from.
 export { remotePipeline, tableQuery } from './table-remote.js';
 
+// The addressable-state pair (spec 06 F92). Pure and SSR-safe, so they belong on
+// this entry rather than on `/dom`, where the history binding that uses them
+// lives (NFR-29).
+export { tableStateFromParams, tableStateToParams } from './table-url.js';
+
 /**
  * Expressions longer than this stop being parsed as a grammar and are matched
  * literally (NFR-09). No realistic filter is this long; a pathological one
@@ -693,6 +698,12 @@ export function paginate(items, options) {
  * @property {Record<string, string | ((value: unknown) => boolean)>} filters - The
  *   active per-column filters, as given.
  * @property {string} search - The active global search text.
+ * @property {number | null} pageSize - Rows per page, or `null` when the
+ *   pipeline is unpaginated. Added in 19.2 so the read model is complete: a
+ *   caller could already see `pageCount`, which is derived from this, but not
+ *   the number it was derived from — which made the state unserializable
+ *   without tracking a value the pipeline already knew (spec 06 F92). The
+ *   remote sibling's view has carried it since 19.1.
  */
 
 /**
@@ -1000,9 +1011,16 @@ export function tablePipeline(options = {}) {
         ? { items: owned ? derived : derived.slice(), page: 1, pageCount: 1 }
         : paginate(derived, { page, pageSize });
 
+    // Built through `fromEntries` rather than by assignment, because assignment
+    // routes through the `__proto__` setter: a column literally keyed
+    // `'__proto__'` is held perfectly well by the Map above, applied to the
+    // derivation, and then vanished from the read model — the view reporting no
+    // filter while the rows were filtered (BUG-0004). `fromEntries` defines own
+    // properties, so every key the pipeline accepts is a key the view reports.
     /** @type {Record<string, string | ((value: unknown) => boolean)>} */
-    const activeFilters = {};
-    for (const [key, { filter }] of filters) activeFilters[key] = filter;
+    const activeFilters = Object.fromEntries(
+      [...filters].map(([key, { filter }]) => [key, filter]),
+    );
 
     return {
       rows: paged.items,
@@ -1013,6 +1031,7 @@ export function tablePipeline(options = {}) {
       sort: sort.map((entry) => ({ ...entry })),
       filters: activeFilters,
       search,
+      pageSize: pageSize ?? null,
     };
   }
 
