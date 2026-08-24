@@ -22,4 +22,4 @@ a `fixed` record names its `fixed-in`) is enforced by the consistency lint's `bu
 | [BUG-0002](2026/08/BUG-0002-lockfile-out-of-date-with-the-bootstrap-peer.md) | Every CI job fails at install — the lockfile was never updated for the `bootstrap` peer | high | fixed | v0.7.0 |
 | [BUG-0003](2026/08/BUG-0003-cross-realm-abort-signal-in-composites.md) | Composites that own a listener fail against a foreign document — a cross-realm `AbortSignal` | medium | fixed | v0.8.0 |
 | [BUG-0004](2026/08/BUG-0004-view-filters-lose-a-proto-column.md) | A column keyed `__proto__` is filtered for real and reported by the view as no filter | low | fixed | v1.2.0 |
-| [BUG-0005](2026/08/BUG-0005-filter-row-misaligned-under-a-selection-column.md) | Every filter sits under its neighbour when a table has both a selection column and a filter row | medium | open | — |
+| [BUG-0005](2026/08/BUG-0005-filter-row-misaligned-under-a-selection-column.md) | Every filter sits under its neighbour when a table has both a selection column and a filter row | medium | fixed | v1.2.0 |

@@ -375,3 +375,58 @@ describe('contract', () => {
     expect(boxes()).toHaveLength(0);
   });
 });
+
+describe('the filter row lines up with the columns it filters (BUG-0005)', () => {
+  /** Cell counts for every row that mirrors the columns, in document order. */
+  const rowWidths = () =>
+    [...host.querySelectorAll('thead tr, tbody tr')].map((tr) => tr.children.length);
+
+  it('prepends a cell for the selection column, so every row is the same width', () => {
+    table({ selection: true, controls: { filterRow: true } });
+    // Before the fix the filter row was one cell short: its first input sat under
+    // the checkboxes and every filter after it under its left-hand neighbour,
+    // with the last column appearing to have none at all.
+    const widths = rowWidths();
+    expect(new Set(widths).size).toBe(1);
+    expect(widths[0]).toBe(COLUMNS.length + 1);
+  });
+
+  it('puts each filter under the column it filters', () => {
+    table({ selection: true, controls: { filterRow: true } });
+    const filterRow = /** @type {Element} */ (host.querySelector('thead tr:last-child'));
+    const headerRow = /** @type {Element} */ (host.querySelector('thead tr:first-child'));
+    const labels = [...filterRow.children].map(
+      (cell) => cell.querySelector('input')?.getAttribute('aria-label') ?? null,
+    );
+    // Column n's filter is in cell n. The first cell is the spacer under the
+    // checkbox column and holds no control.
+    expect(labels).toEqual([null, 'Filter id', 'Filter name', 'Filter status']);
+    expect(headerRow.children[0].querySelector('input[type="checkbox"]')).not.toBe(null);
+  });
+
+  it('gives the spacer the selection column class, so it lines up without a colgroup', () => {
+    table({ selection: { class: 'w-1' }, controls: { filterRow: true } });
+    const [spacer] = /** @type {Element} */ (host.querySelector('thead tr:last-child')).children;
+    // The same class the header and body selection cells carry — usually a width,
+    // which is the only thing keeping a checkbox column narrow when F99 is off.
+    expect(spacer.className).toBe('w-1');
+    expect(spacer.tagName).toBe('TD');
+    // A `<td>`, not a `<th>`: the cells beside it are `<td>` because they are
+    // controls rather than headers, and an empty cell does not change that.
+    expect(spacer.children).toHaveLength(0);
+  });
+
+  it('adds nothing when there is no selection column', () => {
+    table({ controls: { filterRow: true } });
+    const widths = rowWidths();
+    expect(new Set(widths).size).toBe(1);
+    expect(widths[0]).toBe(COLUMNS.length);
+  });
+
+  it('leaves the empty-state row spanning every column', () => {
+    table({ selection: true, controls: { filterRow: true }, data: [], empty: 'None' });
+    const cells = [...(host.querySelector('tbody tr')?.children ?? [])];
+    expect(cells).toHaveLength(1);
+    expect(cells[0].getAttribute('colspan')).toBe(String(COLUMNS.length + 1));
+  });
+});

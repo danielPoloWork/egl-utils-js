@@ -110,6 +110,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   the new URL serialization. Found by the F92 round-trip property suite, whose key generator
   produces the key nobody would have chosen to test
   ([BUG-0004](docs/bugs/2026/08/BUG-0004-view-filters-lose-a-proto-column.md), ROADMAP 19.2).
+- **The `bsTable` filter row now lines up with the columns it filters** when the table also has
+  a selection column. The header row and every body row prepend a cell for the F95 checkbox
+  column and the F67 filter row did not, so each filter input was drawn one column to the left
+  of the column it filters and the last column appeared to have none. Silent and visual — the
+  wiring is by key and stayed correct, so a sighted user and a screen-reader user were reading
+  different tables. The row now prepends an empty `<td>` carrying the selection column's own
+  class. Found while deciding how the F100 permutation should compute each row's leading offset
+  ([BUG-0005](docs/bugs/2026/08/BUG-0005-filter-row-misaligned-under-a-selection-column.md),
+  ROADMAP 19.9).
 
 ### Security
 

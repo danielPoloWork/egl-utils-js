@@ -203,6 +203,32 @@ describe('the order model', () => {
     ]);
   });
 
+  it('moves the filter row when the table also has a selection column', () => {
+    const instance = table({
+      reorder: true,
+      selection: true,
+      rowKey: 'a',
+      controls: { filterRow: true },
+    });
+    instance.setColumnOrder(['c', 'b', 'a']);
+    const filterRow = /** @type {Element} */ (host.querySelector('thead tr:last-child'));
+    // The permutation computes each row's leading offset from its own cell count
+    // rather than taking a fixed one, so it was correct while the filter row was
+    // a cell short (BUG-0005) and stays correct now that it is not. This is the
+    // test that pins that: change the offset to a constant and it fails.
+    expect(
+      [...filterRow.children].map(
+        (cell) => cell.querySelector('input')?.getAttribute('aria-label') ?? null,
+      ),
+    ).toEqual([null, 'Filter c', 'Filter b', 'Filter a']);
+    // And the checkbox column is still first, still holding the checkboxes.
+    expect(
+      /** @type {Element} */ (host.querySelector('tbody tr')).firstElementChild?.querySelector(
+        'input',
+      ),
+    ).not.toBe(null);
+  });
+
   it('leaves the empty-state row alone', () => {
     const instance = table({ reorder: true, data: [], empty: 'Nothing here' });
     instance.setColumnOrder(['c', 'b', 'a']);

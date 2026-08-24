@@ -113,7 +113,7 @@ export const TRANSFER_ROUTES = {
   bootstrap: {
     file: 'dist/esm/bootstrap.js',
     requests: 8,
-    measured: 40554,
+    measured: 40677,
     budget: 43000,
     why:
       'The whole catalogue over 8 requests — still MORE than the single-file artifact over 1, so a page needing ' +
@@ -130,12 +130,12 @@ export const TRANSFER_ROUTES = {
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 38898,
+    measured: 38990,
     budget: 39000,
     why:
-      'Re-pinned for 19.7 (+822 B for the F100 column reorder), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
+      'Re-pinned for 19.9 (+822 B for the F100 column reorder in 19.7, +92 B for the BUG-0005 filter-row spacer), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
       "The budget stays at 39000 B rather than moving to measured + <= 7%: that practice (ADR-0015) assumes headroom above the measurement, and 7% here is 41620 B — above NFR-22's 40 kB ceiling, which binds first. Recorded as inapplicable rather than quietly stretched, the second wave running. " +
-      'ADR-0068 left 19.7 with 1924 B and said the answer, if reorder did not fit, was a decision with arithmetic behind it rather than a silent breach. **It fits**: reorder cost 822 B served and leaves 1102 B under the ceiling, so NFR-22 is not amended. ' +
-      "19.7 is the wave's last capability — 19.9 is a defect fix worth a handful of bytes — so this row is effectively settled for M19. The tighter constraint is now the sibling one — ADR-0041's 25 kB /bootstrap entry clause has 609 B left, and M20 puts dialogs, toasts and a theme manager on that entry. ADR-0069.",
+      'ADR-0068 left 19.7 with 1924 B and said the answer, if reorder did not fit, was a decision with arithmetic behind it rather than a silent breach. **It fits**: reorder cost 822 B served, the 19.9 defect fix a further 92 B, and 1010 B remain under the ceiling — so NFR-22 is not amended. ' +
+      "M19 is complete with 19.9, so this row is settled for the wave. Worth noting what it took to settle it: even a one-cell defect fix cost 92 B against a ceiling this close, which is the concrete form of the warning below. The tighter constraint is now the sibling one — ADR-0041's 25 kB /bootstrap entry clause has 609 B left, and M20 puts dialogs, toasts and a theme manager on that entry. ADR-0069.",
   },
 };

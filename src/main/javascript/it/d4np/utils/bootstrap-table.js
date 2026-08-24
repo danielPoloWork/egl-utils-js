@@ -1778,6 +1778,9 @@ export function bsTable(container, options) {
           thead,
           pageSize,
           api,
+          // The F67 filter row mirrors the columns, so it has to know about the
+          // one column that is not one of the caller's (BUG-0005).
+          selectionClass: selection === undefined ? null : (selectionClass ?? ''),
         });
   if (wired !== null) element = wired.element;
 
@@ -1877,12 +1880,13 @@ export function bsTable(container, options) {
  *   thead: Element,
  *   pageSize: number | undefined,
  *   api: string,
+ *   selectionClass: ClassOption | null,
  * }} context
  * @returns {{ element: Element, parts: BsTableControlParts, reflect: (view: any) => void, destroy: () => void }}
  * @throws {TypeError} On a malformed control option.
  */
 function buildControls(context) {
-  const { controls, columns, pipeline, doc, table, thead, pageSize, api } = context;
+  const { controls, columns, pipeline, doc, table, thead, pageSize, api, selectionClass } = context;
   assertPlainObject(controls, 'options.controls', api);
   const { filterRow, search, pageSize: pageSizeControl, pagination, toolbar } = controls;
   const { formatStatus, debounceMs, headerClass, footerClass } = controls;
@@ -1997,6 +2001,23 @@ function buildControls(context) {
     applyClasses(row, [], filterRowClass, api);
     /** @type {Record<string, Element>} */
     const filters = {};
+    if (selectionClass !== null) {
+      // A spacer under the F95 checkbox column, and the reason BUG-0005 existed:
+      // the header row and every body row prepend a cell for that column and this
+      // row did not, so every filter sat one column to the left of the column it
+      // filters — silently, because the wiring is by key and stayed correct. A
+      // sighted user and a screen-reader user were reading different tables.
+      //
+      // A `<td>`, not a `<th scope="row">`: the cells beside it are `<td>` for a
+      // stated reason — they are controls, and a header cell here would attach
+      // itself to the data below — and that reason does not stop applying because
+      // a cell is empty. A row header would also claim this row is *about* the
+      // selection column, which it is not. It carries the selection column's own
+      // class so it lines up with it even without the F99 `<colgroup>`.
+      const spacer = doc.createElement('td');
+      applyClasses(spacer, [], selectionClass === '' ? undefined : selectionClass, api);
+      row.append(spacer);
+    }
     for (const column of columns) {
       // A cell, not a header: these are controls, and a <th> here would attach
       // itself to every data cell beneath as a header a screen reader announces.

@@ -226,7 +226,7 @@
     "limit": "510 B"
   },
   {
-    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header, the F99 column resize and the F100 reorder - measured 24391 B, +886 B in 19.7. Limit 24.9 kB, and NOT measured+7%: ADR-0041's 25 kB entry clause binds first, and a row above its own clause is a gate that cannot fail. **609 B remain under that clause** - and the next wave that grows this entry (M20 puts dialogs, toasts and a theme manager on it) inherits that figure and owes the decision, per ADR-0069)",
+    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header, the F99 column resize and the F100 reorder - measured 24406 B (+886 B in 19.7, +15 B in 19.9's BUG-0005 fix). Limit 24.9 kB, and NOT measured+7%: ADR-0041's 25 kB entry clause binds first, and a row above its own clause is a gate that cannot fail. **594 B remain under that clause** - and the next wave that grows this entry (M20 puts dialogs, toasts and a theme manager on it) inherits that figure and owes the decision, per ADR-0069)",
     "path": "dist/esm/bootstrap.js",
     "limit": "24.9 kB"
   },
@@ -315,7 +315,7 @@
     "limit": "1.58 kB"
   },
   {
-    "name": "single: bsTable (14.2 kB - documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065, ADR-0067, ADR-0068 and ADR-0069: measured 13356 B, +765 B in 19.7 for the F100 column reorder. Cheaper than the F99 resize it sits beside (1155 B) because it reuses that item's decisions rather than restating them - one handle for pointer and keyboard, pointer capture, the same click guard - and because moving nodes needs no markup of its own)",
+    "name": "single: bsTable (14.2 kB - documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065, ADR-0067, ADR-0068 and ADR-0069: measured 13475 B: +765 B in 19.7 for the F100 column reorder, +119 B in 19.9 for the BUG-0005 filter-row spacer. Cheaper than the F99 resize it sits beside (1155 B) because it reuses that item's decisions rather than restating them - one handle for pointer and keyboard, pointer capture, the same click guard - and because moving nodes needs no markup of its own)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsTable }",
     "limit": "14.2 kB"
@@ -632,8 +632,8 @@
     "limit": "1.35 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 38786 B, re-pinned for 19.7. **The trajectory, and the end of it**: 31444 B at M18, 33982 (19.2), 35671 (19.3), 36541 (19.4), 36797 (19.5), 38020 (19.6), 38786 (19.7) against NFR-22's 40 kB authoring ceiling. ADR-0068 left 19.7 with ~1.9 kB and said the answer, if it did not fit, was a decision with arithmetic rather than a silent breach. It fits: 19.7 cost 766 B here and the served figure lands at 38898 B, **1102 B under the ceiling, which is therefore NOT amended**. 19.7 is the wave's last capability; 19.9 is a defect fix worth a handful of bytes (ADR-0069)",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 38897 B, re-pinned for 19.9. **The trajectory, and the end of it**: 31444 B at M18, 33982 (19.2), 35671 (19.3), 36541 (19.4), 36797 (19.5), 38020 (19.6), 38786 (19.7), 38897 (19.9) against NFR-22's 40 kB authoring ceiling. ADR-0068 left 19.7 with ~1.9 kB and said the answer, if it did not fit, was a decision with arithmetic rather than a silent breach. It fits: 19.7 cost 766 B here and 19.9's defect fix a further 111 B, so the served figure lands at 38990 B - **1010 B under the ceiling, which is therefore NOT amended**. The limit is 39.5 kB rather than 39 kB because the previous pin left the gate 10 B of room, which is a gate that fails on the next comment; it stays deliberately below the spec ceiling so a breach is caught before the spec is violated, the same shape as the /bootstrap row under ADR-0041 (ADR-0069)",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "39 kB"
+    "limit": "39.5 kB"
   }
 ]
