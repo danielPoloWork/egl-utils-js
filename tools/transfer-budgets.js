@@ -77,7 +77,7 @@
  */
 export const TRANSFER_ROUTES = {
   // --- The deep-ESM route, one row per entry (F85's per-entry URLs) ---------
-  index: { file: 'dist/esm/index.js', requests: 7, measured: 13571, budget: 14400 },
+  index: { file: 'dist/esm/index.js', requests: 7, measured: 13574, budget: 14400 },
   storage: { file: 'dist/esm/storage.js', requests: 4, measured: 4342, budget: 4540 },
   sanitize: {
     file: 'dist/esm/sanitize.js',
@@ -130,7 +130,7 @@ export const TRANSFER_ROUTES = {
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 38990,
+    measured: 38943,
     budget: 39000,
     why:
       'Re-pinned for 19.9 (+822 B for the F100 column reorder in 19.7, +92 B for the BUG-0005 filter-row spacer), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +

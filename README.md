@@ -2,7 +2,7 @@
 
 > Universal JavaScript async, data, and event utilities for Node.js and modern browsers
 
-![Status](https://img.shields.io/badge/Status-v1.1.0-blue)
+![Status](https://img.shields.io/badge/Status-v1.2.0-blue)
 
 A
 library written in **JavaScript (ES2023)**, built and governed to an enterprise quality
@@ -1457,9 +1457,9 @@ Each entry is a plain ES module. Load only what you use:
 
 ```html
 <script type="module">
-  import { retry, groupBy } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.1.0/dist/esm/index.js';
-  import { truncate } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.1.0/dist/esm/text.js';
-  import { bsButton } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.1.0/dist/esm/bootstrap.js';
+  import { retry, groupBy } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.2.0/dist/esm/index.js';
+  import { truncate } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.2.0/dist/esm/text.js';
+  import { bsButton } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.2.0/dist/esm/bootstrap.js';
 </script>
 ```
 
@@ -1471,7 +1471,7 @@ free. Several of those chunks are **shared across entries** — `errors.js`, `ta
 version and the same CDN share one cached download; that is also why the rule below matters.
 
 **Pin one version for every `egl-utils-js` URL on the page.** Entries share content-hashed
-chunks *within a version*, not across one: a page mixing `@1.1.0` and `@1.2.0` URLs
+chunks *within a version*, not across one: a page mixing `@1.2.0` and `@1.3.0` URLs
 downloads the overlapping code twice and can end up running two separate copies of the same
 class (the classic dual-instance hazard ADR-0003 already documents for the ESM/CJS build —
 branch on `.code`, never cross-instance `instanceof`, and that advice applies here too).
@@ -1487,8 +1487,8 @@ all, `dist/global/egl-utils.global.js` is the whole public surface in one IIFE, 
 global `egl` (ROADMAP 18.2, spec 05 F83). This is also what the bare CDN URL resolves to:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/egl-utils-js@1.1.0"></script>
-<!-- equivalently: https://unpkg.com/egl-utils-js@1.1.0 -->
+<script src="https://cdn.jsdelivr.net/npm/egl-utils-js@1.2.0"></script>
+<!-- equivalently: https://unpkg.com/egl-utils-js@1.2.0 -->
 <script>
   const rows = egl.table.paginate(data, { page: 1, pageSize: 20 });
   document.body.append(egl.bootstrap.bsBadge(`${rows.total} results`));
@@ -1526,7 +1526,7 @@ never a load-time failure.
 ```html
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
 <script type="module">
-  import { sanitizeHtml } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.1.0/dist/esm/sanitize.js';
+  import { sanitizeHtml } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.2.0/dist/esm/sanitize.js';
   element.innerHTML = sanitizeHtml(userSuppliedHtml); // window.DOMPurify is the peer
 </script>
 ```
