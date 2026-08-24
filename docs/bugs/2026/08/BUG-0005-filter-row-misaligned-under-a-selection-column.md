@@ -1,11 +1,12 @@
 ---
 id: BUG-0005
 title: Every filter sits under its neighbour when a table has both a selection column and a filter row
-status: open
+status: fixed
 severity: medium
 reporter: internal
 discovered: 2026-08-24
-affected-versions: v1.1.0
+affected-versions: none released — the defect is in unreleased M19 code (roadmap 19.3 onwards)
+fixed-in: v1.2.0
 ---
 
 # BUG-0005: Every filter sits under its neighbour when a table has both a selection column and a filter row
@@ -43,9 +44,15 @@ filter column `a`. The defect is that a user cannot tell which box filters what,
 last column appears to have no filter. For a screen-reader user the labels are correct, so
 the two experiences disagree.
 
-It affects any table combining two opt-in features that have never been used together in a
+It affects any table combining two opt-in features that had never been used together in a
 test: `selection` (F95, roadmap 19.3) and `controls.filterRow` (F67, roadmap 15.2). Neither
 feature is wrong on its own, which is why it survived both items and the 19.4–19.7 wave.
+
+**No released version is affected.** The report as first filed said `v1.1.0`; that was wrong,
+and the correction matters for anyone reading the ledger later. The selection column arrived
+in 19.3, and the whole of M19 is still in `[Unreleased]` — v1.1.0 shipped on 2026-08-21,
+before it. The defect existed for four days, inside one unreleased wave, and is fixed by
+19.9 before that wave is cut.
 
 ## Root cause
 
@@ -74,22 +81,27 @@ with the other three about a table that had a selection column.
 Recorded rather than fixed: it predates 19.7, it is visible without reorder, and AGENTS.md
 §10 makes an out-of-scope finding a roadmap item in the same PR — **19.9**.
 
-## Note for the fix
+## Fix (roadmap 19.9)
 
-The permutation ADR-0069 introduced computes its leading offset per row
-(`kids.length - from.length`) rather than taking a fixed one, so column reorder is correct
-both before and after this is fixed. The fix should therefore not need to touch the reorder
-path — and a regression test that reorders a table with `selection` *and* `filterRow` is the
-cheap way to prove that.
+`buildControls` prepends an empty `<td>` to the filter row when the table has a selection
+column, carrying that column's own `class` so it lines up even when F99's `<colgroup>` is not
+in play.
 
-Two candidate shapes, and the choice is not obvious:
+**A `<td>`, not the `<th scope="row">` the report offered as the alternative.** The cells
+beside it are `<td>` for a reason the code already states — they hold controls, and a header
+cell there would attach itself to the data below as a header assistive technology announces —
+and that reason does not stop applying because a cell is empty. A row header would also claim
+the filter row is *about* the selection column, which it is not: the row is a set of controls,
+not a record.
 
-1. **A leading `<td>` in the filter row**, empty, matching the header and body. Simplest,
-   and it aligns everything.
-2. **A leading `<th scope="row">`** carrying the same accessible name the selection header
-   uses. More correct for assistive technology, and a bigger change to the F67 markup
-   contract.
+**The reorder path needed no change**, as predicted: ADR-0069's permutation computes each
+row's leading offset from its own cell count (`kids.length - from.length`) rather than taking
+a fixed one, so it was correct while the filter row was a cell short and stays correct now
+that it is not. A regression test pins exactly that — reorder a table with `selection` *and*
+`filterRow`, and assert each filter is still under its column. Replace the computed offset
+with a constant and it fails.
 
-The item should decide with the same care 19.3 gave the selection column's own accessible
-name, and should check whether any other opt-in pair mirrors the columns without the
-prologue.
+**No other row mirrors the columns without the prologue.** All six per-column loops in
+`bootstrap-table.js` were checked: the header row, the body rows and the F99 `<colgroup>` and
+grip loops all account for the selection column; the empty-state row spans it through its
+`colspan`; the filter row was the only one that did not.

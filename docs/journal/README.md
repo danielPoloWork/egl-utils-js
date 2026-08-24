@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-24 — The cell that was never there (roadmap 19.9)](2026/08/2026-08-24-filter-row-leading-cell.md)
 - [2026-08-24 — Column reorder, and spec 06 is delivered (roadmap 19.7)](2026/08/2026-08-24-column-reorder.md)
 - [2026-08-24 — Column resize (roadmap 19.6)](2026/08/2026-08-24-column-resize.md)
 - [2026-08-21 — Five declarations and no scroll listener (roadmap 19.5)](2026/08/2026-08-21-sticky-header.md)

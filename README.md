@@ -1616,7 +1616,7 @@ inside their declared ranges — keeping those patched is yours. Full detail:
 | 16 | Bootstrap interactive wrappers | ✅ done |
 | 17 | v1.0.0 readiness & the first stable release | ✅ done |
 | 18 | Browser distribution | ✅ done |
-| 19 | Table data & bsTable extras | 🚧 in progress |
+| 19 | Table data & bsTable extras | ✅ done |
 | 20 | Application UX utilities | ⏳ planned |
 | 21 | Form engine | ⏳ planned |
 
