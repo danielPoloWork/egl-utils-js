@@ -565,6 +565,59 @@ why. Also worth knowing:
   otherwise loses its collapsed border and lets rows scroll through it. Your theme's colours,
   not ours.
 
+### Column resize (`egl-utils-js/bootstrap`)
+
+Opt in, and every header grows a grip that works with a pointer **and with the keyboard**
+([ADR-0068](docs/adr/0068-a-colgroup-a-separator-and-a-ceiling-in-sight.md)):
+
+```js
+const table = bsTable(host, {
+  columns: [
+    { key: 'host', label: 'Host', width: 240, minWidth: 120 },
+    { key: 'seen', label: 'Last seen' },
+    { key: 'act', label: '', resizable: false }, // an action column keeps its width
+  ],
+  data: rows,
+  responsive: true,
+  resize: { onResize: (widths) => localStorage.setItem('cols', JSON.stringify(widths)) },
+});
+
+table.setColumnWidths(JSON.parse(localStorage.getItem('cols') ?? '{}')); // restore
+table.getColumnWidths(); // → { host: 240, seen: 180, act: 90 }
+```
+
+**No row is re-rendered, ever.** Widths live on a `<colgroup>` — one `<col>` per column — so a
+resize writes one style property on one node that is not a row. A ten-thousand-row table costs
+exactly what a ten-row one does, and the tests assert it by node *identity* rather than by
+counting rows.
+
+The grip is a `role="separator"` with a tab stop and `aria-valuenow`/`aria-valuemin` — the
+platform's own window-splitter pattern. **Arrow keys resize it**, `Shift` takes a step four
+times as big, and the same node handles the drag, so there is one control carrying one state
+rather than a mouse affordance beside a keyboard one that can drift out of step. A resize
+grip you can only reach by dragging is inaccessible, and this library has refused that trade
+since spec 04.
+
+Worth knowing:
+
+- **The table looks untouched until someone resizes it.** `table-layout: fixed` — which is what
+  makes a declared width authoritative — is applied at the *first* change, not when you enable
+  the option, so switching the capability on does not re-lay-out a table nobody has touched.
+- **`getColumnWidths()` reports the width the table enforces, not the pixel painted.** Under a
+  `width: 100%` table those differ: a column pinned to its 60 px floor can measure 67 px on a
+  wide container. Declared widths are resolution-independent, so a layout saved on a wide
+  window restores correctly on a narrow one — and `setColumnWidths(getColumnWidths())` is
+  exact rather than drifting a few pixels each time.
+- **`resizable: false` withholds the affordance, not the width**: no grip for your user,
+  `setColumnWidths` still works for you.
+- **`minWidth` per column, `resize: { min }` for the rest** (48 px by default). A restored
+  width is clamped too — a saved layout is not more trustworthy than a drag.
+- **`onResize` fires once per completed gesture** — a released drag, one arrow press — never
+  per pointer move, and never for a restore you performed yourself.
+- **Sticky and resize compose.** `{ sticky: true, resize: true }` is the combination most
+  people want, and the grip anchors to the sticky cell without unsticking it.
+- Dragging a grip does **not** sort the column it lives in, and sorting still works.
+
 ### Export: CSV and the clipboard (`egl-utils-js/table`, `egl-utils-js/dom`)
 
 **A CSV is not an inert document.** Every mainstream spreadsheet evaluates a cell whose text

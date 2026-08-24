@@ -71,6 +71,18 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   inset bottom rule because a sticky cell otherwise loses its collapsed border. Sorting and
   `aria-sort` are untouched (spec 06 F98, ROADMAP 19.5,
   [ADR-0067](docs/adr/0067-five-declarations-and-no-scroll-listener.md)).
+- **`bsTable({ resize })`, plus `width`, `minWidth` and `resizable` on a column** — a resize
+  grip on every header, driven by a pointer **and by the keyboard**: `role="separator"` with a
+  tab stop and `aria-valuenow`, so arrow keys resize and `Shift` takes a coarser step, and the
+  same node handles the drag rather than a second control that can drift out of step with it.
+  Widths live on a `<colgroup>`, so a resize writes one property on one node that is not a row
+  and **no row is ever re-rendered**. `table-layout: fixed` is applied at the first change
+  rather than when the option is enabled, so switching resize on does not re-lay-out a table
+  nobody has touched. New on the instance: `getColumnWidths()` — the width the table *enforces*,
+  which is what round-trips and what survives a different window size — and `setColumnWidths()`,
+  clamped to the same floors as a drag. `resizable: false` withholds the affordance from a user,
+  not the width from the caller (spec 06 F99, ROADMAP 19.6,
+  [ADR-0068](docs/adr/0068-a-colgroup-a-separator-and-a-ceiling-in-sight.md)).
 
 ### Changed
 

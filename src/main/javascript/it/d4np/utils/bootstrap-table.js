@@ -91,6 +91,14 @@ import {
  *   **and render** — one extractor, so what the user sorts is what they see.
  * @property {boolean} [searchable] - F42.
  * @property {boolean} [filterable] - F42.
+ * @property {number} [width] - Starting width in **pixels** (F99). Only
+ *   meaningful under `resize`, which is what makes a declared width
+ *   authoritative; without it the browser lays the table out and this is inert.
+ * @property {number} [minWidth] - The floor this column cannot go below,
+ *   overriding `resize.min`. A date column and a checkbox column do not have the
+ *   same sensible minimum, and one global number cannot say so.
+ * @property {boolean} [resizable] - `false` exempts this column: no grip, and no
+ *   width a user can change. Every column is resizable when `resize` is on.
  */
 
 /**
@@ -119,6 +127,12 @@ import {
  *   and what makes this the cheapest option on this bag. `true` takes every
  *   default; `{ maxHeight }` also bounds the F71 wrapper so the body has something
  *   to scroll inside.
+ * @property {boolean | BsTableResizeOptions<Row>} [resize] - Opt-in column
+ *   resize (F99): a grip on every resizable header, driven by pointer **and by
+ *   the keyboard**, with the widths readable and restorable so a caller can
+ *   persist a layout. Widths live on a `<colgroup>`, so one resize writes one
+ *   attribute per column and touches **no row** — a 10 000-row table costs
+ *   exactly what a 10-row one does.
  * @property {boolean | BsTableSelectionOptions<Row>} [selection] - Opt-in row
  *   selection (F95): a leading column of checkboxes, a select-all header with a
  *   real **indeterminate** state, and `data-egl-selected` plus `table-active` on
@@ -231,6 +245,29 @@ import {
 
 /**
  * @template Row
+ * @typedef {object} BsTableResizeOptions
+ * @property {number} [min=48] - The default floor, in pixels, for a column that
+ *   declares no `minWidth`. A resize that can reach zero produces a column the
+ *   user cannot find again, so there is no way to switch this off — only to
+ *   choose the number.
+ * @property {number} [step=16] - Pixels per arrow-key press, the keyboard
+ *   counterpart of a drag. Shift multiplies it by four, which is the
+ *   platform convention for every slider and the difference between a keyboard
+ *   path that works and one that exists only on paper.
+ * @property {number} [handle=8] - Width of the grip, in pixels. The default is
+ *   a pointer target, not a hairline; a 1 px affordance is a 1 px miss.
+ * @property {(column: BsTableColumn<Row>) => string} [label] - Accessible name
+ *   for a column's grip. The default is `Resize <column label>`, which is
+ *   English — supply this for any UI that is not (NFR-21).
+ * @property {(widths: Record<string, number>, key: string) => void} [onResize] -
+ *   Called once per **completed** change — a released drag, or one arrow-key
+ *   press — with every column's width and the key of the one that moved. Once
+ *   per commit rather than per pointer move, because this exists so a caller can
+ *   persist a layout and persisting on every frame of a drag is a defect.
+ */
+
+/**
+ * @template Row
  * @typedef {object} BsTableSelectionOptions
  * @property {'single' | 'multiple'} [mode='multiple'] - `'multiple'` renders
  *   checkboxes and a select-all header; `'single'` renders radios and no header
@@ -269,6 +306,14 @@ import {
  *   F94 selection this table renders, present only when `options.selection` asked
  *   for one. Read it, command it, subscribe to it: the table reflects every change
  *   without re-rendering a row (F95).
+ * @property {() => Record<string, number>} [getColumnWidths] - Every resizable
+ *   column's current width in pixels, **measured from the document** rather than
+ *   remembered, present only when `options.resize` asked for it. Hand the result
+ *   to storage; hand it back to `setColumnWidths` on the next visit (F99).
+ * @property {(widths: Record<string, number>) => void} [setColumnWidths] -
+ *   Restore widths by column key. Partial: keys omitted keep what they have, and
+ *   an unknown key is a `TypeError` rather than a silently ignored line of the
+ *   layout someone saved.
  * @property {() => void} destroy
  */
 
@@ -351,6 +396,7 @@ export function bsTable(container, options) {
     onRowClick,
     selection: selectionOption,
     sticky: stickyOption,
+    resize: resizeOption,
     controls,
     empty,
     caption,
@@ -398,6 +444,9 @@ export function bsTable(container, options) {
       getValue,
       searchable,
       filterable,
+      width,
+      minWidth,
+      resizable,
       ...unknownColumn
     } = column;
     assertNoUnknownOptions(unknownColumn, api, `options.columns[${index}] property`);
@@ -411,6 +460,23 @@ export function bsTable(container, options) {
     if (align !== undefined && !ALIGNMENTS.has(align)) {
       throw new TypeError(`${api}: options.columns[${index}].align must be start, center, or end`);
     }
+    for (const [value, name] of [
+      [width, 'width'],
+      [minWidth, 'minWidth'],
+    ]) {
+      if (
+        value !== undefined &&
+        (typeof value !== 'number' || !(value > 0) || !Number.isFinite(value))
+      ) {
+        throw new TypeError(
+          `${api}: options.columns[${index}].${name} must be a positive number of pixels`,
+        );
+      }
+    }
+    // `resizable` is read by the destructuring above and nowhere else: like
+    // `sortable` and `searchable` beside it, a boolean flag has no malformed
+    // value worth a message that `Boolean(x)` would not already explain.
+    void resizable;
   }
   if (onRowClick !== undefined && typeof onRowClick !== 'function') {
     throw new TypeError(`${api}: options.onRowClick must be a function`);
@@ -453,6 +519,43 @@ export function bsTable(container, options) {
     }
     if (!Number.isInteger(stickyZIndex)) {
       throw new TypeError(`${api}: options.sticky.zIndex must be an integer`);
+    }
+  }
+
+  // --- column resize (F99) --------------------------------------------------
+  /** @type {BsTableResizeOptions<Row>} */
+  let resizeConfig = {};
+  const wantsResize = resizeOption !== undefined && resizeOption !== false;
+  if (wantsResize && resizeOption !== true) {
+    assertPlainObject(resizeOption, 'options.resize', api);
+    resizeConfig = /** @type {BsTableResizeOptions<Row>} */ (resizeOption);
+  }
+  const {
+    min: resizeMin = 48,
+    step: resizeStep = 16,
+    handle: resizeHandle = 8,
+    label: resizeLabel,
+    onResize,
+    ...unknownResize
+  } = resizeConfig;
+  if (wantsResize) {
+    assertNoUnknownOptions(unknownResize, `${api}.resize`);
+    for (const [value, name] of [
+      [resizeMin, 'min'],
+      [resizeStep, 'step'],
+      [resizeHandle, 'handle'],
+    ]) {
+      if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+        throw new TypeError(`${api}: options.resize.${name} must be a positive number of pixels`);
+      }
+    }
+    for (const [value, name] of [
+      [resizeLabel, 'label'],
+      [onResize, 'onResize'],
+    ]) {
+      if (value !== undefined && typeof value !== 'function') {
+        throw new TypeError(`${api}: options.resize.${name} must be a function`);
+      }
     }
   }
 
@@ -640,6 +743,18 @@ export function bsTable(container, options) {
    * only place it shows.
    */
   const selectionName = selection === undefined ? '' : uniqueId(doc, 'egl-sel');
+  /**
+   * The selection column's header, kept only so F99 can give that column a
+   * `<col>` width of its own. Under `table-layout: fixed` a column with no
+   * declared width shares the leftover space equally with the others, so the
+   * checkbox column would grow to a quarter of the table the moment the data
+   * columns were pinned.
+   *
+   * @type {Element | null}
+   */
+  let selectionTh = null;
+  /** The `<col>` keeping the selection column narrow once pinned. @type {Element | null} */
+  let selectionCol = null;
   if (selection !== undefined) {
     const th = doc.createElement('th');
     th.setAttribute('scope', 'col');
@@ -656,9 +771,17 @@ export function bsTable(container, options) {
       // is announced as nothing at all (NFR-21).
       th.setAttribute('aria-label', selectionLabels.column ?? 'Select');
     }
+    selectionTh = th;
     headRow.append(th);
   }
 
+  /**
+   * One header cell per column, in column order — the only thing F99 needs from
+   * this loop, and cheaper than stamping an attribute and querying for it back.
+   *
+   * @type {Element[]}
+   */
+  const headerCells = [];
   for (const column of columns) {
     const th = doc.createElement('th');
     th.setAttribute('scope', 'col');
@@ -680,6 +803,7 @@ export function bsTable(container, options) {
       contentOptions({ html, sanitize }, undefined),
       api,
     );
+    headerCells.push(th);
     headRow.append(th);
   }
   thead.append(headRow);
@@ -719,6 +843,306 @@ export function bsTable(container, options) {
 
   const controller = controllerFor(container);
   const interactive = onRowClick !== undefined;
+
+  // --- column resize (F99) --------------------------------------------------
+  //
+  // Widths live on a `<colgroup>`: one `<col>` per column, and the width written
+  // there governs the whole column. That is the entire reason this feature can
+  // promise "no row re-render" as a structural fact rather than as a discipline —
+  // a resize writes one style property on one node that is not a row, and the
+  // 10 000 `<td>`s below it are never touched, never re-created, never read.
+  //
+  // The alternative every string-templating table reaches for — a width on each
+  // `<th>`, or worse a re-render — is O(rows) per frame of a drag, and is why
+  // those tables stutter.
+
+  /**
+   * @typedef {object} ResizeEntry
+   * @property {Element} col - The `<col>` that owns this column's width.
+   * @property {Element} th - Its header cell, which is what gets measured.
+   * @property {Element | null} grip - The separator widget, absent on a column
+   *   the caller exempted with `resizable: false`.
+   * @property {number} min - This column's floor in pixels.
+   */
+
+  /** @type {Map<string, ResizeEntry>} */
+  const resizeState = new Map();
+  /** Widths this instance has written, in pixels. @type {Map<string, number>} */
+  const columnWidths = new Map();
+  /**
+   * Whether the browser's chosen layout has been frozen yet.
+   *
+   * Deliberately **lazy**. `table-layout: fixed` is what makes a declared width
+   * authoritative, and it is also a different-looking table: under it a column
+   * with no width shares the leftover space equally instead of being sized to its
+   * content. Applying it at build time would mean that merely *enabling* resize
+   * re-laid-out a table nobody had touched yet — a capability changing the
+   * appearance of the thing it was added to. So the table lays itself out
+   * normally until the user disagrees with the result, and the first change pins
+   * every column to the width it already had.
+   */
+  let pinned = false;
+
+  /**
+   * Measure a node's rendered width, or `0` where there is no layout to read —
+   * jsdom, a detached tree, a server render.
+   *
+   * @param {Element} el
+   * @returns {number}
+   */
+  const measureWidth = (el) =>
+    Math.round(/** @type {any} */ (el).getBoundingClientRect?.().width ?? 0);
+
+  /**
+   * Clamp a width to its column's floor, write it, and tell assistive technology.
+   *
+   * @param {string} key
+   * @param {number} px
+   * @returns {void}
+   */
+  const applyWidth = (key, px) => {
+    const entry = resizeState.get(key);
+    if (entry === undefined) return;
+    const next = Math.max(entry.min, Math.round(px));
+    columnWidths.set(key, next);
+    /** @type {any} */ (entry.col).style.setProperty('width', `${next}px`);
+    entry.grip?.setAttribute('aria-valuenow', String(next));
+  };
+
+  /**
+   * Freeze the layout the browser chose, once, at the first change.
+   *
+   * @returns {void}
+   */
+  const pinLayout = () => {
+    if (pinned) return;
+    pinned = true;
+    for (const [key, entry] of resizeState) {
+      applyWidth(key, columnWidths.get(key) ?? measureWidth(entry.th));
+    }
+    if (selectionCol !== null && selectionTh !== null) {
+      // Not through `applyWidth`: the selection column has no entry, no grip and
+      // no caller-visible width, because it is ours rather than one of the
+      // caller's columns. It needs a number only so `fixed` does not hand it a
+      // quarter of the table. `1px` is where a layout-free host lands, and a real
+      // engine never sees it.
+      /** @type {any} */ (selectionCol).style.setProperty(
+        'width',
+        `${Math.max(1, measureWidth(selectionTh))}px`,
+      );
+    }
+    /** @type {any} */ (table).style.setProperty('table-layout', 'fixed');
+  };
+
+  /**
+   * Every resizable column's width in pixels.
+   *
+   * **The width this table enforces, not the pixel the engine painted** — and
+   * they are not the same number. Bootstrap's `.table` is `width: 100%`, and
+   * `table-layout: fixed` scales the declared widths to fill that, so a column
+   * pinned to its 60 px floor can measure 67 px on a wide container. Reporting
+   * the painted figure would mean `setColumnWidths(getColumnWidths())` drifted a
+   * few pixels on every round-trip, and that a layout saved on a wide window
+   * restored wrong on a narrow one. The declared widths are resolution-
+   * independent, which is exactly what persisting a layout needs.
+   *
+   * Before the first change there is nothing declared to report, so those columns
+   * are measured: an empty object is not an answer a caller can save. After
+   * pinning every column has a declared width, so the measurement is never
+   * consulted again — which is also what keeps this off the layout path.
+   *
+   * @returns {Record<string, number>}
+   */
+  const readColumnWidths = () => {
+    /** @type {Record<string, number>} */
+    const out = {};
+    for (const [key, entry] of resizeState) {
+      out[key] = columnWidths.get(key) ?? measureWidth(entry.th);
+    }
+    return out;
+  };
+
+  /**
+   * Restore widths by column key.
+   *
+   * Validated in full **before** anything is written, so a saved layout with one
+   * bad entry leaves the table as it was rather than half-applied.
+   *
+   * @param {Record<string, number>} next
+   * @returns {void}
+   */
+  const writeColumnWidths = (next) => {
+    assertPlainObject(next, 'widths', `${api}.setColumnWidths`);
+    for (const [key, value] of Object.entries(next)) {
+      if (!resizeState.has(key)) {
+        throw new TypeError(`${api}: setColumnWidths() names no resizable column '${key}'`);
+      }
+      if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+        throw new TypeError(
+          `${api}: setColumnWidths() width for '${key}' must be a positive number of pixels`,
+        );
+      }
+    }
+    pinLayout();
+    for (const [key, value] of Object.entries(next)) applyWidth(key, value);
+  };
+
+  if (wantsResize) {
+    const colgroup = doc.createElement('colgroup');
+    if (selectionTh !== null) {
+      selectionCol = doc.createElement('col');
+      colgroup.append(selectionCol);
+    }
+    for (const [index, column] of columns.entries()) {
+      const col = doc.createElement('col');
+      const th = headerCells[index];
+      const min = column.minWidth ?? resizeMin;
+      /** @type {Element | null} */
+      let grip = null;
+      if (column.resizable !== false) {
+        // `role="separator"` with a tab stop and `aria-value*` is the platform's
+        // own window-splitter pattern, and adopting it is what makes F99's
+        // keyboard requirement one node rather than two: the same element takes
+        // the drag and the arrow keys, so there is one control carrying one
+        // state, instead of a drag hotspot beside a hidden button that has to be
+        // kept in step with it.
+        grip = doc.createElement('span');
+        grip.setAttribute('role', 'separator');
+        grip.setAttribute('aria-orientation', 'vertical');
+        grip.setAttribute('tabindex', '0');
+        grip.setAttribute('aria-valuemin', String(min));
+        grip.setAttribute('data-egl-resize', column.key);
+        grip.setAttribute(
+          'aria-label',
+          resizeLabel === undefined ? `Resize ${labelText(column)}` : resizeLabel(column),
+        );
+        const gripStyle = /** @type {any} */ (grip).style;
+        gripStyle.setProperty('position', 'absolute');
+        gripStyle.setProperty('top', '0');
+        gripStyle.setProperty('bottom', '0');
+        gripStyle.setProperty('right', '0');
+        gripStyle.setProperty('width', `${resizeHandle}px`);
+        gripStyle.setProperty('cursor', 'col-resize');
+        // Without this a drag on a touch screen scrolls the page instead of
+        // resizing: the browser claims the gesture before the first
+        // `pointermove` is delivered. Not a nicety — the difference between
+        // working and not working on half the devices that exist.
+        gripStyle.setProperty('touch-action', 'none');
+        gripStyle.setProperty('user-select', 'none');
+        th.append(grip);
+        // The grip is positioned against its header cell, so that cell has to be
+        // a containing block — and `position: sticky` already is one. Writing
+        // `relative` over a sticky header would silently unstick it, which is why
+        // this asks rather than assumes: F98 and F99 on the same table is the
+        // combination a caller reaches for first.
+        if (!wantsSticky) /** @type {any} */ (th).style.setProperty('position', 'relative');
+      }
+      resizeState.set(column.key, { col, th, grip, min });
+      if (column.width !== undefined) columnWidths.set(column.key, column.width);
+      colgroup.append(col);
+    }
+    // After any `<caption>`, which must stay the table's first child, and before
+    // the sections — where the HTML parser would have put it.
+    table.insertBefore(colgroup, thead);
+
+    /** @type {{ key: string, startX: number, startWidth: number, grip: Element } | null} */
+    let drag = null;
+    /** @param {Event} event @returns {Element | null} */
+    const gripOf = (event) =>
+      /** @type {any} */ (event.target)?.closest?.('[data-egl-resize]') ?? null;
+    /** @param {string} key @returns {void} */
+    const commit = (key) => onResize?.(readColumnWidths(), key);
+
+    // Five delegated listeners on the header row, whatever the column count — and
+    // every one of them on a node this instance built. Pointer capture is what
+    // buys that: from `pointerdown` on, the engine retargets every move and the
+    // release to the captured grip, so they bubble to exactly here. The usual
+    // shape — listen on `document` for the duration of a drag — reaches into
+    // someone else's node in someone else's realm, which is the trap BUG-0003 was.
+    headRow.addEventListener(
+      'pointerdown',
+      (event) => {
+        const grip = gripOf(event);
+        if (grip === null) return;
+        // Stops the text selection a drag across a header would otherwise paint,
+        // and the native drag some engines begin from a mousedown in a cell.
+        event.preventDefault();
+        pinLayout();
+        // Both casts assert something the code around them has already
+        // established, and neither is a fallback: `closest` matched on this very
+        // attribute, and `pinLayout` has just given every column a width. Writing
+        // them as `?? ''` and `?? 0` would add two branches no execution can take,
+        // which this project deletes rather than mock-covers (the M2.4 precedent).
+        const key = /** @type {string} */ (grip.getAttribute('data-egl-resize'));
+        drag = {
+          key,
+          startX: /** @type {any} */ (event).clientX,
+          startWidth: /** @type {number} */ (columnWidths.get(key)),
+          grip,
+        };
+        // Called outright, not optionally. Pointer capture is Safari 13, well
+        // under the 16.4 floor (ADR-0050), so an optional call would be a branch
+        // no supported runtime takes — the same reasoning that deleted the
+        // `AbortSignal.timeout` fallback. jsdom lacks it, and the suite supplies
+        // it, which is what it already does for pointer events themselves.
+        /** @type {any} */ (grip).setPointerCapture(/** @type {any} */ (event).pointerId);
+      },
+      { signal: controller.signal },
+    );
+    headRow.addEventListener(
+      'pointermove',
+      (event) => {
+        if (drag === null) return;
+        // From the gesture's own origin, never from the previous move: an
+        // incremental delta accumulates every clamp at the minimum, so dragging
+        // left past the floor and back leaves the column narrower than it was.
+        applyWidth(drag.key, drag.startWidth + /** @type {any} */ (event.clientX - drag.startX));
+      },
+      { signal: controller.signal },
+    );
+    /** @param {Event} event @returns {void} */
+    const endDrag = (event) => {
+      if (drag === null) return;
+      const { key, grip } = drag;
+      drag = null;
+      /** @type {any} */ (grip).releasePointerCapture(/** @type {any} */ (event).pointerId);
+      commit(key);
+    };
+    headRow.addEventListener('pointerup', endDrag, { signal: controller.signal });
+    headRow.addEventListener('pointercancel', endDrag, { signal: controller.signal });
+    headRow.addEventListener(
+      'keydown',
+      (event) => {
+        const grip = gripOf(event);
+        if (grip === null) return;
+        const pressed = /** @type {any} */ (event).key;
+        const direction = pressed === 'ArrowLeft' ? -1 : pressed === 'ArrowRight' ? 1 : 0;
+        if (direction === 0) return;
+        // Otherwise the arrow scrolls the F71 wrapper sideways while the column
+        // resizes, which reads as the table fighting the user.
+        event.preventDefault();
+        pinLayout();
+        const key = /** @type {string} */ (grip.getAttribute('data-egl-resize'));
+        const factor = /** @type {any} */ (event).shiftKey === true ? 4 : 1;
+        applyWidth(
+          key,
+          /** @type {number} */ (columnWidths.get(key)) + direction * resizeStep * factor,
+        );
+        commit(key);
+      },
+      { signal: controller.signal },
+    );
+    headRow.addEventListener(
+      'click',
+      (event) => {
+        // A grip lives inside a sortable header, and F51's sort delegation sits
+        // on `thead` — one level above this row. Without this, every finished
+        // drag also re-sorts the column it just resized.
+        if (gripOf(event) !== null) event.stopPropagation();
+      },
+      { signal: controller.signal },
+    );
+  }
 
   /**
    * Write one row's selected state — the control, the attribute and the class.
@@ -1051,6 +1475,18 @@ export function bsTable(container, options) {
     pipeline,
     ...(wired === null ? {} : { controls: wired.parts }),
     ...(selection === undefined ? {} : { selection }),
+    ...(wantsResize
+      ? {
+          getColumnWidths: readColumnWidths,
+          /** @param {Record<string, number>} widths */
+          setColumnWidths: (widths) => {
+            if (destroyed) {
+              throw new TypeError(`${api}: setColumnWidths() was called after destroy()`);
+            }
+            writeColumnWidths(widths);
+          },
+        }
+      : {}),
     setData: (rows) => {
       if (destroyed) throw new TypeError(`${api}: setData() was called after destroy()`);
       pipeline.setSource(rows);
