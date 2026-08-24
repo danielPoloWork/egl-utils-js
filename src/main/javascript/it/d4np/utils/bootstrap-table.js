@@ -99,6 +99,10 @@ import {
  *   same sensible minimum, and one global number cannot say so.
  * @property {boolean} [resizable] - `false` exempts this column: no grip, and no
  *   width a user can change. Every column is resizable when `resize` is on.
+ * @property {boolean} [movable] - `false` exempts this column from `reorder`: no
+ *   handle, so a user cannot pick it up. `setColumnOrder` still places it, for the
+ *   same reason `resizable: false` still takes a width — the exemption is from the
+ *   user, not from the caller.
  */
 
 /**
@@ -133,6 +137,12 @@ import {
  *   persist a layout. Widths live on a `<colgroup>`, so one resize writes one
  *   attribute per column and touches **no row** — a 10 000-row table costs
  *   exactly what a 10-row one does.
+ * @property {boolean | BsTableReorderOptions<Row>} [reorder] - Opt-in column
+ *   reorder (F100): a handle on every movable header, dragged with a pointer or
+ *   stepped with the arrow keys, over an order that is **caller-visible and
+ *   authoritative** — `getColumnOrder()` / `setColumnOrder()` mean a caller can
+ *   build their own affordance, or restore a saved layout, without touching the
+ *   DOM. Purely presentational: the F42 derivation never sees the order.
  * @property {boolean | BsTableSelectionOptions<Row>} [selection] - Opt-in row
  *   selection (F95): a leading column of checkboxes, a select-all header with a
  *   real **indeterminate** state, and `data-egl-selected` plus `table-active` on
@@ -268,6 +278,21 @@ import {
 
 /**
  * @template Row
+ * @typedef {object} BsTableReorderOptions
+ * @property {number} [handle=12] - Width of the drag handle, in pixels. It sits on
+ *   the header's **leading** edge, where the F99 resize grip sits on the trailing
+ *   one, so a table with both has one control per edge and no overlap.
+ * @property {(column: BsTableColumn<Row>) => string} [label] - Accessible name for
+ *   a column's handle. The default is `Move <column label>`, which is English —
+ *   supply this for any UI that is not (NFR-21).
+ * @property {(order: readonly string[], key: string) => void} [onReorder] - Called
+ *   once per **completed** move — a released drag, or one arrow-key press — with
+ *   the new order and the key of the column that moved. Never fired for a
+ *   `setColumnOrder` call: the caller already knows an order they just supplied.
+ */
+
+/**
+ * @template Row
  * @typedef {object} BsTableSelectionOptions
  * @property {'single' | 'multiple'} [mode='multiple'] - `'multiple'` renders
  *   checkboxes and a select-all header; `'single'` renders radios and no header
@@ -314,6 +339,13 @@ import {
  *   Restore widths by column key. Partial: keys omitted keep what they have, and
  *   an unknown key is a `TypeError` rather than a silently ignored line of the
  *   layout someone saved.
+ * @property {() => string[]} [getColumnOrder] - The column keys in the order they
+ *   are displayed, present only when `options.reorder` asked for it. Save it; hand
+ *   it back to `setColumnOrder` on the next visit (F100).
+ * @property {(order: readonly string[]) => void} [setColumnOrder] - Display the
+ *   columns in this order. A **full permutation** of the column keys: a partial
+ *   list is a `TypeError` naming what is missing, because "the rest, in some
+ *   order" is two answers to one question and a saved layout deserves neither.
  * @property {() => void} destroy
  */
 
@@ -397,6 +429,7 @@ export function bsTable(container, options) {
     selection: selectionOption,
     sticky: stickyOption,
     resize: resizeOption,
+    reorder: reorderOption,
     controls,
     empty,
     caption,
@@ -447,6 +480,7 @@ export function bsTable(container, options) {
       width,
       minWidth,
       resizable,
+      movable,
       ...unknownColumn
     } = column;
     assertNoUnknownOptions(unknownColumn, api, `options.columns[${index}] property`);
@@ -473,10 +507,11 @@ export function bsTable(container, options) {
         );
       }
     }
-    // `resizable` is read by the destructuring above and nowhere else: like
-    // `sortable` and `searchable` beside it, a boolean flag has no malformed
-    // value worth a message that `Boolean(x)` would not already explain.
+    // `resizable` and `movable` are read by the destructuring above and nowhere
+    // else: like `sortable` and `searchable` beside them, a boolean flag has no
+    // malformed value worth a message that `Boolean(x)` would not already explain.
     void resizable;
+    void movable;
   }
   if (onRowClick !== undefined && typeof onRowClick !== 'function') {
     throw new TypeError(`${api}: options.onRowClick must be a function`);
@@ -555,6 +590,39 @@ export function bsTable(container, options) {
     ]) {
       if (value !== undefined && typeof value !== 'function') {
         throw new TypeError(`${api}: options.resize.${name} must be a function`);
+      }
+    }
+  }
+
+  // --- column reorder (F100) ------------------------------------------------
+  /** @type {BsTableReorderOptions<Row>} */
+  let reorderConfig = {};
+  const wantsReorder = reorderOption !== undefined && reorderOption !== false;
+  if (wantsReorder && reorderOption !== true) {
+    assertPlainObject(reorderOption, 'options.reorder', api);
+    reorderConfig = /** @type {BsTableReorderOptions<Row>} */ (reorderOption);
+  }
+  const {
+    handle: reorderHandle = 12,
+    label: reorderLabel,
+    onReorder,
+    ...unknownReorder
+  } = reorderConfig;
+  if (wantsReorder) {
+    assertNoUnknownOptions(unknownReorder, `${api}.reorder`);
+    if (
+      typeof reorderHandle !== 'number' ||
+      !Number.isFinite(reorderHandle) ||
+      reorderHandle <= 0
+    ) {
+      throw new TypeError(`${api}: options.reorder.handle must be a positive number of pixels`);
+    }
+    for (const [value, name] of [
+      [reorderLabel, 'label'],
+      [onReorder, 'onReorder'],
+    ]) {
+      if (value !== undefined && typeof value !== 'function') {
+        throw new TypeError(`${api}: options.reorder.${name} must be a function`);
       }
     }
   }
@@ -844,6 +912,11 @@ export function bsTable(container, options) {
   const controller = controllerFor(container);
   const interactive = onRowClick !== undefined;
 
+  /** @type {(() => string[]) | undefined} */
+  let getColumnOrder;
+  /** @type {((next: readonly string[]) => void) | undefined} */
+  let setColumnOrder;
+
   // --- column resize (F99) --------------------------------------------------
   //
   // Widths live on a `<colgroup>`: one `<col>` per column, and the width written
@@ -864,6 +937,15 @@ export function bsTable(container, options) {
    *   the caller exempted with `resizable: false`.
    * @property {number} min - This column's floor in pixels.
    */
+
+  /**
+   * The `<colgroup>`, when this instance built one. Only F99 creates it — without
+   * declared widths there is nothing for a `<col>` to carry — so F100's
+   * permutation checks for it rather than assuming it.
+   *
+   * @type {Element | null}
+   */
+  let colgroupNode = null;
 
   /** @type {Map<string, ResizeEntry>} */
   const resizeState = new Map();
@@ -989,6 +1071,7 @@ export function bsTable(container, options) {
 
   if (wantsResize) {
     const colgroup = doc.createElement('colgroup');
+    colgroupNode = colgroup;
     if (selectionTh !== null) {
       selectionCol = doc.createElement('col');
       colgroup.append(selectionCol);
@@ -1171,6 +1254,274 @@ export function bsTable(container, options) {
   /** @type {readonly Row[]} */
   let rendered = [];
 
+  // --- column reorder (F100) --------------------------------------------------
+  //
+  // The order is a **permutation of column keys**, and it is the whole model: the
+  // F42 derivation never sees it, because which column a filter or a sort
+  // addresses has nothing to do with where that column is drawn. That is what
+  // keeps this feature presentational, and it is why `pipeline` needs no notion
+  // of order at all.
+  //
+  // Applying an order **moves nodes; it never rebuilds them**. A row's cells are
+  // the same `<td>` objects afterwards, in a different sequence — so a reorder
+  // costs O(rows) moves rather than O(rows × columns) constructions, and a
+  // selected row stays selected without anything being reflected back onto it.
+
+  /** Column keys in display order. Identity until something moves it. */
+  let order = columns.map((column) => column.key);
+  /**
+   * The columns in display order — what every render iterates.
+   *
+   * Kept as its own array rather than derived per render: a re-render caused by a
+   * pipeline change has to produce the *current* order, and reading it from one
+   * place is what makes that true without `renderBody` knowing F100 exists.
+   *
+   * @type {readonly BsTableColumn<Row>[]}
+   */
+  let orderedColumns = columns;
+
+  if (wantsReorder) {
+    /** @type {Map<string, Element>} */
+    const headerOf = new Map(columns.map((column, index) => [column.key, headerCells[index]]));
+    /** @type {Map<string, BsTableColumn<Row>>} */
+    const columnOf = new Map(columns.map((column) => [column.key, column]));
+
+    /**
+     * Rearrange one row's cells into `from`, an array of source indices.
+     *
+     * The leading offset is **computed per row** rather than passed in: a header
+     * row and a body row carry the F95 selection cell, the F67 filter row does
+     * not, and the empty-state row is a single `colspan` cell that must be left
+     * alone. `kids.length - from.length` tells each of those apart without this
+     * function knowing which is which — and it keeps working when the filter
+     * row's own leading cell arrives (BUG-0005).
+     *
+     * @param {Element} parent
+     * @param {readonly number[]} from
+     * @returns {void}
+     */
+    const permute = (parent, from) => {
+      const kids = [...parent.children];
+      const lead = kids.length - from.length;
+      if (lead < 0) return;
+      // `append` of nodes already in the tree *moves* them — no clone, no rebuild.
+      parent.append(...from.map((index) => kids[index + lead]));
+    };
+
+    /**
+     * Display the columns in `next`, moving every node that mirrors the order.
+     *
+     * @param {readonly string[]} next
+     * @returns {void}
+     */
+    const applyOrder = (next) => {
+      const from = next.map((key) => order.indexOf(key));
+      if (colgroupNode !== null) permute(colgroupNode, from);
+      // Every row of the head, not just the header: the F67 filter row mirrors
+      // the columns too, and leaving it behind would put each filter under its
+      // neighbour.
+      for (const tr of thead.children) permute(tr, from);
+      for (const tr of tbody.children) permute(tr, from);
+      order = [...next];
+      orderedColumns = next.map((key) => /** @type {BsTableColumn<Row>} */ (columnOf.get(key)));
+    };
+
+    /**
+     * Move one column by `delta` slots, if there is a slot to move into.
+     *
+     * @param {string} key
+     * @param {number} delta
+     * @returns {boolean} Whether anything moved.
+     */
+    const moveBy = (key, delta) => {
+      const at = order.indexOf(key);
+      const to = at + delta;
+      if (to < 0 || to >= order.length) return false;
+      const next = [...order];
+      next.splice(to, 0, ...next.splice(at, 1));
+      applyOrder(next);
+      return true;
+    };
+
+    for (const [index, column] of columns.entries()) {
+      if (column.movable === false) continue;
+      const th = headerCells[index];
+      // `role="button"` and a tab stop, because that is what it is: a control
+      // that moves something. The keyboard path is not an alternative bolted on
+      // beside the drag — it is the same node, which is the F99 lesson applied
+      // (ADR-0068).
+      const handle = doc.createElement('span');
+      handle.setAttribute('role', 'button');
+      handle.setAttribute('tabindex', '0');
+      handle.setAttribute('data-egl-move', column.key);
+      handle.setAttribute(
+        'aria-label',
+        reorderLabel === undefined ? `Move ${labelText(column)}` : reorderLabel(column),
+      );
+      const handleStyle = /** @type {any} */ (handle).style;
+      handleStyle.setProperty('position', 'absolute');
+      handleStyle.setProperty('top', '0');
+      handleStyle.setProperty('bottom', '0');
+      // The leading edge, where F99's resize grip takes the trailing one: a table
+      // with both has one control per edge and they cannot overlap.
+      handleStyle.setProperty('left', '0');
+      handleStyle.setProperty('width', `${reorderHandle}px`);
+      handleStyle.setProperty('cursor', 'grab');
+      handleStyle.setProperty('touch-action', 'none');
+      handleStyle.setProperty('user-select', 'none');
+      th.append(handle);
+      // Same containing-block rule as F99, and set unconditionally here rather
+      // than only when resize left it unset: writing `relative` twice costs
+      // nothing, and writing it over `sticky` would silently unstick the header.
+      if (!wantsSticky) /** @type {any} */ (th).style.setProperty('position', 'relative');
+    }
+
+    /** @param {Event} event @returns {Element | null} */
+    const handleOf = (event) =>
+      /** @type {any} */ (event.target)?.closest?.('[data-egl-move]') ?? null;
+
+    /**
+     * Header widths in display order.
+     *
+     * Read at the start of a gesture and again after each swap — **never per
+     * pointer move**, which is the per-frame layout read F98 refused and F99
+     * inherited. A drag crosses a handful of boundaries; it fires hundreds of
+     * moves.
+     *
+     * @type {number[]}
+     */
+    let headerWidths = [];
+    const measureHeaders = () => {
+      headerWidths = order.map(
+        (key) => /** @type {any} */ (headerOf.get(key)).getBoundingClientRect().width,
+      );
+    };
+
+    /** @type {{ key: string, handle: Element, moved: boolean, from: number } | null} */
+    let drag = null;
+
+    headRow.addEventListener(
+      'pointerdown',
+      (event) => {
+        const handle = handleOf(event);
+        if (handle === null) return;
+        event.preventDefault();
+        const key = /** @type {string} */ (handle.getAttribute('data-egl-move'));
+        drag = { key, handle, moved: false, from: /** @type {any} */ (event).clientX };
+        measureHeaders();
+        /** @type {any} */ (handle).setPointerCapture(/** @type {any} */ (event).pointerId);
+        /** @type {any} */ (handle).style.setProperty('cursor', 'grabbing');
+      },
+      { signal: controller.signal },
+    );
+    headRow.addEventListener(
+      'pointermove',
+      (event) => {
+        if (drag === null) return;
+        const at = order.indexOf(drag.key);
+        // **Displacement**, not absolute position: how far the pointer has
+        // travelled since the gesture began, against half the neighbour's width.
+        // Measuring from the pointer's own start is what makes the grab point
+        // irrelevant — the handle sits on the leading edge, so an absolute rule
+        // would have made a one-slot move cost the column's own width plus half
+        // the neighbour's, which is not a gesture anybody would guess.
+        const travelled = /** @type {any} */ (event).clientX - drag.from;
+        // `Infinity` at the ends: a column at the edge has no neighbour to pass,
+        // and no threshold can be crossed.
+        const ahead = at < order.length - 1 ? headerWidths[at + 1] : Number.POSITIVE_INFINITY;
+        const behind = at > 0 ? headerWidths[at - 1] : Number.POSITIVE_INFINITY;
+        // Swapping live rather than drawing a drop indicator means the drag has
+        // no extra node and no extra CSS, and the table shows the result instead
+        // of a promise of it.
+        if (travelled > ahead / 2) {
+          moveBy(drag.key, 1);
+          drag.from += ahead;
+        } else if (-travelled > behind / 2) {
+          moveBy(drag.key, -1);
+          drag.from -= behind;
+        } else {
+          return;
+        }
+        drag.moved = true;
+        measureHeaders();
+      },
+      { signal: controller.signal },
+    );
+    /** @param {Event} event @returns {void} */
+    const endDrag = (event) => {
+      if (drag === null) return;
+      const { key, handle, moved } = drag;
+      drag = null;
+      /** @type {any} */ (handle).releasePointerCapture(/** @type {any} */ (event).pointerId);
+      /** @type {any} */ (handle).style.setProperty('cursor', 'grab');
+      // Only a gesture that changed something is a change. A press and release on
+      // a handle is how a user finds out what it is.
+      if (moved) onReorder?.([...order], key);
+    };
+    headRow.addEventListener('pointerup', endDrag, { signal: controller.signal });
+    headRow.addEventListener('pointercancel', endDrag, { signal: controller.signal });
+    headRow.addEventListener(
+      'keydown',
+      (event) => {
+        const handle = handleOf(event);
+        if (handle === null) return;
+        const pressed = /** @type {any} */ (event).key;
+        const delta = pressed === 'ArrowLeft' ? -1 : pressed === 'ArrowRight' ? 1 : 0;
+        if (delta === 0) return;
+        event.preventDefault();
+        const key = /** @type {string} */ (handle.getAttribute('data-egl-move'));
+        if (!moveBy(key, delta)) return;
+        // The handle travelled with its header, and moving a node can drop the
+        // focus it was holding. Restoring it is what lets a user press the arrow
+        // twice — without it the second press goes nowhere.
+        /** @type {any} */ (handle).focus();
+        onReorder?.([...order], key);
+      },
+      { signal: controller.signal },
+    );
+    headRow.addEventListener(
+      'click',
+      (event) => {
+        // The handle sits inside a sortable header and F51's sort delegation is
+        // on `thead`, one level up: without this, every finished drag also sorts
+        // the column it just moved.
+        if (handleOf(event) !== null) event.stopPropagation();
+      },
+      { signal: controller.signal },
+    );
+
+    setColumnOrder = (next) => {
+      if (!Array.isArray(next)) {
+        throw new TypeError(`${api}: setColumnOrder() expects an array of column keys`);
+      }
+      // Unknown keys first: a typo should be reported as a typo, not as the
+      // missing column it happens to displace.
+      for (const key of next) {
+        if (!columnOf.has(key)) {
+          throw new TypeError(`${api}: setColumnOrder() names no such column '${key}'`);
+        }
+      }
+      const seen = new Set(next);
+      const missing = order.filter((key) => !seen.has(key));
+      if (missing.length > 0) {
+        // A partial order is refused rather than interpreted. "The rest, in some
+        // order" is two answers to one question, and the caller who saved this
+        // layout deserves to be told which columns it forgot.
+        //
+        // One condition covers both shapes this rejects, and that is not a
+        // shortcut: every key is known by now, so an array of the right length
+        // with a duplicate in it is necessarily an array with something missing.
+        throw new TypeError(
+          `${api}: setColumnOrder() needs every column key exactly once, and is missing ${missing
+            .map((key) => `'${key}'`)
+            .join(', ')}`,
+        );
+      }
+      applyOrder(next);
+    };
+    getColumnOrder = () => [...order];
+  }
+
   /**
    * Rebuild the body from a derived view — one fragment, one insertion,
    * whatever the page size (F52).
@@ -1246,7 +1597,7 @@ export function bsTable(container, options) {
       applyRowState(tr, box, selection.hasKey(key));
     }
 
-    for (const column of columns) {
+    for (const column of orderedColumns) {
       const td = doc.createElement('td');
       applyClasses(
         td,
@@ -1475,6 +1826,18 @@ export function bsTable(container, options) {
     pipeline,
     ...(wired === null ? {} : { controls: wired.parts }),
     ...(selection === undefined ? {} : { selection }),
+    ...(wantsReorder
+      ? {
+          getColumnOrder: /** @type {() => string[]} */ (getColumnOrder),
+          /** @param {readonly string[]} next */
+          setColumnOrder: (next) => {
+            if (destroyed) {
+              throw new TypeError(`${api}: setColumnOrder() was called after destroy()`);
+            }
+            /** @type {(next: readonly string[]) => void} */ (setColumnOrder)(next);
+          },
+        }
+      : {}),
     ...(wantsResize
       ? {
           getColumnWidths: readColumnWidths,

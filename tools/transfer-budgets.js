@@ -113,26 +113,29 @@ export const TRANSFER_ROUTES = {
   bootstrap: {
     file: 'dist/esm/bootstrap.js',
     requests: 8,
-    measured: 39480,
-    budget: 40000,
+    measured: 40554,
+    budget: 43000,
     why:
       'The whole catalogue over 8 requests — still MORE than the single-file artifact over 1, so a page needing ' +
       '/bootstrap should take the artifact. 19.3 is the first M19 item to grow it for a feature it actually ' +
       'gained: bsTable renders the F95 selection column. 19.1 and 19.2 grew it for features it did not, because ' +
       'bsTable pulls the shared table chunk and that chunk carries remotePipeline and the F92 pair too. A bundler ' +
       'shakes those away; this route downloads whole files, which is exactly the cost F87 exists to keep visible ' +
-      'instead of silent.',
+      'instead of silent. ' +
+      'Re-pinned for 19.7 at measured + 6%, the ordinary ADR-0015 practice — which applies here and does NOT apply ' +
+      'to the artifact row below, because this route answers to no spec ceiling and that one answers to NFR-22.',
   },
 
   // --- The artifact route (F83) --------------------------------------------
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 38076,
+    measured: 38898,
     budget: 39000,
     why:
-      'Re-pinned for 19.6 (+1165 B for the F99 column resize), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
-      "The re-pin is measured + 2.4%, NOT the usual measured + <= 7%: that practice (ADR-0015) assumes headroom above the measurement, and 7% here is 40741 B — above NFR-22's 40 kB ceiling, which binds first. Recorded as inapplicable rather than quietly stretched. " +
-      'What is left is 1924 B for 19.7 (column reorder), and 19.6 cost 1165 B for a comparable amount of feature — so that item may not fit, and the answer then is a decision with arithmetic behind it (amend NFR-22, or move reorder off the default artifact), never a silent breach. ADR-0068.',
+      'Re-pinned for 19.7 (+822 B for the F100 column reorder), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
+      "The budget stays at 39000 B rather than moving to measured + <= 7%: that practice (ADR-0015) assumes headroom above the measurement, and 7% here is 41620 B — above NFR-22's 40 kB ceiling, which binds first. Recorded as inapplicable rather than quietly stretched, the second wave running. " +
+      'ADR-0068 left 19.7 with 1924 B and said the answer, if reorder did not fit, was a decision with arithmetic behind it rather than a silent breach. **It fits**: reorder cost 822 B served and leaves 1102 B under the ceiling, so NFR-22 is not amended. ' +
+      "19.7 is the wave's last capability — 19.9 is a defect fix worth a handful of bytes — so this row is effectively settled for M19. The tighter constraint is now the sibling one — ADR-0041's 25 kB /bootstrap entry clause has 609 B left, and M20 puts dialogs, toasts and a theme manager on that entry. ADR-0069.",
   },
 };

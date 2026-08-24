@@ -226,9 +226,9 @@
     "limit": "510 B"
   },
   {
-    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header and the F99 column resize - measured 23505 B, +1114 B in 19.6. Limit raised to 24.5 kB and NOT to measured+7%, which would be 25.1 kB: ADR-0041's 25 kB entry clause binds first, and a row above its own clause is a gate that cannot fail. 1.5 kB left, which 19.7 must fit inside or amend deliberately - ADR-0068)",
+    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header, the F99 column resize and the F100 reorder - measured 24391 B, +886 B in 19.7. Limit 24.9 kB, and NOT measured+7%: ADR-0041's 25 kB entry clause binds first, and a row above its own clause is a gate that cannot fail. **609 B remain under that clause** - and the next wave that grows this entry (M20 puts dialogs, toasts and a theme manager on it) inherits that figure and owes the decision, per ADR-0069)",
     "path": "dist/esm/bootstrap.js",
-    "limit": "24.5 kB"
+    "limit": "24.9 kB"
   },
   {
     "name": "single: bsIcon (NFR-17 <= 1.2 kB per ADR-0037; measured 933 B incl. the ADR-0047 option-key contract)",
@@ -315,10 +315,10 @@
     "limit": "1.58 kB"
   },
   {
-    "name": "single: bsTable (13.4 kB - documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065, ADR-0067 and ADR-0068: measured 12591 B, +1155 B in 19.6 for the F99 column resize. Between the two extremes of this wave: half what the F95 selection column cost, and four and a half times the F98 sticky header, which is what a colgroup, five delegated listeners, a separator widget and two public methods come to)",
+    "name": "single: bsTable (14.2 kB - documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065, ADR-0067, ADR-0068 and ADR-0069: measured 13356 B, +765 B in 19.7 for the F100 column reorder. Cheaper than the F99 resize it sits beside (1155 B) because it reuses that item's decisions rather than restating them - one handle for pointer and keyboard, pointer capture, the same click guard - and because moving nodes needs no markup of its own)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsTable }",
-    "limit": "13.4 kB"
+    "limit": "14.2 kB"
   },
   {
     "name": "single: bsToast (2.55 kB - NFR-17 composing row amended from 2.32 kB by ADR-0049: measured 2472 B, +152 B for on() + isShown() + element, the members the readiness review found missing)",
@@ -632,7 +632,7 @@
     "limit": "1.35 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 38020 B, re-pinned for 19.6 at +2.6%. **The trajectory**: 31444 B at M18, 33982 B (19.2), 35671 B (19.3), 36541 B (19.4), 36797 B (19.5), 38020 B (19.6) against NFR-22's 40 kB authoring ceiling - now 95%. 19.5 cost 256 B and falsified the ~1500 B-an-item projection in the good direction; 19.6 cost 1223 B and put it back, which is why ADR-0067 said to check the projection at each data point rather than restate it. The ceiling IS the constraint 19.7 inherits: ~2 kB for column reorder, an item with its own affordance, keyboard path and order model. If it does not fit, the answer is a decision with arithmetic behind it - amend NFR-22, or move reorder off the default artifact - never a silent breach (ADR-0068)",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 38786 B, re-pinned for 19.7. **The trajectory, and the end of it**: 31444 B at M18, 33982 (19.2), 35671 (19.3), 36541 (19.4), 36797 (19.5), 38020 (19.6), 38786 (19.7) against NFR-22's 40 kB authoring ceiling. ADR-0068 left 19.7 with ~1.9 kB and said the answer, if it did not fit, was a decision with arithmetic rather than a silent breach. It fits: 19.7 cost 766 B here and the served figure lands at 38898 B, **1102 B under the ceiling, which is therefore NOT amended**. 19.7 is the wave's last capability; 19.9 is a defect fix worth a handful of bytes (ADR-0069)",
     "path": "dist/global/egl-utils.global.js",
     "limit": "39 kB"
   }

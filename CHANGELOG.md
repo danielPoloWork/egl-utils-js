@@ -83,6 +83,16 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
   clamped to the same floors as a drag. `resizable: false` withholds the affordance from a user,
   not the width from the caller (spec 06 F99, ROADMAP 19.6,
   [ADR-0068](docs/adr/0068-a-colgroup-a-separator-and-a-ceiling-in-sight.md)).
+- **`bsTable({ reorder })`, plus `movable` on a column** — the column order becomes
+  caller-visible and authoritative: `getColumnOrder()` / `setColumnOrder()` on the instance,
+  and a handle on every header that both drags and takes the arrow keys, so a caller can build
+  their own control or none at all. Dragging swaps columns live as the pointer passes each
+  neighbour, with no drop indicator to clean up. The order is presentational — the F42
+  pipeline never sees it — and applying one **moves cells rather than rebuilding rows**.
+  `setColumnOrder` takes a full permutation and names what a partial one is missing. This
+  supersedes spec 03's drag-and-drop non-goal on F100's condition: the drag exists, and it is
+  not the only way in (spec 06 F100, ROADMAP 19.7,
+  [ADR-0069](docs/adr/0069-an-order-is-a-permutation-and-the-ceiling-held.md)).
 
 ### Changed
 
