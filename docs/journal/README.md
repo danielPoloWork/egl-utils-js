@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-24 — Column reorder, and spec 06 is delivered (roadmap 19.7)](2026/08/2026-08-24-column-reorder.md)
 - [2026-08-24 — Column resize (roadmap 19.6)](2026/08/2026-08-24-column-resize.md)
 - [2026-08-21 — Five declarations and no scroll listener (roadmap 19.5)](2026/08/2026-08-21-sticky-header.md)
 - [2026-08-21 — A CSV is not an inert document (roadmap 19.4)](2026/08/2026-08-21-csv-export.md)

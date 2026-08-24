@@ -1984,3 +1984,208 @@ test.describe('/bootstrap — bsTable column resize (roadmap 19.6, F99)', () => 
     }
   });
 });
+
+test.describe('/bootstrap — bsTable column reorder (roadmap 19.7, F100)', () => {
+  // The half jsdom cannot reach: which header a pointer is actually over. Every
+  // assertion here is geometry — a drag crossing a neighbour's midpoint, the
+  // order that results, and the fact that the columns under the cursor are the
+  // ones that moved. Three engines, because pointer capture and live DOM moves
+  // during a gesture are where they have historically differed.
+  test.beforeEach(async ({ page }) => {
+    await page.addStyleTag({ url: '/node_modules/bootstrap/dist/css/bootstrap.min.css' });
+    await page.evaluate(() => {
+      const { bsTable } = window.egl.bootstrap;
+      const host = document.getElementById('host');
+      host.replaceChildren();
+      window.eglOrderCommits = [];
+      window.eglReorder = bsTable(host, {
+        columns: [
+          { key: 'id', label: 'Id', sortable: true },
+          { key: 'host', label: 'Host' },
+          { key: 'seen', label: 'Last seen' },
+        ],
+        data: Array.from({ length: 5 }, (_unused, index) => ({
+          id: index + 1,
+          host: `gw-${String(index + 1).padStart(3, '0')}`,
+          seen: '2026-08-24',
+        })),
+        responsive: true,
+        controls: { search: true, filterRow: true },
+        reorder: {
+          onReorder: (order, key) => window.eglOrderCommits.push({ key, order: [...order] }),
+        },
+      });
+    });
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(() => window.eglReorder?.destroy());
+  });
+
+  /** The rendered width of the nth header cell, so a drag is expressed in slots. */
+  const headerWidth = (page, nth) =>
+    page.evaluate(
+      (index) =>
+        document.querySelectorAll('#host thead tr:first-child th')[index].getBoundingClientRect()
+          .width,
+      nth,
+    );
+
+  /** Drag one move handle horizontally by `dx`, through the engine's own pointer pipeline. */
+  const dragBy = async (page, key, dx) => {
+    const grip = page.locator(`#host [data-egl-move="${key}"]`);
+    const box = await grip.boundingBox();
+    const y = box.y + box.height / 2;
+    await page.mouse.move(box.x + box.width / 2, y);
+    await page.mouse.down();
+    // Several moves: the swap happens when the pointer passes a neighbour's
+    // centre, and a gesture that only works when the pointer teleports is not a
+    // gesture.
+    for (const step of [0.25, 0.5, 0.75, 1]) {
+      await page.mouse.move(box.x + box.width / 2 + dx * step, y);
+    }
+    await page.mouse.up();
+  };
+
+  test('a drag past the neighbour swaps the columns under the cursor', async ({ page }) => {
+    const width = await page.evaluate(
+      () => document.querySelector('#host thead th:nth-child(2)').getBoundingClientRect().width,
+    );
+    await dragBy(page, 'id', width);
+
+    expect(await page.evaluate(() => window.eglReorder.getColumnOrder())).toEqual([
+      'host',
+      'id',
+      'seen',
+    ]);
+    // The header text is the visible proof, read from the rendered document.
+    expect(
+      await page.evaluate(() =>
+        [...document.querySelectorAll('#host thead tr:first-child th')].map((th) =>
+          th.textContent.trim(),
+        ),
+      ),
+    ).toEqual(['Host', 'Id', 'Last seen']);
+    // …and every body row followed it.
+    expect(
+      await page.evaluate(() =>
+        [...document.querySelectorAll('#host tbody tr:first-child td')].map((td) =>
+          td.textContent.trim(),
+        ),
+      ),
+    ).toEqual(['gw-001', '1', '2026-08-24']);
+  });
+
+  test('a drag across two neighbours passes both', async ({ page }) => {
+    const span = await page.evaluate(() => {
+      const cells = [...document.querySelectorAll('#host thead tr:first-child th')];
+      return cells[1].getBoundingClientRect().width + cells[2].getBoundingClientRect().width;
+    });
+    await dragBy(page, 'id', span);
+    expect(await page.evaluate(() => window.eglReorder.getColumnOrder())).toEqual([
+      'host',
+      'seen',
+      'id',
+    ]);
+    // One commit for the whole gesture, however many boundaries it crossed.
+    const commits = await page.evaluate(() => window.eglOrderCommits);
+    expect(commits).toHaveLength(1);
+    expect(commits[0]).toEqual({ key: 'id', order: ['host', 'seen', 'id'] });
+  });
+
+  test('a drag that crosses nothing changes nothing, and commits nothing', async ({ page }) => {
+    // Expressed as a fraction of the neighbour it must NOT pass, like every other
+    // drag here. A fixed pixel count made this the one flaky test in the block:
+    // the threshold is half the RENDERED neighbour, so "4 px is small" holds only
+    // for the viewport it was written on.
+    await dragBy(page, 'host', (await headerWidth(page, 2)) * 0.4);
+    expect(await page.evaluate(() => window.eglReorder.getColumnOrder())).toEqual([
+      'id',
+      'host',
+      'seen',
+    ]);
+    expect(await page.evaluate(() => window.eglOrderCommits)).toHaveLength(0);
+  });
+
+  test('the filter row travels with the columns', async ({ page }) => {
+    // Two slots, expressed in the widths actually rendered: a fixed pixel count
+    // would move a different number of columns on a different viewport.
+    await dragBy(page, 'id', (await headerWidth(page, 1)) + (await headerWidth(page, 2)));
+    // Each filter input must end up under the column it filters — the row that
+    // would silently be left behind, and the one BUG-0005 is about.
+    expect(
+      await page.evaluate(() =>
+        [...document.querySelectorAll('#host thead tr:last-child input')].map((input) =>
+          input.getAttribute('aria-label'),
+        ),
+      ),
+    ).toEqual(['Filter Host', 'Filter Last seen', 'Filter Id']);
+  });
+
+  test('the handle is focusable and arrow-operable', async ({ page }) => {
+    const grip = page.locator('#host [data-egl-move="id"]');
+    await grip.focus();
+    await expect(grip).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    expect(await page.evaluate(() => window.eglReorder.getColumnOrder())).toEqual([
+      'host',
+      'id',
+      'seen',
+    ]);
+    // Focus survived the move, so a second press lands on the same handle.
+    await expect(page.locator('#host [data-egl-move="id"]')).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    expect(await page.evaluate(() => window.eglReorder.getColumnOrder())).toEqual([
+      'host',
+      'seen',
+      'id',
+    ]);
+  });
+
+  test('a move does not sort the column, and sorting still works', async ({ page }) => {
+    await dragBy(page, 'id', (await headerWidth(page, 1)) + (await headerWidth(page, 2)));
+    await expect(page.locator('#host th[data-sort-key="id"]')).toHaveAttribute('aria-sort', 'none');
+    await page.locator('#host th[data-sort-key="id"]').click();
+    await expect(page.locator('#host th[data-sort-key="id"]')).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    );
+    // The order survived a full body re-render: the render reads it.
+    expect(await page.evaluate(() => window.eglReorder.getColumnOrder())).toEqual([
+      'host',
+      'seen',
+      'id',
+    ]);
+  });
+
+  test('resize and reorder compose: one control per edge', async ({ page }) => {
+    const geometry = await page.evaluate(() => {
+      const { bsTable } = window.egl.bootstrap;
+      const host = document.getElementById('host');
+      window.eglReorder.destroy();
+      host.replaceChildren();
+      window.eglReorder = bsTable(host, {
+        columns: [
+          { key: 'id', label: 'Id' },
+          { key: 'host', label: 'Host' },
+        ],
+        data: [{ id: 1, host: 'gw-001' }],
+        responsive: true,
+        resize: true,
+        reorder: true,
+      });
+      const th = document.querySelector('#host thead th').getBoundingClientRect();
+      const move = document.querySelector('#host [data-egl-move]').getBoundingClientRect();
+      const grip = document.querySelector('#host [data-egl-resize]').getBoundingClientRect();
+      return {
+        moveAtStart: Math.round(move.left - th.left),
+        gripAtEnd: Math.round(th.right - grip.right),
+        overlap: move.right > grip.left,
+      };
+    });
+    expect(geometry.moveAtStart).toBe(0);
+    expect(geometry.gripAtEnd).toBe(0);
+    // The two controls share a header cell and must not share a pixel of it.
+    expect(geometry.overlap).toBe(false);
+  });
+});

@@ -84,3 +84,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0066](0066-a-csv-is-not-an-inert-document.md) | A CSV is not an inert document | Accepted |
 | [0067](0067-five-declarations-and-no-scroll-listener.md) | Five declarations and no scroll listener | Accepted |
 | [0068](0068-a-colgroup-a-separator-and-a-ceiling-in-sight.md) | A colgroup, a separator, and a ceiling now in sight | Accepted |
+| [0069](0069-an-order-is-a-permutation-and-the-ceiling-held.md) | An order is a permutation, a drag is a displacement — and the ceiling held | Accepted |

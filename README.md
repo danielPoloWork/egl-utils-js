@@ -618,6 +618,46 @@ Worth knowing:
   people want, and the grip anchors to the sticky cell without unsticking it.
 - Dragging a grip does **not** sort the column it lives in, and sorting still works.
 
+### Column reorder (`egl-utils-js/bootstrap`)
+
+The column order is **yours**, and the affordance is only one way to reach it
+([ADR-0069](docs/adr/0069-an-order-is-a-permutation-and-the-ceiling-held.md)):
+
+```js
+const table = bsTable(host, {
+  columns: [{ key: 'host' }, { key: 'ip' }, { key: 'seen' }],
+  data: rows,
+  reorder: { onReorder: (order) => localStorage.setItem('order', JSON.stringify(order)) },
+});
+
+table.setColumnOrder(JSON.parse(localStorage.getItem('order') ?? '[]')); // restore
+table.getColumnOrder(); // → ['seen', 'host', 'ip']
+```
+
+Every header grows a handle on its leading edge. **Drag it** and the columns swap as you pass
+each neighbour — no drop indicator, because the table can simply show the result. **Or use
+the arrow keys**: the handle is a focusable `role="button"`, and `ArrowLeft` / `ArrowRight`
+move the column one slot per press. Or use neither and call `setColumnOrder` — a caller who
+wants their own control, or no control at all, never has to touch the DOM.
+
+Worth knowing:
+
+- **The pipeline never sees the order.** Which column a filter or a sort addresses has nothing
+  to do with where it is drawn, so reordering is purely presentational and the derived view is
+  untouched.
+- **No row is rebuilt.** Cells are *moved*, not re-created, so a reorder costs one traversal
+  and a selected row stays selected.
+- **`setColumnOrder` takes a full permutation.** A partial list is a `TypeError` naming what is
+  missing — "the rest, in some order" is two answers to one question, and a layout you saved
+  deserves neither.
+- **`movable: false`** withholds the handle from your user; `setColumnOrder` still places the
+  column, exactly as `resizable: false` still takes a width.
+- **Reorder and resize compose**: the move handle takes the header's leading edge, the resize
+  grip the trailing one, so there is one control per edge and they never overlap.
+- **A move is not announced.** A screen-reader user hears the new order when they re-read the
+  header row, not at the moment of the move — this library has no live region yet. The
+  operability F100 asks for is there; the announcement is a known gap.
+
 ### Export: CSV and the clipboard (`egl-utils-js/table`, `egl-utils-js/dom`)
 
 **A CSV is not an inert document.** Every mainstream spreadsheet evaluates a cell whose text
