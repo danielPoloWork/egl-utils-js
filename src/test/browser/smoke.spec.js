@@ -1807,3 +1807,180 @@ test.describe('/bootstrap — bsTable sticky header (roadmap 19.5, F98)', () => 
     expect(delta).toBe(0);
   });
 });
+
+test.describe('/bootstrap — bsTable column resize (roadmap 19.6, F99)', () => {
+  // Everything jsdom could not ask, because all of it is layout: does a drag
+  // actually move the boundary, does the width survive the pointer being
+  // released outside the table, is the grip a real target, and does a keyboard
+  // user reach the same result. Three engines, because pointer capture and
+  // `table-layout: fixed` are exactly where engines have historically differed.
+  test.beforeEach(async ({ page }) => {
+    await page.addStyleTag({ url: '/node_modules/bootstrap/dist/css/bootstrap.min.css' });
+    await page.evaluate(() => {
+      const { bsTable } = window.egl.bootstrap;
+      const host = document.getElementById('host');
+      host.replaceChildren();
+      window.eglResizeCommits = [];
+      window.eglResize = bsTable(host, {
+        columns: [
+          { key: 'id', label: 'Id', sortable: true, minWidth: 60 },
+          { key: 'host', label: 'Host' },
+          { key: 'seen', label: 'Last seen' },
+        ],
+        data: Array.from({ length: 8 }, (_unused, index) => ({
+          id: index + 1,
+          host: `gw-${String(index + 1).padStart(3, '0')}`,
+          seen: '2026-08-24',
+        })),
+        responsive: true,
+        // Controls are wired for the same reason the F98 fixture wires them: the
+        // sort-header delegation is F51's and exists only when they are, so
+        // "a finished drag does not sort the column" is not testable without it.
+        controls: { search: true },
+        resize: {
+          onResize: (widths, key) => window.eglResizeCommits.push({ key, widths }),
+        },
+      });
+    });
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(() => window.eglResize?.destroy());
+  });
+
+  /** Drag one grip by `dx` pixels, through the engine's own pointer pipeline. */
+  const dragBy = async (page, key, dx) => {
+    const grip = page.locator(`#host [data-egl-resize="${key}"]`);
+    const box = await grip.boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    // Two moves: some engines coalesce a single one into the press, and a drag
+    // that only works when the pointer teleports is not a drag.
+    await page.mouse.move(box.x + box.width / 2 + dx / 2, box.y + box.height / 2);
+    await page.mouse.move(box.x + box.width / 2 + dx, box.y + box.height / 2);
+    await page.mouse.up();
+  };
+
+  test('a drag moves the boundary, and the column keeps the width', async ({ page }) => {
+    const before = await page.evaluate(() => window.eglResize.getColumnWidths());
+    await dragBy(page, 'id', 120);
+    const after = await page.evaluate(() => window.eglResize.getColumnWidths());
+
+    // Measured from the document, not from what we wrote — the whole point of a
+    // browser assertion here.
+    expect(after.id).toBeGreaterThan(before.id + 80);
+    // And the neighbours did not absorb it silently: under `table-layout: fixed`
+    // the columns that were not dragged keep the widths they were pinned at.
+    expect(Math.abs(after.host - before.host)).toBeLessThan(3);
+    expect(await page.evaluate(() => document.querySelector('#host table').style.tableLayout)).toBe(
+      'fixed',
+    );
+  });
+
+  test('the layout is untouched until the first drag', async ({ page }) => {
+    // Enabling resize must not re-lay-out the table. Asserted in an engine
+    // because "the browser sized the columns to their content" is a claim only an
+    // engine can settle: the three columns hold very different amounts of text,
+    // so equal widths would mean `fixed` had been applied at build time.
+    const widths = await page.evaluate(() => window.eglResize.getColumnWidths());
+    expect(await page.evaluate(() => document.querySelector('#host table').style.tableLayout)).toBe(
+      '',
+    );
+    expect(widths.id).not.toBe(widths.host);
+  });
+
+  test('the floor holds even when the pointer keeps going', async ({ page }) => {
+    await dragBy(page, 'id', -600);
+    const widths = await page.evaluate(() => window.eglResize.getColumnWidths());
+    // `minWidth: 60` on this column, and the pointer went far past it — including
+    // outside the table, which is where a resize without pointer capture stops
+    // receiving events and freezes half-done.
+    //
+    // Exactly 60, because this reads the width the table **enforces**. The engine
+    // paints it wider: `.table` is `width: 100%` and `table-layout: fixed` scales
+    // the declared widths to fill the container, so the painted figure is a
+    // function of the window and the declared one is not. Persisting the painted
+    // number would restore wrong on a differently-sized window.
+    expect(widths.id).toBe(60);
+    const painted = await page.evaluate(() =>
+      Math.round(document.querySelector('#host thead th').getBoundingClientRect().width),
+    );
+    expect(painted).toBeGreaterThanOrEqual(60);
+  });
+
+  test('the keyboard reaches the same state as the pointer', async ({ page }) => {
+    const grip = page.locator('#host [data-egl-resize="host"]');
+    await grip.focus();
+    // Focusable at all: `role="separator"` with a tab stop is the widget pattern,
+    // and a resize affordance reachable only by dragging is the thing F99 refuses.
+    await expect(grip).toBeFocused();
+    const before = await page.evaluate(() => window.eglResize.getColumnWidths());
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    const after = await page.evaluate(() => window.eglResize.getColumnWidths());
+    expect(after.host).toBe(before.host + 32);
+    await expect(grip).toHaveAttribute('aria-valuenow', String(after.host));
+    // Shift is the coarse step — four presses' worth in one.
+    await page.keyboard.press('Shift+ArrowLeft');
+    expect((await page.evaluate(() => window.eglResize.getColumnWidths())).host).toBe(
+      after.host - 64,
+    );
+  });
+
+  test('the grip refuses to become a scroll gesture', async ({ page }) => {
+    // Computed from the engine: without `touch-action: none` a touch drag on the
+    // grip scrolls the F71 wrapper instead of resizing, and the property is one
+    // jsdom drops entirely rather than storing.
+    const touchAction = await page.evaluate(
+      () => getComputedStyle(document.querySelector('#host [data-egl-resize]')).touchAction,
+    );
+    expect(touchAction).toBe('none');
+  });
+
+  test('a resize does not sort the column, and sorting still works', async ({ page }) => {
+    await dragBy(page, 'id', 60);
+    // The grip lives inside a sortable header; without the click guard every
+    // finished drag would also re-sort the column just resized.
+    await expect(page.locator('#host th[data-sort-key="id"]')).toHaveAttribute('aria-sort', 'none');
+    await page.locator('#host th[data-sort-key="id"]').click();
+    await expect(page.locator('#host th[data-sort-key="id"]')).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    );
+    // And the width survived a full body re-render, because it never lived on a
+    // row in the first place.
+    expect((await page.evaluate(() => window.eglResize.getColumnWidths())).id).toBeGreaterThan(60);
+  });
+
+  test('a completed gesture commits once, with a layout that round-trips', async ({ page }) => {
+    await dragBy(page, 'host', 100);
+    const commits = await page.evaluate(() => window.eglResizeCommits);
+    expect(commits).toHaveLength(1);
+    expect(commits[0].key).toBe('host');
+
+    // Save, rebuild, restore — the reason `getColumnWidths` exists.
+    const saved = commits[0].widths;
+    const restored = await page.evaluate((widths) => {
+      const { bsTable } = window.egl.bootstrap;
+      const host = document.getElementById('host');
+      window.eglResize.destroy();
+      host.replaceChildren();
+      window.eglResize = bsTable(host, {
+        columns: [
+          { key: 'id', label: 'Id' },
+          { key: 'host', label: 'Host' },
+          { key: 'seen', label: 'Last seen' },
+        ],
+        data: [{ id: 1, host: 'gw-001', seen: '2026-08-24' }],
+        responsive: true,
+        resize: true,
+      });
+      window.eglResize.setColumnWidths(widths);
+      return window.eglResize.getColumnWidths();
+    }, saved);
+
+    for (const key of Object.keys(saved)) {
+      expect(Math.abs(restored[key] - saved[key])).toBeLessThan(3);
+    }
+  });
+});

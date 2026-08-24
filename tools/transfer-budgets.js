@@ -113,7 +113,7 @@ export const TRANSFER_ROUTES = {
   bootstrap: {
     file: 'dist/esm/bootstrap.js',
     requests: 8,
-    measured: 38058,
+    measured: 39480,
     budget: 40000,
     why:
       'The whole catalogue over 8 requests — still MORE than the single-file artifact over 1, so a page needing ' +
@@ -128,8 +128,11 @@ export const TRANSFER_ROUTES = {
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 36911,
-    budget: 38000,
-    why: 'Budget re-pinned for the 19.2 surface, holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061).',
+    measured: 38076,
+    budget: 39000,
+    why:
+      'Re-pinned for 19.6 (+1165 B for the F99 column resize), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
+      "The re-pin is measured + 2.4%, NOT the usual measured + <= 7%: that practice (ADR-0015) assumes headroom above the measurement, and 7% here is 40741 B — above NFR-22's 40 kB ceiling, which binds first. Recorded as inapplicable rather than quietly stretched. " +
+      'What is left is 1924 B for 19.7 (column reorder), and 19.6 cost 1165 B for a comparable amount of feature — so that item may not fit, and the answer then is a decision with arithmetic behind it (amend NFR-22, or move reorder off the default artifact), never a silent breach. ADR-0068.',
   },
 };

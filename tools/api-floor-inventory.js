@@ -278,6 +278,65 @@ export const MEMBERS = {
     guarded:
       'same presence check; read so a write preserves the fragment, which is a different page concern than the table state and must survive it',
   },
+  // --- Pointer Events and pointer capture (spec 06 F99/NFR-28, roadmap 19.6) ---
+  //
+  // The column-resize grip. Every one of these is reached on a node **this
+  // library built** — a `<span>` inside our own `<tr>` — so none is visible to
+  // the scanner, which policies globals and their members; they are declared for
+  // check 2, the BCD floor comparison, which is the question that actually
+  // matters for a capability this recent.
+  //
+  // And it is recent by this file's standards: Safari 13 for the whole set,
+  // against `getBoundingClientRect`'s Safari 4 and `setAttribute`'s Safari 1.
+  // Still comfortably below the 16.4 floor (ADR-0050) — checked rather than
+  // assumed, which is the entire reason an entry exists instead of a comment.
+  //
+  // The `context` guard is the Node half: none of these exists there, and
+  // `/bootstrap` is an entry a server-side render legitimately loads. Nothing
+  // here is reached at build time; a table renders, and only a *gesture* touches
+  // any of it.
+  'Element.pointerdown': {
+    guardReason: 'context',
+    bcd: 'api.Element.pointerdown_event',
+    guarded:
+      'bsTable attaches it to the header row it just built, and only when `options.resize` asked for the capability; a table without resize registers nothing, and a host with no pointer input simply never fires it (F99)',
+  },
+  'Element.pointermove': {
+    guardReason: 'context',
+    bcd: 'api.Element.pointermove_event',
+    guarded:
+      'same listener set, and it returns immediately unless a `pointerdown` on a grip opened a gesture — so a move that no press began costs one null check',
+  },
+  'Element.pointerup': {
+    guardReason: 'context',
+    bcd: 'api.Element.pointerup_event',
+    guarded: 'same listener set; ends the gesture and is where the F99 commit callback fires',
+  },
+  'Element.pointercancel': {
+    guardReason: 'context',
+    bcd: 'api.Element.pointercancel_event',
+    guarded:
+      'same listener set and the same handler as the release. Registered deliberately rather than for symmetry: an engine cancels a pointer when the system takes the gesture over, and a resize that only ends on `pointerup` would be left mid-drag, following a pointer nobody is holding',
+  },
+  'Element.setPointerCapture': {
+    guardReason: 'context',
+    bcd: 'api.Element.setPointerCapture',
+    guarded:
+      'called on the grip the gesture started on, and called OUTRIGHT rather than optionally: Safari 13 against the 16.4 floor means an optional call would be a branch no supported runtime takes, which is the reasoning ADR-0050 used to delete the AbortSignal.timeout fallback. It is what keeps every listener on a node this library owns: the shape it replaces — listen on `document` for the duration of the drag — reaches into someone else’s node in someone else’s realm, which is the trap BUG-0003 was (ADR-0045). jsdom implements it nowhere, so the unit suite supplies it, as it already does the pointer events themselves',
+  },
+  'Element.releasePointerCapture': {
+    guardReason: 'context',
+    bcd: 'api.Element.releasePointerCapture',
+    guarded:
+      'the matching call on the release, on the same terms. Engines drop an implicit capture at `pointerup` anyway, so this is belt-and-braces for the `pointercancel` path rather than the load-bearing half',
+  },
+  'Element.getBoundingClientRect': {
+    guardReason: 'context',
+    bcd: 'api.Element.getBoundingClientRect',
+    guarded:
+      'read optionally and always through a fallback to `0`, because a layout-free host — jsdom, a detached tree, a server render — answers zero for everything and F99 must not write that as a width. Read **once per column at the first resize** and once per `getColumnWidths()` call: never per pointer move, and never per frame, which is the cost F98 refused and this inherits (ADR-0067)',
+  },
+
   // Declared by hand, like `EventTarget.addEventListener` above and for the same
   // reason: an event name is a string, and strings are exactly what the scanner
   // must keep dropping — prose in a comment or a message must never read as a
