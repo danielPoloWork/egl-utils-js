@@ -226,7 +226,7 @@
     "limit": "510 B"
   },
   {
-    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column — measured 22032 B, up 2869 B in 19.3. Entry clause 25 kB per ADR-0041, untouched since M14 and still holding with 3 kB to spare)",
+    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column and the F98 sticky header - measured 22391 B, +359 B in 19.5. Entry clause 25 kB per ADR-0041, untouched since M14 and still holding with 2.6 kB to spare)",
     "path": "dist/esm/bootstrap.js",
     "limit": "23.5 kB"
   },
@@ -315,10 +315,10 @@
     "limit": "1.58 kB"
   },
   {
-    "name": "single: bsTable (11.8 kB - documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065: measured 11064 B, +2222 B for the F95 selection column and the F94 model it imports. 1433 B of that is tableSelection itself, statically imported the same way tablePipeline and bindTableControls already are - options are not tree-shakeable, so an opt-in feature costs this row even when it is off. Spec 06 F95 amended to say so)",
+    "name": "single: bsTable (12.2 kB - documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065 and ADR-0067: measured 11436 B, +372 B in 19.5 for the F98 sticky header. That figure is the point of the item: five CSS declarations and a validated option, no scroll listener and no measured layout, so a whole feature costs less than a tenth of what the selection column did)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsTable }",
-    "limit": "11.8 kB"
+    "limit": "12.2 kB"
   },
   {
     "name": "single: bsToast (2.55 kB - NFR-17 composing row amended from 2.32 kB by ADR-0049: measured 2472 B, +152 B for on() + isShown() + element, the members the readiness review found missing)",
@@ -632,8 +632,8 @@
     "limit": "1.35 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 36541 B, re-pinned for 19.4 at +3% as in 19.2 and 19.3. **The trajectory is now the story**: 31444 B at M18, 33982 B (19.2), 35671 B (19.3), 36541 B (19.4) - which is 91% of NFR-22's 40 kB authoring ceiling with three items left (19.5-19.7), all of them bsTable features that land in this file. The item that crosses it owes a decision with a measured argument - amend the clause, or split the artifact - and ADR-0065 and ADR-0066 both say so rather than leaving it to be met as a red build)",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 36797 B, re-pinned for 19.5 at +2%. **The trajectory, corrected**: 31444 B at M18, 33982 B (19.2), 35671 B (19.3), 36541 B (19.4), 36797 B (19.5) against NFR-22 authoring ceiling of 40 kB - now 92%, but 19.5 cost only 256 B where the projection in 19.3 and 19.4 assumed ~1500 B an item. A CSS-only feature falsified that assumption in the good direction, so the ceiling is NOT the constraint 19.6 inherits: ~3.2 kB remain for two items. The decision still belongs to whichever item actually crosses it, with a measured argument (ADR-0067)",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "37.6 kB"
+    "limit": "37.5 kB"
   }
 ]

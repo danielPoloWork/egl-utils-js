@@ -526,6 +526,45 @@ re-rendering**. Pass an existing `tableSelection` as `selection: { selection }` 
 borrows it: `destroy()` unsubscribes and leaves it alive, exactly as it treats an injected
 pipeline.
 
+### Sticky header (`egl-utils-js/bootstrap`)
+
+One option, and **`position: sticky` is the entire implementation** — no scroll listener, no
+`requestAnimationFrame`, nothing measured in JavaScript
+([ADR-0067](docs/adr/0067-five-declarations-and-no-scroll-listener.md)). It costs 372 bytes.
+
+```js
+bsTable(host, {
+  columns,
+  data: rows,
+  responsive: true,
+  sticky: { maxHeight: '400px' }, // a working sticky table in one option
+});
+```
+
+`maxHeight` bounds the responsive wrapper — which is what gives the body something to scroll
+inside — and adds the `overflow-y` that `.table-responsive` does not ask for. Leave it out and
+the header sticks to whatever scroll container **you** built:
+
+```js
+host.style.maxHeight = '400px';
+host.style.overflow = 'auto';
+bsTable(host, { columns, data: rows, sticky: true });
+```
+
+Passing `maxHeight` **without** `responsive` is a `TypeError`, not a no-op: there would be no
+node of ours to bound, and the result would be a header that never sticks with nothing to say
+why. Also worth knowing:
+
+- **`sticky: { top }`** is where the header comes to rest, for a table under something else that
+  is already sticky in the same container. **`zIndex`** defaults to `2`.
+- **The selection column sticks with the rest** — the styles land per `<th>`, so the F95 checkbox
+  header is simply another one of them.
+- **Sorting is untouched.** Sticky is CSS; `aria-sort` and the sort controls behave exactly as
+  they do without it, asserted with real clicks on three engines.
+- The cell gets a `--bs-*`-derived background and an inset bottom rule, because a sticky cell
+  otherwise loses its collapsed border and lets rows scroll through it. Your theme's colours,
+  not ours.
+
 ### Export: CSV and the clipboard (`egl-utils-js/table`, `egl-utils-js/dom`)
 
 **A CSV is not an inert document.** Every mainstream spreadsheet evaluates a cell whose text
@@ -1420,8 +1459,8 @@ own response:
 | `/table` | 5 | 11.82 kB |
 | root (`index.js`) | 7 | 13.57 kB |
 | `/dom` | 8 | 13.96 kB |
-| `/bootstrap` | 8 | 37.54 kB |
-| **the global artifact** | **1** | **36.63 kB** |
+| `/bootstrap` | 8 | 38.06 kB |
+| **the global artifact** | **1** | **36.91 kB** |
 
 Two things worth reading off it. **If you need `/bootstrap`, take the artifact** — the whole
 surface in one request now costs *less* than that one entry costs in seven, because
