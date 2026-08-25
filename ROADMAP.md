@@ -332,17 +332,30 @@ emotePipeline is a sibling of `tablePipeline`, not a wrapper around it** ([ADR-0
 
 ## Milestone 20 — Application UX utilities
 
-Provisional wave ([ADR-0046](docs/adr/0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md)):
-same rules as M19 — the wave's spec (07) is authored in its own planning PR; execution
-order is the owner's post-1.0 call. This wave expects api-floor amendments (`matchMedia`
-at minimum), each an explicit ADR-0017 inventory decision.
+Adopted wave ([ADR-0046](docs/adr/0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md)).
+Spec: [`docs/specs/07_spec_application_ux.md`](docs/specs/07_spec_application_ux.md), authored
+in its own planning PR before implementation — **F101–F111 and NFR-31–NFR-36**. Scope: the
+layer an application writes on top of a finished component catalogue — **behaviour that
+outlives a single component**. Execution order among the items is the owner's call;
+numbering fixes identity, not sequence.
 
-- [ ] 20.1 Promise-based dialogs over `bsModal`: `confirm`/`prompt`/custom returning a promise with the dialog's result, focus restoration included _(route: standard/high — sets-pattern: the promise-wrapper shape later dialogs copy)_
-- [ ] 20.2 Toast manager over `bsToast`: queue, max-visible cap, dedupe, update-by-id, and a `promise()` loading → success/error helper _(route: standard/medium)_
-- [ ] 20.3 Theme management: `data-bs-theme` get/set/toggle, `prefers-color-scheme` tracking, storage persistence, early no-flash apply, and a toggle-control builder _(route: standard/medium)_
-- [ ] 20.4 BreakpointObserver: `matchMedia` over Bootstrap's breakpoint names with a subscribe API (api-floor amendment) _(route: standard/medium)_
-- [ ] 20.5 A11y primitives: a reusable focus trap and focus save/restore extracted from the F50 overlay, and a LiveRegion announcer _(route: standard/high — focus and live-region timing are classically bug-prone)_
-- [ ] 20.6 Reduced-motion policy helper: one query point components consult (a MotionManager stays rejected, ADR-0046) _(route: fast/low)_
+**Two ceilings bind this wave, and the spec settles both before the first item starts** —
+which is the whole reason it was planned rather than begun. `/bootstrap` measures 24 406 B
+against [ADR-0041](docs/adr/0041-a-peer-looked-up-not-imported.md)'s 25 kB clause, leaving
+**594 B**, while `bsModal` and `bsToast` alone — the two components 20.1 and 20.2 wrap —
+measure 1 266 B and 2 473 B. The wave does not fit and no care makes it fit, so **F101–F108
+land on a new entry** (spec 07 NFR-32) rather than inside a ceiling ADR-0041 sized for the
+*finished* catalogue. And because the F83 artifact carries the whole surface, a new entry
+lands in it wherever it lives: at 38 911 B against NFR-22's 40 kB there are 1 089 B, so the
+wave **re-derives that ceiling by spec 05's own method** and commits the arithmetic (NFR-33).
+Raising the number without redoing the derivation is the one thing that clause forbids.
+
+- [ ] 20.1 Promise-based dialogs over `bsModal` (spec 07 **F101–F103**): `confirm`/`prompt`/custom returning a promise that **resolves** with the dialog's answer — a dismissal is an answer, not an error, and exactly one settlement survives any race of dismissals — with focus trapped while open and restored to where it came from, through the F109 primitives rather than a second implementation. Owes the ADR that fixes the surface shape (free functions vs a manager instance) and the new entry's name, both deferred by spec 07 §4 _(route: frontier-reasoning/high — sets-pattern: the promise-wrapper shape later dialogs copy, and it carries the entry decision)_
+- [ ] 20.2 Toast manager over `bsToast` (spec 07 **F104–F105**): a queue with a max-visible cap, dedupe and update-by-id — with what "identical" means part of the contract — plus a `promise()` helper that shows **one** toast and transitions it rather than three that tell the story out of order, passing the caller's settlement through untouched _(route: standard/medium)_
+- [ ] 20.3 Theme management (spec 07 **F106–F107**): `data-bs-theme` get/set/toggle over Bootstrap's own mechanism, `prefers-color-scheme` tracking that follows the system only while the user has expressed no choice, persistence through the F21 storage wrapper, a documented `<head>` snippet that applies a persisted theme **before first paint**, and a toggle control whose accessible name names the state it will move to _(route: standard/medium)_
+- [ ] 20.4 Breakpoint observation (spec 07 **F108**): `matchMedia` over Bootstrap's breakpoint names with a subscribe API and a current-value read, so a component asks once instead of every component re-deriving the same query. Api-floor amendment: `matchMedia` and `MediaQueryList` change events (NFR-34) _(route: standard/medium)_
+- [ ] 20.5 A11y primitives on `/dom` (spec 07 **F109–F110**): a reusable focus trap and focus save/restore **extracted** from the F50 overlay — where a correct implementation already exists and nothing else can reach it — including the empty-root case that turns a trap into a lock; plus a live-region announcer that leaves focus unmoved. F110 closes the gap [ADR-0069](docs/adr/0069-an-order-is-a-permutation-and-the-ceiling-held.md) named: a column moved by F100's keyboard path is announced to nobody today _(route: standard/high — focus and live-region timing are classically bug-prone)_
+- [ ] 20.6 Reduced-motion policy helper on `/dom` (spec 07 **F111**): one query point components consult, on the same subscribe shape as F108. A helper, not a manager — a MotionManager stays rejected (ADR-0046) _(route: fast/low)_
 
 
 ---
@@ -417,6 +430,17 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 | §4 (04) | Logical architecture | 14.1, 15.1, 16.1 | ✅ |
 | §5 (04) | Public interface | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4, 17.7, 17.8, 17.9, 17.13 | ✅ |
 | §6 (04) | Verification & test strategy | 14.1, 14.2, 15.1, 15.2, 16.1, 16.2, 16.3, 16.4, 16.5 | ✅ |
+
+### Spec 07 — application UX: dialogs, notifications, theme & a11y (F101–F111)
+
+| Spec § | Requirement | Roadmap items | Status |
+|--------|-------------|---------------|--------|
+| §1 (07) | Objective & business context | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ⏳ |
+| §2 (07) | Functional requirements F101–F111 | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ⏳ |
+| §3 (07) | Non-functional requirements | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ⏳ |
+| §4 (07) | Logical architecture | 20.1, 20.5 | ⏳ |
+| §5 (07) | Public interface | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ⏳ |
+| §6 (07) | Verification & test strategy | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ⏳ |
 
 ### Spec 05 — browser distribution (F82–F87)
 
