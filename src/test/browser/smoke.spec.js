@@ -2189,3 +2189,123 @@ test.describe('/bootstrap — bsTable column reorder (roadmap 19.7, F100)', () =
     expect(geometry.overlap).toBe(false);
   });
 });
+
+test.describe('/dom — focus primitives and the announcer (roadmap 20.5, F109-F110)', () => {
+  // The half jsdom cannot answer: what the BROWSER's own Tab does. jsdom has no
+  // sequential focus navigation at all, so every wrap in the unit suite is
+  // asserted through the handler; here the key is pressed and the engine decides
+  // where focus goes, which is the only way to know the trap and the platform
+  // agree rather than merely coexist.
+  test.beforeEach(async ({ page }) => {
+    await page.evaluate(() => {
+      const host = document.getElementById('host');
+      host.replaceChildren();
+      host.insertAdjacentHTML(
+        'beforeend',
+        `<button id="before">before</button>
+         <div id="dialog">
+           <button id="one">one</button>
+           <input id="two" />
+           <button id="three" disabled>three</button>
+           <input id="four" />
+         </div>
+         <button id="after">after</button>`,
+      );
+      document.getElementById('before').focus();
+    });
+  });
+
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(() => window.eglRelease?.());
+  });
+
+  const install = (page, options = {}) =>
+    page.evaluate((opts) => {
+      window.eglRelease = window.egl.dom.focusTrap(document.getElementById('dialog'), opts);
+    }, options);
+
+  const focused = (page) => page.evaluate(() => document.activeElement?.id);
+
+  test('Tab cycles inside the trap and never leaves it', async ({ page }) => {
+    await install(page);
+    expect(await focused(page)).toBe('one');
+    await page.keyboard.press('Tab');
+    expect(await focused(page)).toBe('two');
+    // `three` is disabled: the engine skips it, and so does the trap — the two
+    // agreeing on that is the point of asserting it here.
+    //
+    // Form controls only, deliberately. WebKit's default is that **Tab does not
+    // visit links** unless the user turns "press Tab to highlight each item" on,
+    // so a fixture containing an `<a href>` asserts that preference rather than
+    // this trap. The trap still lists the link — the unit suite pins that — and
+    // an engine that never Tabs to it simply never reaches it, with or without a
+    // trap in the way.
+    await page.keyboard.press('Tab');
+    expect(await focused(page)).toBe('four');
+    // The wrap: past the last, back to the first, rather than out to `after`.
+    await page.keyboard.press('Tab');
+    expect(await focused(page)).toBe('one');
+  });
+
+  test('Shift+Tab wraps backwards', async ({ page }) => {
+    await install(page);
+    await page.keyboard.press('Shift+Tab');
+    expect(await focused(page)).toBe('four');
+    await page.keyboard.press('Shift+Tab');
+    expect(await focused(page)).toBe('two');
+  });
+
+  test('release puts focus back where it came from', async ({ page }) => {
+    await install(page);
+    expect(await focused(page)).toBe('one');
+    await page.evaluate(() => window.eglRelease());
+    expect(await focused(page)).toBe('before');
+    // And Tab is the browser's again: from `before` it goes into the dialog in
+    // document order, which is what "not trapped" looks like.
+    await page.keyboard.press('Tab');
+    expect(await focused(page)).toBe('one');
+  });
+
+  test('a root with nothing tabbable holds focus instead of losing it', async ({ page }) => {
+    await page.evaluate(() => {
+      document
+        .getElementById('dialog')
+        .replaceChildren(document.createTextNode('nothing to focus here'));
+      window.eglRelease = window.egl.dom.focusTrap(document.getElementById('dialog'));
+    });
+    expect(await focused(page)).toBe('dialog');
+    await page.keyboard.press('Tab');
+    // The empty-root case in a real engine: focus stays put rather than escaping
+    // to `after`, which is the failure the unit suite can only approximate.
+    expect(await focused(page)).toBe('dialog');
+  });
+
+  test('the announcer is readable, hidden, and moves nothing', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      document.getElementById('before').focus();
+      const region = window.egl.dom.liveRegion();
+      region.announce('Column moved to position 2 of 3');
+      const box = region.element.getBoundingClientRect();
+      const style = getComputedStyle(region.element);
+      const out = {
+        text: region.element.textContent,
+        focused: document.activeElement?.id,
+        // Clipped to a pixel, but NOT display:none or visibility:hidden — either
+        // would take it out of the accessibility tree with the screen, which is
+        // what makes a live region silent.
+        display: style.display,
+        visibility: style.visibility,
+        width: Math.round(box.width),
+        role: region.element.getAttribute('role'),
+      };
+      region.destroy();
+      return out;
+    });
+    expect(result.text).toBe('Column moved to position 2 of 3');
+    expect(result.focused).toBe('before');
+    expect(result.display).not.toBe('none');
+    expect(result.visibility).not.toBe('hidden');
+    expect(result.width).toBeLessThanOrEqual(1);
+    expect(result.role).toBe('status');
+  });
+});

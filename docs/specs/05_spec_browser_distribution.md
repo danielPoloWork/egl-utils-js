@@ -117,6 +117,23 @@ implementation.
   deduplicated single file. When 18.2 lands, the budget is re-pinned to **measured + ≤ 7%**
   (the ADR-0015 practice), and the pinned number amends this clause in that PR. Measured by
   the existing size-limit tooling (§6).
+  - **Re-derived (roadmap 20.5, [ADR-0070](../adr/0070-two-primitives-extracted-and-a-ceiling-recomputed.md)),
+    under spec 07 NFR-33:** the ceiling is **≤ 52 kB**, and the number comes from redoing the
+    derivation above rather than from needing a bigger one. The same method — the sum of the
+    measured entry figures, which double-counts shared chunks and is therefore an upper bound
+    on a deduplicated single file — reads **52 104 B** today against ≈ 39.8 kB at M18: `root`
+    6 103, `/storage` 2 104, `/sanitize` 1 491, `/text` 924, `/net` 770, `/table` 6 861,
+    `/logging` 1 475, `/dom` 7 481, `/bootstrap` 24 518, `/errors` 377. Two waves of surface
+    (M19's F88–F100, M20's F109–F110 so far) are the whole of the difference.
+    - **The clause is an authoring bound, not the gate.** The artifact measures **39 696 B
+      served**, 12 kB under the recomputed ceiling — that gap *is* the deduplication the
+      derivation always assumed, and a clause with slack in it does no per-PR work. What
+      gates growth is the **size-limit row, pinned at measured + ≤ 2%**, which is the split
+      [ADR-0041](../adr/0041-a-peer-looked-up-not-imported.md) already made explicit for the
+      `/bootstrap` entry: a clause sized for the finished thing, a row sized for this PR, two
+      instruments doing different jobs.
+    - Recomputing rather than raising is the condition spec 07 NFR-33 attached, and it is the
+      reason this is written down with its arithmetic instead of as a number.
   - **Amended (roadmap 18.2, [ADR-0059](../adr/0059-one-file-one-global-and-a-budget-repinned.md)):**
     the artifact measures **31 444 B** and the budget is pinned to **33.6 kB** — measured
     **+ 6.9%**, inside the ≤ 7% this clause reserved. Two notes on the metric, because the
