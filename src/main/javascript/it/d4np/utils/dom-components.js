@@ -16,6 +16,7 @@
  */
 
 import { controllerFor, isAbortSignal, isElement, requireDocument } from './dom-helpers.js';
+import { saveFocus } from './dom-a11y.js';
 import { assertAlive } from './lifecycle.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 
@@ -523,7 +524,7 @@ export function loadingOverlay(options, api = 'loadingOverlay') {
   if (focus === null || typeof focus !== 'object') {
     throw new TypeError(`${api}: options.focus must be an object`);
   }
-  const { save: saveFocus = false, root: focusRoot, ...unknownFocus } = focus;
+  const { save: wantsFocusSave = false, root: focusRoot, ...unknownFocus } = focus;
   assertNoUnknownOptions(unknownFocus, `${api}.focus`);
   if (focusRoot !== undefined && !isElement(focusRoot)) {
     throw new TypeError(`${api}: options.focus.root must be an Element`);
@@ -536,7 +537,7 @@ export function loadingOverlay(options, api = 'loadingOverlay') {
   // is otherwise usable with no DOM at all, which is what makes its timing
   // logic testable in Node (NFR-14 as amended in 11.2).
   /** @type {Document | undefined} */
-  const doc = saveFocus ? (focusRoot?.ownerDocument ?? requireDocument(api)) : undefined;
+  const doc = wantsFocusSave ? (focusRoot?.ownerDocument ?? requireDocument(api)) : undefined;
 
   /** @type {'hidden' | 'appearing' | 'shown'} */
   let state = 'hidden';
@@ -546,8 +547,8 @@ export function loadingOverlay(options, api = 'loadingOverlay') {
   let floorElapsed = false;
   let hideRequested = false;
   let destroyed = false;
-  /** @type {Element | undefined} */
-  let savedFocus;
+  /** The F109 restore closure while an overlay is up. @type {(() => void) | undefined} */
+  let restoreFocus;
 
   const clearFloor = () => {
     if (floorTimer !== undefined) {
@@ -589,13 +590,12 @@ export function loadingOverlay(options, api = 'loadingOverlay') {
     }
 
     return runHook(onHide).then(() => {
-      const target = savedFocus;
-      savedFocus = undefined;
-      // Only refocus something still attached: restoring focus to a node the
-      // operation removed would throw, or silently focus a detached element.
-      if (target !== undefined && doc?.contains(target) === true) {
-        /** @type {{ focus?: () => void }} */ (target).focus?.();
-      }
+      // F109's `saveFocus`, not a copy of it. The rule about a target that has
+      // since left the document lives there now, where the dialogs of F101 read
+      // the same one.
+      const restore = restoreFocus;
+      restoreFocus = undefined;
+      restore?.();
     });
   };
 
@@ -615,7 +615,7 @@ export function loadingOverlay(options, api = 'loadingOverlay') {
 
   const beginAppear = () => {
     state = 'appearing';
-    savedFocus = doc?.activeElement ?? undefined;
+    restoreFocus = doc === undefined ? undefined : saveFocus({ document: doc });
     runHook(onShow).then(onAppeared);
   };
 
@@ -669,7 +669,7 @@ export function loadingOverlay(options, api = 'loadingOverlay') {
     // Teardown is not cosmetic: it bypasses the minimum-visible floor rather
     // than leaving an overlay up for a component that no longer exists.
     if (state !== 'hidden') performHide();
-    savedFocus = undefined;
+    restoreFocus = undefined;
   };
 
   signal?.addEventListener('abort', destroy, { once: true });

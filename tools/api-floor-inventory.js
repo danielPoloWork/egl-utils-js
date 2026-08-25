@@ -278,6 +278,23 @@ export const MEMBERS = {
     guarded:
       'same presence check; read so a write preserves the fragment, which is a different page concern than the table state and must survive it',
   },
+  // --- Focus, for the F109 primitives (spec 07/NFR-34, roadmap 20.5) ---
+  //
+  // Read as `doc.activeElement` off a local that holds the resolved document, so
+  // the scanner cannot see it — the same shape as every history and location entry
+  // above, and declared for the same reason: check 2, the BCD floor comparison, is
+  // the question that matters for a read this load-bearing.
+  //
+  // Safari 7, and the context guard is the Node half: `/dom` is an entry a
+  // server-side render legitimately loads, and neither the focus trap nor
+  // `saveFocus` is reached at import time.
+  'document.activeElement': {
+    guardReason: 'context',
+    bcd: 'api.Document.activeElement',
+    guarded:
+      'reached only from focusTrap and saveFocus, both of which resolve their document first — the root node own ownerDocument for the trap, options.document or requireDocument() for the save — so a host with no DOM fails by contract (DomContractError) rather than on an undefined read (ADR-0028). The value is nullable by specification and every read handles null: nothing focused is a legal state, not an error',
+  },
+
   // --- Pointer Events and pointer capture (spec 06 F99/NFR-28, roadmap 19.6) ---
   //
   // The column-resize grip. Every one of these is reached on a node **this

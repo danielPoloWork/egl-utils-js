@@ -106,14 +106,14 @@ export const TRANSFER_ROUTES = {
   dom: {
     file: 'dist/esm/dom.js',
     requests: 8,
-    measured: 13955,
-    budget: 15000,
+    measured: 14971,
+    budget: 15900,
     why: '+2683 B and an eighth request for bindTableHistory (spec 06 F93, roadmap 19.2, ADR-0063) and the F92 pair it composes. The largest single-item growth this route has taken; the per-function size-limit rows are what bound what an individual import costs, and they did not move.',
   },
   bootstrap: {
     file: 'dist/esm/bootstrap.js',
     requests: 8,
-    measured: 40677,
+    measured: 41671,
     budget: 43000,
     why:
       'The whole catalogue over 8 requests — still MORE than the single-file artifact over 1, so a page needing ' +
@@ -130,12 +130,12 @@ export const TRANSFER_ROUTES = {
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 38943,
-    budget: 39000,
+    measured: 39696,
+    budget: 40400,
     why:
-      'Re-pinned for 19.9 (+822 B for the F100 column reorder in 19.7, +92 B for the BUG-0005 filter-row spacer), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
-      "The budget stays at 39000 B rather than moving to measured + <= 7%: that practice (ADR-0015) assumes headroom above the measurement, and 7% here is 41620 B — above NFR-22's 40 kB ceiling, which binds first. Recorded as inapplicable rather than quietly stretched, the second wave running. " +
-      'ADR-0068 left 19.7 with 1924 B and said the answer, if reorder did not fit, was a decision with arithmetic behind it rather than a silent breach. **It fits**: reorder cost 822 B served, the 19.9 defect fix a further 92 B, and 1010 B remain under the ceiling — so NFR-22 is not amended. ' +
-      "M19 is complete with 19.9, so this row is settled for the wave. Worth noting what it took to settle it: even a one-cell defect fix cost 92 B against a ceiling this close, which is the concrete form of the warning below. The tighter constraint is now the sibling one — ADR-0041's 25 kB /bootstrap entry clause has 609 B left, and M20 puts dialogs, toasts and a theme manager on that entry. ADR-0069.",
+      'Re-pinned for 20.5 (+753 B for the F109 focus primitives and the F110 announcer), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
+      "20.5 is where two waves of pressure resolved. NFR-22's ceiling is RE-DERIVED to 52 kB rather than raised, by spec 05's own method — the sum of the measured entry figures, an upper bound on a deduplicated single file, which reads 52104 B today against 39.8 kB at M18. That recomputation, and not a bigger number, is the condition spec 07 NFR-33 attached (ADR-0070). " +
+      'The budget here stays tight on purpose: 40400 B is measured + 1.8%, not the ADR-0015 + 7%. The clause is an authoring bound with 12 kB of slack in it — that gap IS the deduplication the derivation always assumed — and a clause with slack does no per-PR work, while this row does. Two instruments, different jobs: the split ADR-0041 already made for the /bootstrap entry. ' +
+      "The sibling constraint is unchanged and still the tighter one for M20's remaining items: ADR-0041's 25 kB /bootstrap clause has 482 B left, and 20.1-20.4 land on a new entry for exactly that reason (spec 07 NFR-32).",
   },
 };

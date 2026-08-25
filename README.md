@@ -848,6 +848,43 @@ detach(); //  height is released before measuring, and detach restores the origi
 touches no DOM — import it from the root instead (see Web, above); the ADR-0052 binding
 here is kept only for compatibility.
 
+### Accessibility primitives (`egl-utils-js/dom`)
+
+The two things every dialog needs, and which most codebases write once per dialog
+([ADR-0070](docs/adr/0070-two-primitives-extracted-and-a-ceiling-recomputed.md)):
+
+```js
+import { focusTrap, liveRegion, saveFocus } from 'egl-utils-js/dom';
+
+const release = focusTrap(dialog); // Tab stays inside; focus is restored on release
+release();
+
+const announcer = liveRegion();
+announcer.announce(`Column moved to position ${index + 1} of ${total}`);
+```
+
+**The trap is scoped to Tab, deliberately.** It corrects the two cases the platform gets wrong
+— the edge the key is about to leave through, and focus sitting outside the region — and leaves
+everything in between to the browser's own tab order. It does *not* install a document-level
+`focusin` guard: fighting focus moved by a screen reader's virtual cursor is how a trap becomes
+something a user cannot escape.
+
+Worth knowing:
+
+- **A root with nothing focusable holds focus itself**, under a temporary `tabindex="-1"` that
+  is removed on release. Tab is held rather than cycled, because there is nothing to cycle to.
+- **`initialFocus`** picks what to focus first (default: the first tabbable element); `false`
+  moves nothing. **`restore: false`** leaves focus where the trap ends.
+- **What counts as tabbable is decided without reading layout** — `disabled`, `hidden`,
+  `aria-hidden` and a negative `tabindex`, all free from the DOM. An element hidden by CSS
+  alone is yours to keep out of the root; a forced layout per Tab press is not a price a
+  keyboard user should pay.
+- **`saveFocus()` is the trap's restore half on its own**, for a component that moves focus
+  without trapping it — `loadingOverlay` uses exactly this.
+- **`liveRegion` never moves focus.** That is the point: it is what lets a keyboard handler say
+  what it did. Announcing the same message twice really announces it twice, which needs a
+  trick and gets one. Politeness is fixed at construction — for both, make two announcers.
+
 ### UI components (`egl-utils-js/dom`)
 
 Instance-based and framework-agnostic. Each alert owns its nodes, its timer, and its close
@@ -1617,7 +1654,7 @@ inside their declared ranges — keeping those patched is yours. Full detail:
 | 17 | v1.0.0 readiness & the first stable release | ✅ done |
 | 18 | Browser distribution | ✅ done |
 | 19 | Table data & bsTable extras | ✅ done |
-| 20 | Application UX utilities | ⏳ planned |
+| 20 | Application UX utilities | 🚧 in progress |
 | 21 | Form engine | ⏳ planned |
 
 

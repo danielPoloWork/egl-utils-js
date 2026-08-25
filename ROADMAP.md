@@ -354,7 +354,7 @@ Raising the number without redoing the derivation is the one thing that clause f
 - [ ] 20.2 Toast manager over `bsToast` (spec 07 **F104–F105**): a queue with a max-visible cap, dedupe and update-by-id — with what "identical" means part of the contract — plus a `promise()` helper that shows **one** toast and transitions it rather than three that tell the story out of order, passing the caller's settlement through untouched _(route: standard/medium)_
 - [ ] 20.3 Theme management (spec 07 **F106–F107**): `data-bs-theme` get/set/toggle over Bootstrap's own mechanism, `prefers-color-scheme` tracking that follows the system only while the user has expressed no choice, persistence through the F21 storage wrapper, a documented `<head>` snippet that applies a persisted theme **before first paint**, and a toggle control whose accessible name names the state it will move to _(route: standard/medium)_
 - [ ] 20.4 Breakpoint observation (spec 07 **F108**): `matchMedia` over Bootstrap's breakpoint names with a subscribe API and a current-value read, so a component asks once instead of every component re-deriving the same query. Api-floor amendment: `matchMedia` and `MediaQueryList` change events (NFR-34) _(route: standard/medium)_
-- [ ] 20.5 A11y primitives on `/dom` (spec 07 **F109–F110**): a reusable focus trap and focus save/restore **extracted** from the F50 overlay — where a correct implementation already exists and nothing else can reach it — including the empty-root case that turns a trap into a lock; plus a live-region announcer that leaves focus unmoved. F110 closes the gap [ADR-0069](docs/adr/0069-an-order-is-a-permutation-and-the-ceiling-held.md) named: a column moved by F100's keyboard path is announced to nobody today _(route: standard/high — focus and live-region timing are classically bug-prone)_
+- [x] 20.5 A11y primitives on `/dom` (spec 07 **F109–F110**): a reusable focus trap and focus save/restore **extracted** from the F50 overlay — where a correct implementation already exists and nothing else can reach it — including the empty-root case that turns a trap into a lock; plus a live-region announcer that leaves focus unmoved. F110 closes the gap [ADR-0069](docs/adr/0069-an-order-is-a-permutation-and-the-ceiling-held.md) named: a column moved by F100's keyboard path is announced to nobody today _(route: standard/high — focus and live-region timing are classically bug-prone)_ — `focusTrap`, `saveFocus` and `liveRegion`, per [ADR-0070](docs/adr/0070-two-primitives-extracted-and-a-ceiling-recomputed.md). **`saveFocus` is the extraction and the trap is new**: the overlay had focus save/restore and never had a trap, so the honest half is lifted out and `loadingOverlay` now calls it — one implementation of "put focus back where it was", three callers. The trap is **scoped to Tab and says so**, with no document-level `focusin` guard, because a primitive that fights focus moved by assistive technology is the wrong primitive; everything between the edges is left to the platform's own tab order. No layout is read to decide tabbability — a forced layout per Tab press is the cost F98 refused. An empty root focuses **itself** under a temporary `tabindex="-1"`, which is the case that turns a trap into a lock. **NFR-22 is re-derived, not raised**: spec 05's own method (the sum of the measured entry figures) reads 52 104 B today against ≈39.8 kB at M18, so the clause becomes 52 kB while the size-limit row stays pinned at measured + 2% and remains the gate
 - [ ] 20.6 Reduced-motion policy helper on `/dom` (spec 07 **F111**): one query point components consult, on the same subscribe shape as F108. A helper, not a manager — a MotionManager stays rejected (ADR-0046) _(route: fast/low)_
 
 
@@ -435,12 +435,12 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 (07) | Objective & business context | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ⏳ |
-| §2 (07) | Functional requirements F101–F111 | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ⏳ |
-| §3 (07) | Non-functional requirements | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ⏳ |
+| §1 (07) | Objective & business context | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
+| §2 (07) | Functional requirements F101–F111 | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
+| §3 (07) | Non-functional requirements | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
 | §4 (07) | Logical architecture | 20.1, 20.5 | ⏳ |
-| §5 (07) | Public interface | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ⏳ |
-| §6 (07) | Verification & test strategy | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ⏳ |
+| §5 (07) | Public interface | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
+| §6 (07) | Verification & test strategy | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
 
 ### Spec 05 — browser distribution (F82–F87)
 

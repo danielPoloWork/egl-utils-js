@@ -85,3 +85,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0067](0067-five-declarations-and-no-scroll-listener.md) | Five declarations and no scroll listener | Accepted |
 | [0068](0068-a-colgroup-a-separator-and-a-ceiling-in-sight.md) | A colgroup, a separator, and a ceiling now in sight | Accepted |
 | [0069](0069-an-order-is-a-permutation-and-the-ceiling-held.md) | An order is a permutation, a drag is a displacement — and the ceiling held | Accepted |
+| [0070](0070-two-primitives-extracted-and-a-ceiling-recomputed.md) | Two primitives extracted, a trap that knows what it does not do, and a ceiling recomputed rather than raised | Accepted |

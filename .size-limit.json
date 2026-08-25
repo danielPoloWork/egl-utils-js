@@ -131,9 +131,9 @@
     "limit": "850 B"
   },
   {
-    "name": "/dom - full import (NFR-12: measured 6724 B; +276 B for copyToClipboard, spec 06 F97 / ADR-0066. Past ADR-0035's 5 kB clause since 19.2 and knowingly so: NFR-30 as corrected in 19.1 moves the rows per PR and restates the spec-03 prose clause once, at wave end)",
+    "name": "/dom - full import (NFR-12: measured 7481 B; +757 B in 20.5 for the F109 focus primitives and the F110 announcer. Past ADR-0035's 5 kB clause since 19.2 and knowingly so: NFR-30 as corrected in 19.1 moves the rows per PR and restates the spec-03 prose clause once, at wave end)",
     "path": "dist/esm/dom.js",
-    "limit": "7.15 kB"
+    "limit": "7.95 kB"
   },
   {
     "name": "single: bindElements (NFR-12 <= 1 kB / NFR-02)",
@@ -208,10 +208,10 @@
     "limit": "2.3 kB"
   },
   {
-    "name": "single: loadingOverlay (NFR-12 component row: measured 1063 B, clause 1.25 kB; +105 B for the ADR-0049 guards and the injectable api name)",
+    "name": "single: loadingOverlay (NFR-12 component row: measured 1127 B, clause 1.25 kB; +105 B for the ADR-0049 guards, then +64 B in 20.5 when it dropped its own focus save/restore for F109's saveFocus. That figure is the price of the extraction and it is paid on purpose: two copies of focus-restore logic drift, and only one of them gets fixed)",
     "path": "dist/esm/dom.js",
     "import": "{ loadingOverlay }",
-    "limit": "1.1 kB"
+    "limit": "1.2 kB"
   },
   {
     "name": "single: bindTableHistory (2.05 kB - NFR-12 composing-facade row, ADR-0063: measured 1920 B, which includes the F92 pair it composes. Named and measured, per the ADR-0058 rule for this clause)",
@@ -333,10 +333,10 @@
     "limit": "1.31 kB"
   },
   {
-    "name": "single: bsLoadingOverlay (2.73 kB - NFR-17 composing row amended from 1.75 kB by ADR-0041; measured 2550 B, of which loadingOverlay 958 B + bsSpinner 778 B are composed parts)",
+    "name": "single: bsLoadingOverlay (2.85 kB - NFR-17 composing row amended from 1.75 kB by ADR-0041, again in 20.5: measured 2758 B, of which loadingOverlay 1127 B + bsSpinner 778 B are composed parts. It moved because its composed part did: loadingOverlay 1063 -> 1127 B for the F109 saveFocus it now calls instead of keeping its own copy - the composed row moves because the part did, which is the accounting ADR-0041 asked for)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsLoadingOverlay }",
-    "limit": "2.73 kB"
+    "limit": "2.85 kB"
   },
   {
     "name": "single: bsCollapse (1.48 kB - NFR-17 wiring row amended from 1.25 kB by ADR-0042; measured 1380 B, the toggler's aria sync and id minting being what a bare wrapper does not carry)",
@@ -632,8 +632,8 @@
     "limit": "1.35 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 38897 B, re-pinned for 19.9. **The trajectory, and the end of it**: 31444 B at M18, 33982 (19.2), 35671 (19.3), 36541 (19.4), 36797 (19.5), 38020 (19.6), 38786 (19.7), 38897 (19.9) against NFR-22's 40 kB authoring ceiling. ADR-0068 left 19.7 with ~1.9 kB and said the answer, if it did not fit, was a decision with arithmetic rather than a silent breach. It fits: 19.7 cost 766 B here and 19.9's defect fix a further 111 B, so the served figure lands at 38990 B - **1010 B under the ceiling, which is therefore NOT amended**. The limit is 39.5 kB rather than 39 kB because the previous pin left the gate 10 B of room, which is a gate that fails on the next comment; it stays deliberately below the spec ceiling so a breach is caught before the spec is violated, the same shape as the /bootstrap row under ADR-0041 (ADR-0069)",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 39609 B, re-pinned for 20.5. **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5). NFR-22's ceiling is RE-DERIVED to 52 kB in this PR, not raised: spec 05 derived it as the sum of the measured entry figures (an upper bound on a deduplicated single file), that sum reads 52104 B today against 39.8 kB at M18, and spec 07 NFR-33 required the recomputation rather than a bigger number (ADR-0070). THIS ROW IS STILL THE GATE: pinned at measured + 2%, because a clause with 12 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "39.5 kB"
+    "limit": "40.4 kB"
   }
 ]

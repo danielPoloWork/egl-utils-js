@@ -42,6 +42,11 @@ export { bindTableControls } from './dom-table.js';
 // of the same feature — state ↔ query string — is on `egl-utils-js/table`.
 export { bindTableHistory } from './dom-history.js';
 
+// Accessibility primitives (spec 07 §2 items F109-F110, ADR-0070). Nothing here
+// needs a component library, which is why they are on this entry rather than
+// behind the Bootstrap-flavoured one (spec 07 §4).
+export { focusTrap, liveRegion, saveFocus } from './dom-a11y.js';
+
 // The clipboard write (spec 06 §2 item F97, ADR-0066). The text it moves is built
 // by `tableCsv` on `egl-utils-js/table`, which needs no DOM at all.
 export { copyToClipboard } from './dom-clipboard.js';
