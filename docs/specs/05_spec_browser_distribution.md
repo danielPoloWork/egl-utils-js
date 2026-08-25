@@ -146,6 +146,20 @@ implementation.
     derivation predicted is visible, and larger than predicted: the ten entry rows now sum to
     **41 847 B** (the ≈ 39.8 kB above was the figure when this wave was planned, before the
     M17 items moved several entries), and the single file is **25% under** that sum.
+  - **Re-derived again (roadmap 20.1, [ADR-0071](../adr/0071-a-manager-not-three-globals-and-a-dismissal-is-an-answer.md)),
+    under spec 07 NFR-33:** the ceiling is **≤ 57 kB**. The derivation has an **eleventh
+    input** — the new `egl-utils-js/ui` entry spec 07 NFR-32 required — and the same method
+    reads **57 278 B**: `root` 6 103, `/storage` 2 104, `/sanitize` 1 491, `/text` 924,
+    `/net` 770, `/table` 6 861, `/logging` 1 475, `/dom` 7 483, `/bootstrap` 24 527,
+    `/errors` 377, `/ui` 5 163. The new entry is 5 163 B of it; the remaining 11 B is
+    `/dom` and `/bootstrap` moving by 2 B and 9 B as esbuild re-split the shared chunks
+    around an eleventh consumer of them — measured, not assumed, and the reason the sum is
+    recomputed from the build rather than added to on paper.
+    - **The gate is still the row, not the clause.** The artifact measures **41 063 B
+      served** against the recomputed 57 kB, so the slack widened rather than closed; the
+      size-limit row is re-pinned to **42 kB**, measured + 2.1%, holding ADR-0059's rule
+      that the tight row does the per-PR work.
+
 - NFR-23 **Bundler-consumer non-regression (hard):** the `exports` map's shape and
   resolution semantics are untouched by this wave; `sideEffects: false` continues to hold
   for every module including the new artifact's source; runtime dependencies stay **zero**

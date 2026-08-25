@@ -112,6 +112,16 @@
         "default": "./dist/cjs/bootstrap.cjs"
       }
     },
+    "./ui": {
+      "import": {
+        "types": "./dist/esm/ui.d.ts",
+        "default": "./dist/esm/ui.js"
+      },
+      "require": {
+        "types": "./dist/cjs/ui.d.cts",
+        "default": "./dist/cjs/ui.cjs"
+      }
+    },
     "./logging": {
       "import": {
         "types": "./dist/esm/logging.d.ts",

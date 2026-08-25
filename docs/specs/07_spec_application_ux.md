@@ -52,7 +52,7 @@ the rule they follow from.
 
 - F101 **Promise-based dialogs.** `confirm` and `prompt` equivalents, plus a general form
   taking caller-supplied content, each returning a **promise that resolves with the answer**.
-  Built on the F73 modal wrapper, so Bootstrap's own open/close behaviour, backdrop and
+  Built on the F70 modal wrapper, so Bootstrap's own open/close behaviour, backdrop and
   animation are inherited rather than reimplemented.
 - F102 **A dismissal is an answer, not an error.** Escape, the backdrop, the close control and
   the cancel control all **resolve** — with the negative result for a confirm, with `null` for
@@ -167,7 +167,7 @@ F111 are a live region and a media query. Putting them behind a Bootstrap-flavou
 would make a consumer take a component catalogue to announce a message.
 
 **Composition, not reimplementation** — the rule ADR-0038 and ADR-0040 established and this
-wave inherits. F101 is the F73 modal wrapper with a promise around it; F104 is the F69 toast
+wave inherits. F101 is the F70 modal wrapper with a promise around it; F104 is the F69 toast
 manager with a queue in front of it; F103 is F109 called twice. Where a capability already
 exists inside something else, this wave *extracts* it rather than writing a second one, and
 F109 is the named case: the correct focus trap is in the overlay today and unreachable.

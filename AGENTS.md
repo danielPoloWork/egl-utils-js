@@ -133,7 +133,7 @@ build, chore, ci}`. Keep the description under ~40 characters; favor the *what*.
 
 - One logical change per commit; imperative subject.
 - The body is for motivation, trade-offs, and links to ADRs.
-- Scopes for this repo: `api` `async` `events` `data` `validation` `web` `crypto` `storage` `sanitize` `errors` `diagnostics` `text` `net` `table` `logging` `dom` `bootstrap` `build` `tests` `docs` `ci` .
+- Scopes for this repo: `api` `async` `events` `data` `validation` `web` `crypto` `storage` `sanitize` `errors` `diagnostics` `text` `net` `table` `logging` `dom` `bootstrap` `ui` `build` `tests` `docs` `ci` .
 
 ### 6.4 Pull Requests
 

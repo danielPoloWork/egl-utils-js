@@ -105,16 +105,16 @@ export const TRANSFER_ROUTES = {
   logging: { file: 'dist/esm/logging.js', requests: 3, measured: 3063, budget: 3270 },
   dom: {
     file: 'dist/esm/dom.js',
-    requests: 8,
-    measured: 14971,
-    budget: 15900,
-    why: '+2683 B and an eighth request for bindTableHistory (spec 06 F93, roadmap 19.2, ADR-0063) and the F92 pair it composes. The largest single-item growth this route has taken; the per-function size-limit rows are what bound what an individual import costs, and they did not move.',
+    requests: 9,
+    measured: 15495,
+    budget: 16400,
+    why: '+524 B and a NINTH request in 20.1, for a wave that added nothing to this entry: the new /ui entry became an eleventh consumer of the shared chunks and esbuild re-split them, so a deep-ESM /dom page now fetches one more file. This is the cost F87 exists to keep visible - a bundler consumer sees 2 B of it (the size-limit row), a static page sees 524 B and a round trip. Before 20.1: +2683 B and an eighth request for bindTableHistory (spec 06 F93, roadmap 19.2, ADR-0063) and the F92 pair it composes. The largest single-item growth this route has taken; the per-function size-limit rows are what bound what an individual import costs, and they did not move.',
   },
   bootstrap: {
     file: 'dist/esm/bootstrap.js',
-    requests: 8,
-    measured: 41671,
-    budget: 43000,
+    requests: 10,
+    measured: 44278,
+    budget: 47000,
     why:
       'The whole catalogue over 8 requests — still MORE than the single-file artifact over 1, so a page needing ' +
       '/bootstrap should take the artifact. 19.3 is the first M19 item to grow it for a feature it actually ' +
@@ -122,20 +122,38 @@ export const TRANSFER_ROUTES = {
       'bsTable pulls the shared table chunk and that chunk carries remotePipeline and the F92 pair too. A bundler ' +
       'shakes those away; this route downloads whole files, which is exactly the cost F87 exists to keep visible ' +
       'instead of silent. ' +
-      'Re-pinned for 19.7 at measured + 6%, the ordinary ADR-0015 practice — which applies here and does NOT apply ' +
-      'to the artifact row below, because this route answers to no spec ceiling and that one answers to NFR-22.',
+      'Re-pinned for 20.1 at measured + 6.1%, the ordinary ADR-0015 practice — which applies here and does NOT apply ' +
+      'to the artifact row below, because this route answers to no spec ceiling and that one answers to NFR-22. ' +
+      '20.1 is the largest movement this route has ever taken for a wave that changed NONE of its source: +2607 B and ' +
+      'TWO more requests, because the new /ui entry re-split the shared chunks this route downloads whole. The advice ' +
+      'above therefore holds harder than before — a page needing /bootstrap should take the artifact, which is now ' +
+      '3 kB smaller over 1 request than this route is over 10.',
+  },
+
+  ui: {
+    file: 'dist/esm/ui.js',
+    requests: 6,
+    measured: 15709,
+    budget: 16800,
+    why:
+      'The application-UX entry (spec 07 NFR-32). Three times its 5 163 B size-limit row, and the gap is the point ' +
+      'of this file: a bundler consumer importing `createDialogs` ships the tree-shaken 5 kB, while a static page ' +
+      'downloads ui.js plus the five chunks it imports whole — the F70 modal wrapper, the F55/F56 buttons, the F109 ' +
+      'focus primitives and the builder contract underneath them. Composition is free for the bundler consumer and ' +
+      'billed by the file here.',
   },
 
   // --- The artifact route (F83) --------------------------------------------
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 39696,
-    budget: 40400,
+    measured: 41063,
+    budget: 42000,
     why:
-      'Re-pinned for 20.5 (+753 B for the F109 focus primitives and the F110 announcer), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
+      'Re-pinned for 20.1 (+1367 B for the /ui entry: the F101-F103 dialogs and the module that composes them), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
       "20.5 is where two waves of pressure resolved. NFR-22's ceiling is RE-DERIVED to 52 kB rather than raised, by spec 05's own method — the sum of the measured entry figures, an upper bound on a deduplicated single file, which reads 52104 B today against 39.8 kB at M18. That recomputation, and not a bigger number, is the condition spec 07 NFR-33 attached (ADR-0070). " +
       'The budget here stays tight on purpose: 40400 B is measured + 1.8%, not the ADR-0015 + 7%. The clause is an authoring bound with 12 kB of slack in it — that gap IS the deduplication the derivation always assumed — and a clause with slack does no per-PR work, while this row does. Two instruments, different jobs: the split ADR-0041 already made for the /bootstrap entry. ' +
-      "The sibling constraint is unchanged and still the tighter one for M20's remaining items: ADR-0041's 25 kB /bootstrap clause has 482 B left, and 20.1-20.4 land on a new entry for exactly that reason (spec 07 NFR-32).",
+      '20.1 recomputes the clause a second time, by the same method and with an ELEVENTH input — the /ui entry itself — reading 57278 B, so NFR-22 becomes 57 kB and this row moves to 42 kB (measured + 2.3%). ' +
+      "The sibling constraint is unchanged and still the tighter one for M20's remaining items: ADR-0041's 25 kB /bootstrap clause has 473 B left after 20.1 spent 9 B of it on a chunk re-split, and 20.2-20.4 land on the new entry for exactly the reason 20.1 did (spec 07 NFR-32).",
   },
 };

@@ -9,10 +9,10 @@
  * npm — and reads as the single global `egl`.
  *
  * **The namespace is composed by re-export, never by hand.** An object literal
- * listing 110 exports would be correct exactly once: the next export added to
+ * listing every export would be correct exactly once: the next export added to
  * an entry would be missing from the artifact, and nothing would say so. `export
  * *` cannot drift, and the packaging gate
- * (`tools/assert-global-artifact.mjs`) proves it against the ten entries rather
+ * (`tools/assert-global-artifact.mjs`) proves it against the eleven entries rather
  * than trusting it.
  *
  * **Nothing here assigns anything to a global.** The `var egl = …` wrapper is
@@ -49,3 +49,4 @@ export * as table from './table.js';
 export * as logging from './logging.js';
 export * as dom from './dom.js';
 export * as bootstrap from './bootstrap.js';
+export * as ui from './ui.js';

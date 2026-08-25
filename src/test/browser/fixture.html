@@ -39,7 +39,7 @@
       // surfaces as a readable assertion instead of a blank page.
       window.__eglReady = (async () => {
         try {
-          const [root, storage, sanitize, errors, logging, table, dom, bootstrap] =
+          const [root, storage, sanitize, errors, logging, table, dom, bootstrap, ui] =
             await Promise.all([
               import('/dist/esm/index.js'),
               import('/dist/esm/storage.js'),
@@ -55,8 +55,13 @@
               // import resolves with no import-map entry is itself the NFR-18
               // assertion.
               import('/dist/esm/bootstrap.js'),
+              // The application-UX entry (spec 07). It composes /bootstrap and
+              // /dom internals, so its import graph is the widest on this page —
+              // and it resolves with no import map either, which is the same
+              // NFR-18 assertion one entry further out.
+              import('/dist/esm/ui.js'),
             ]);
-          window.egl = { root, storage, sanitize, errors, logging, table, dom, bootstrap };
+          window.egl = { root, storage, sanitize, errors, logging, table, dom, bootstrap, ui };
           return { ok: true };
         } catch (error) {
           return { ok: false, message: String(error && error.message ? error.message : error) };

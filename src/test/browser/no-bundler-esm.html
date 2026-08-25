@@ -35,14 +35,19 @@
       // page silently going blank.
       window.__eglEsm = (async () => {
         try {
-          const [root, text, table, bootstrap] = await Promise.all([
+          const [root, text, table, bootstrap, ui] = await Promise.all([
             import('/dist/esm/index.js'),
             import('/dist/esm/text.js'),
             import('/dist/esm/table.js'),
             import('/dist/esm/bootstrap.js'),
+            // The eleventh entry (spec 07 NFR-32). It composes /bootstrap and
+            // /dom internals, so it is the entry most likely to break on a page
+            // with no import map: everything it needs has to resolve by relative
+            // chunk path, and nothing may reach for a bare specifier.
+            import('/dist/esm/ui.js'),
           ]);
-          window.__eglModules = { root, text, table, bootstrap };
-          return { ok: true, entries: ['root', 'text', 'table', 'bootstrap'] };
+          window.__eglModules = { root, text, table, bootstrap, ui };
+          return { ok: true, entries: ['root', 'text', 'table', 'bootstrap', 'ui'] };
         } catch (error) {
           return {
             ok: false,

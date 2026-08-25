@@ -15,6 +15,7 @@ const entry = {
   logging: 'src/main/javascript/it/d4np/utils/logging.js',
   dom: 'src/main/javascript/it/d4np/utils/dom.js',
   bootstrap: 'src/main/javascript/it/d4np/utils/bootstrap.js',
+  ui: 'src/main/javascript/it/d4np/utils/ui.js',
 };
 
 const shared = {
