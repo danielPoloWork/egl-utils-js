@@ -119,19 +119,19 @@
     "limit": "575 B"
   },
   {
-    "name": "single: tableSelection (spec 06 F94: measured 1433 B \u2014 a Set of keys, an emitter and the page/off-page arithmetic. The whole model, and the figure a /table consumer pays for selection without bsTable)",
+    "name": "single: tableSelection (spec 06 F94: measured 1433 B — a Set of keys, an emitter and the page/off-page arithmetic. The whole model, and the figure a /table consumer pays for selection without bsTable)",
     "path": "dist/esm/table.js",
     "import": "{ tableSelection }",
     "limit": "1.53 kB"
   },
   {
-    "name": "single: tableCsv (spec 06 F96: measured 796 B \u2014 the RFC 4180 grammar and the formula-injection guard. What a consumer pays for an export, with no DOM anywhere in it)",
+    "name": "single: tableCsv (spec 06 F96: measured 796 B — the RFC 4180 grammar and the formula-injection guard. What a consumer pays for an export, with no DOM anywhere in it)",
     "path": "dist/esm/table.js",
     "import": "{ tableCsv }",
     "limit": "850 B"
   },
   {
-    "name": "/dom - full import (NFR-12: measured 7774 B, +291 B in 20.6 for the F111 reduced-motion helper. Small on purpose: the helper is under 300 B of its own, kept there by NOT reaching for `bootstrap-elements.js`'s `assertPlainObject` for one validation check - that import alone cost this entry 4 kB served on the deep-ESM route before it was removed, which is what NFR-02 exists to catch. Limit 8.3 kB, measured + 6.8%)",
+    "name": "/dom - full import (NFR-12: measured 7882 B, +108 B in 21.1 for the F113 `getValue` read primitive - the twin `setValue` never had (ADR-0077). Small on purpose, and it stays that way because the form ENGINE went to /forms while only the single-element read came here. Limit 8.3 kB unchanged, now measured + 5.3%: a ceiling that still holds is not re-pinned upward for the sake of the formula)",
     "path": "dist/esm/dom.js",
     "limit": "8.3 kB"
   },
@@ -220,13 +220,13 @@
     "limit": "2.05 kB"
   },
   {
-    "name": "single: copyToClipboard (spec 06 F97: measured 477 B \u2014 a permission-gated write and four classified refusals. Most of it is the classification, which is the whole requirement)",
+    "name": "single: copyToClipboard (spec 06 F97: measured 477 B — a permission-gated write and four classified refusals. Most of it is the classification, which is the whole requirement)",
     "path": "dist/esm/dom.js",
     "import": "{ copyToClipboard }",
     "limit": "510 B"
   },
   {
-    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header, the F99 column resize and the F100 reorder - measured 24527 B. Limit 24.9 kB, and NOT measured+7%: ADR-0041\u2019s 25 kB entry clause binds first, and a row above its own clause is a gate that cannot fail. **473 B remain under that clause.** 20.1 cost this entry 9 B without touching one line of its source - esbuild re-split the shared chunks around the new /ui entry - which is why the figure is re-read from the build on every wave rather than carried forward in prose. (The 24406 B this row quoted before 20.1 was already stale by 112 B: 20.5 recorded the true 24518 B in the artifact row and not here.)",
+    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header, the F99 column resize and the F100 reorder - measured 24495 B. Limit 24.9 kB, and NOT measured+7%: ADR-0041's 25 kB entry clause binds first, and a row above its own clause is a gate that cannot fail. **505 B remain under that clause** - 21.1 GAVE this entry 32 B back without touching a line of it, because a twelfth entry made esbuild re-split the shared chunks in its favour this time. The figure is re-read from the build on every wave for exactly that reason: it moves for causes that are nowhere in this entry (it was 24527 B at 20.6, 24518 B at 20.5, 24406 B before 20.1))",
     "path": "dist/esm/bootstrap.js",
     "limit": "24.9 kB"
   },
@@ -632,9 +632,20 @@
     "limit": "1.35 kB"
   },
   {
-    "name": "/ui - full import (spec 07 NFR-32: measured 9529 B - down 38 B from 20.4's reading as the shared chunks re-split around 20.6's /dom change, not because anything on this entry moved. Limit 10.2 kB, measured + 7.0%. Two per-function rows: `themeSnippet` (imports nothing) and `createBreakpoints` (NFR-02 as a number))",
+    "name": "/ui - full import (spec 07 NFR-32: measured 9537 B - up 8 B in 21.1 as the chunks re-split around the new /forms entry, not because anything on this entry moved. Limit 10.2 kB unchanged, now measured + 7.0%. Two per-function rows: `themeSnippet` (imports nothing) and `createBreakpoints` (NFR-02 as a number))",
     "path": "dist/esm/ui.js",
     "limit": "10.2 kB"
+  },
+  {
+    "name": "/forms - full import (spec 08 NFR-43: measured 1840 B for F112-F115, the whole entry at 21.1. Limit 1.95 kB, measured + 6.0%. No per-function row below it, deliberately: the entry has exactly one export, so a `single: createForm` row would measure the same file and a gate that duplicates another gate does no work. It gets one when 21.2 puts a second export here, which is when NFR-02 has something to prove)",
+    "path": "dist/esm/forms.js",
+    "limit": "1.95 kB"
+  },
+  {
+    "name": "single: getValue (NFR-01 <= 1 kB / NFR-02: measured 280 B out of a 7882 B entry - 3.6% of it. The read half of F45 (spec 08 F113) lands on /dom rather than inside the form engine, and this row is the reason that is affordable: a page that wants to read one control pays 280 B, not the 1840 B of /forms)",
+    "path": "dist/esm/dom.js",
+    "import": "{ getValue }",
+    "limit": "1 kB"
   },
   {
     "name": "single: themeSnippet (spec 07 F107: measured 421 B, on its own because it is the only export on /ui that reaches NO platform API and imports nothing - it returns a string. A server render or a build step pays this and not a byte more, which is the whole reason the before-first-paint script is emitted rather than documented)",
@@ -649,8 +660,8 @@
     "limit": "1.32 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 44390 B, re-pinned for 20.6. **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6 - the reduced-motion helper). NFR-22 is RE-DERIVED to 62 kB in this PR: the same sum-of-entry-figures method reads 61938 B, and spec 07 NFR-33 requires the recomputation rather than a bigger number (ADR-0075). THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 17 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 45514 B, re-pinned for 21.1 (+1124 B for the F112-F115 form engine and the chunk re-split around a twelfth entry). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1). NFR-22 is RE-DERIVED to 64 kB in this PR: the same sum-of-entry-figures method now has a TWELFTH input and reads 63862 B. That recomputation, and not a bigger number, is what spec 08 NFR-43 requires - and the derivation is redone whenever any input moves, not only when an entry is added. THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 18 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "45.3 kB"
+    "limit": "46.4 kB"
   }
 ]

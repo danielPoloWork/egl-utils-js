@@ -909,6 +909,69 @@ Absent `matchMedia` (Node, an exotic host) reports `false`: no evidence of a pre
 evidence of one, so the safe default is to animate as designed rather than assume every host
 wants less motion. `destroy()` detaches the listener.
 
+### Form values (`egl-utils-js/forms`)
+
+`setValue` has written a native control correctly since v0.4.0 and nothing read one — so every
+application wrote the same loop over `form.elements` and got the same four things wrong.
+`createForm` is the read half plus the part that needs more than one element: **a field is not
+a control** ([ADR-0077](docs/adr/0077-a-subject-entry-a-primitive-that-stayed-one-and-a-family-not-a-god-object.md)).
+
+```js
+import { createForm } from 'egl-utils-js/forms';
+
+const form = createForm(document.querySelector('#host-form'));
+
+form.setValues(await api.get(`/hosts/${id}`)); // no change events: a write is not an edit
+form.setBaseline(); // this is now "clean"
+
+form.getValues();
+// { name: 'db-01', quantity: 7, notes: '', subscribed: true, tier: 'pro', tags: ['a', 'c'] }
+
+await api.put(`/hosts/${id}`, form.toJSON());
+form.setBaseline(); // saved — the new values are the clean ones
+form.reset(); // back to the baseline, not to the markup's attributes
+```
+
+**The coercions are the contract**, not an implementation detail:
+
+| Field | Value |
+|---|---|
+| one checkbox | `boolean` — never `undefined`, never `'on'` |
+| several checkboxes sharing a name | `string[]` of the checked values |
+| a radio group (any size) | the checked value, or `null` |
+| `select` | the selected value, or `null` when nothing is selected |
+| `select[multiple]` | `string[]` |
+| empty `type="number"` | `null` — never `NaN`, never `''` |
+| `type="file"` | `File[]`, and read-only |
+
+- **`reset()` is not `HTMLFormElement.reset()`.** The platform's restores the *markup's* `value`
+  attributes, so a record fetched into a form and edited resets to an empty form. Here the
+  baseline is what was loaded, and `setBaseline()` adopts a new one after a save.
+- **A key that names no field throws.** `setValues({ emial: 'x' })` is a `TypeError` naming
+  `emial`, not a silent no-op — the same rule as an unknown option key
+  ([ADR-0047](docs/adr/0047-an-unknown-option-key-is-a-typeerror.md)).
+- **Two serializations, one field set.** `toJSON()` carries what the values *mean* (and omits
+  file fields, which JSON cannot hold); `toFormData()` carries what the controls *hold*, in the
+  shape the browser would have submitted — so an empty number is `''` there and `null` in JSON,
+  because "present and empty" is a state a server can act on.
+- **Fields are discovered or declared.** Declared with `{ fields: { name: '[name=name]' } }`,
+  a selector that matches nothing is reported in `missing` — or refuses the boot with
+  `strict: true`, like `bindElements`.
+
+The single-control read is a `/dom` primitive, beside the `setValue` it completes, so a page
+that wants one value pays 280 B rather than the whole engine:
+
+```js
+import { getValue } from 'egl-utils-js/dom';
+
+getValue(elements.quantity); // 7, or null when the box is empty
+getValue(elements.subscribed); // true
+```
+
+Validation, submission and dirty tracking are the rest of milestone 21, and each will be a
+factory that *takes* a form instance rather than more methods on this one — so a filter form
+that needs values only never links them.
+
 ### Promise-based dialogs (`egl-utils-js/ui`)
 
 A dialog is a question with one answer arriving later — which is what a promise is. So `await`
@@ -1951,7 +2014,7 @@ inside their declared ranges — keeping those patched is yours. Full detail:
 | 18 | Browser distribution | ✅ done |
 | 19 | Table data & bsTable extras | ✅ done |
 | 20 | Application UX utilities | ✅ done |
-| 21 | Form engine | ⏳ planned |
+| 21 | Form engine | 🚧 in progress |
 
 
 ## License

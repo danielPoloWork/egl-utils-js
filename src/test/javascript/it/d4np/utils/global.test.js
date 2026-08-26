@@ -11,6 +11,7 @@ import * as logging from '../../../../../main/javascript/it/d4np/utils/logging.j
 import * as dom from '../../../../../main/javascript/it/d4np/utils/dom.js';
 import * as bootstrap from '../../../../../main/javascript/it/d4np/utils/bootstrap.js';
 import * as ui from '../../../../../main/javascript/it/d4np/utils/ui.js';
+import * as forms from '../../../../../main/javascript/it/d4np/utils/forms.js';
 
 // `global.js` is the source of the F83 single-file artifact (roadmap 18.2,
 // ADR-0059): it composes the whole public surface by `export *` so the namespace
@@ -26,7 +27,7 @@ import * as ui from '../../../../../main/javascript/it/d4np/utils/ui.js';
 // itself — that the re-exported binding is the SAME value as the entry's, and
 // that no sub-namespace name shadows a root export.
 
-/** The ten subpaths, each expected as a sub-namespace named after its exports path. */
+/** The eleven subpaths, each expected as a sub-namespace named after its exports path. */
 const SUBPATHS = {
   storage,
   sanitize,
@@ -38,6 +39,7 @@ const SUBPATHS = {
   dom,
   bootstrap,
   ui,
+  forms,
 };
 
 describe('the composed namespace carries the root entry', () => {
@@ -50,7 +52,7 @@ describe('the composed namespace carries the root entry', () => {
 
   it('adds nothing to the top level beyond the root entry and the sub-namespaces', () => {
     // The artifact must not grow a surface the entries do not have: anything at
-    // the top level is either a root export or one of the ten namespaces.
+    // the top level is either a root export or one of the eleven namespaces.
     const allowed = new Set([...Object.keys(root), ...Object.keys(SUBPATHS)]);
     const unexpected = Object.keys(composed).filter((name) => !allowed.has(name));
     expect(unexpected).toEqual([]);

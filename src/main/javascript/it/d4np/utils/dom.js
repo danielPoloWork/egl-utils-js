@@ -25,7 +25,10 @@
 export { bindElements, isElement, requireDocument } from './dom-helpers.js';
 
 // Event delegation and native element setters (spec 03 §2 items F44-F45, ADR-0029).
-export { delegate, setEnabled, setValue, setVisible } from './dom-events.js';
+// `getValue` is the read half `setValue` never had — spec 08 F113, added beside
+// its twin rather than inside the form engine, because reading one control is not
+// a form concern (ADR-0077).
+export { delegate, getValue, setEnabled, setValue, setVisible } from './dom-events.js';
 
 // Fragment injection, textarea auto-grow, URL parameters (spec 03 §2 items F46-F48, ADR-0030).
 // `withUrlParams` is also on the root entry (ADR-0052) — this binding stays for

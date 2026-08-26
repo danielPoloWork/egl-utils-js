@@ -309,3 +309,82 @@ export function setValue(el, value) {
 
   element.value = value === null || value === undefined ? '' : String(value);
 }
+
+/**
+ * Read a form control's value — the half {@link setValue} never had
+ * (spec 08 F113).
+ *
+ * `setValue` has existed since spec 03 and reading was left to the caller, so
+ * every application wrote the same loop over `form.elements` and got the same
+ * four things wrong: an unchecked checkbox reported as `undefined` rather than
+ * `false`, an empty `type="number"` reported as the string `''`, a `multiple`
+ * select reported as one value, and a `select` with nothing selected reported as
+ * `''` — indistinguishable from an option whose value *is* the empty string.
+ *
+ * **Reading needs a policy, and this is it** — stated rather than implied,
+ * because the alternative is every caller inventing one:
+ *
+ * | Control | Value |
+ * |---|---|
+ * | checkbox, radio | `boolean` — the `checked` state |
+ * | `select` | the selected option's value, or `null` when nothing is selected |
+ * | `select[multiple]` | `string[]` of the selected values, `[]` when none are |
+ * | `type="number"`, `type="range"` | `number`, or `null` when the field is empty |
+ * | `type="file"` | `File[]`, `[]` when nothing is chosen |
+ * | anything else | the `value` string |
+ *
+ * Two of those are the whole point. **An empty number is `null`, never `NaN`**:
+ * `Number('')` is `0`, `parseInt('')` is `NaN`, and both are lies about a field
+ * the user left alone. And **an unselected `select` is `null`**, which a bare
+ * `.value` read cannot express.
+ *
+ * A **group** — several radios or checkboxes sharing a name — is not this
+ * function's job, because it needs more than one element: that is what the form
+ * engine's field resolution is for.
+ *
+ * @example
+ * getValue(elements.name); // 'Ada'
+ * getValue(elements.subscribed); // true — not 'on', not undefined
+ * getValue(elements.quantity); // 7, or null when the box is empty
+ * getValue(elements.tags); // ['a', 'b'] from a multiple select
+ * getValue(elements.maybeMissing); // null — no guard needed, like setValue
+ *
+ * @param {Element | null | undefined} el - The control, or nullish for `null`.
+ * @returns {unknown} The value per the table above.
+ * @throws {TypeError} If `el` is neither an element nor nullish.
+ */
+export function getValue(el) {
+  if (!actionable(el, 'getValue')) return null;
+  const element = /** @type {any} */ (el);
+
+  if (element.type === 'checkbox' || element.type === 'radio') {
+    return Boolean(element.checked);
+  }
+
+  if (element.type === 'file') {
+    // A `FileList` is array-like and not an array; a caller wants to iterate,
+    // filter and `length` it like everything else this function returns. No
+    // `?? []` fallback: every engine defines `files` on a file input, so the
+    // guard would be dead code — and this project deletes those rather than
+    // mock-covering them (the M2.4 precedent).
+    return Array.from(element.files);
+  }
+
+  if (typeof element.selectedIndex === 'number' && element.options !== undefined) {
+    if (element.multiple === true) {
+      return Array.from(element.options)
+        .filter((option) => /** @type {any} */ (option).selected)
+        .map((option) => /** @type {any} */ (option).value);
+    }
+    return element.selectedIndex < 0 ? null : element.value;
+  }
+
+  if (element.type === 'number' || element.type === 'range') {
+    // `valueAsNumber` would be the platform's own answer and is deliberately not
+    // used: it reports NaN for an empty field *and* for an unparseable one, so it
+    // cannot tell "left alone" from "typed nonsense". The raw string can.
+    return element.value === '' ? null : Number(element.value);
+  }
+
+  return element.value;
+}

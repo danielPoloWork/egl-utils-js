@@ -122,6 +122,16 @@
         "default": "./dist/cjs/ui.cjs"
       }
     },
+    "./forms": {
+      "import": {
+        "types": "./dist/esm/forms.d.ts",
+        "default": "./dist/esm/forms.js"
+      },
+      "require": {
+        "types": "./dist/cjs/forms.d.cts",
+        "default": "./dist/cjs/forms.cjs"
+      }
+    },
     "./logging": {
       "import": {
         "types": "./dist/esm/logging.d.ts",

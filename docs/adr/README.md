@@ -92,3 +92,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0074](0074-bootstraps-own-mixins-five-queries-and-a-seam-written-once.md) | Bootstrap's own mixins, five queries instead of eleven, and a seam written once | Accepted |
 | [0075](0075-one-query-point-and-a-seam-that-crossed-a-boundary.md) | One query point, and a seam that crossed a boundary | Accepted |
 | [0076](0076-a-worker-count-decided-and-a-server-that-was-not-the-cause.md) | A worker count decided, one budget instead of six, and the server that was not the cause | Accepted |
+| [0077](0077-a-subject-entry-a-primitive-that-stayed-one-and-a-family-not-a-god-object.md) | A subject entry, a primitive that stayed one, and a family rather than a god object | Accepted |

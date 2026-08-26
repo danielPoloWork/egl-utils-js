@@ -12,7 +12,7 @@
  * listing every export would be correct exactly once: the next export added to
  * an entry would be missing from the artifact, and nothing would say so. `export
  * *` cannot drift, and the packaging gate
- * (`tools/assert-global-artifact.mjs`) proves it against the eleven entries rather
+ * (`tools/assert-global-artifact.mjs`) proves it against the twelve entries rather
  * than trusting it.
  *
  * **Nothing here assigns anything to a global.** The `var egl = …` wrapper is
@@ -50,3 +50,4 @@ export * as logging from './logging.js';
 export * as dom from './dom.js';
 export * as bootstrap from './bootstrap.js';
 export * as ui from './ui.js';
+export * as forms from './forms.js';
