@@ -2,7 +2,7 @@
 
 > Universal JavaScript async, data, and event utilities for Node.js and modern browsers
 
-![Status](https://img.shields.io/badge/Status-v1.2.0-blue)
+![Status](https://img.shields.io/badge/Status-v1.3.0-blue)
 
 A
 library written in **JavaScript (ES2023)**, built and governed to an enterprise quality

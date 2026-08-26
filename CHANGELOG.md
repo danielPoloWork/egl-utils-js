@@ -1,5 +1,225 @@
 # Changelog
 
+## 1.3.0
+
+### Minor Changes
+
+- 671dd3d: **Accessibility primitives on `egl-utils-js/dom`** (ROADMAP 20.5, spec 07 F109–F110,
+  [ADR-0070](docs/adr/0070-two-primitives-extracted-and-a-ceiling-recomputed.md)).
+
+  Three exports: **`focusTrap`**, **`saveFocus`** and **`liveRegion`**.
+
+  ```js
+  import { focusTrap, liveRegion } from 'egl-utils-js/dom';
+
+  const release = focusTrap(dialog); // Tab stays inside; focus goes back on release
+  release();
+
+  const announcer = liveRegion();
+  announcer.announce(`Column moved to position ${index + 1} of ${total}`);
+  ```
+
+  **The trap is scoped to Tab, deliberately.** It corrects the two cases the platform gets wrong
+  — the edge the key is about to leave through, and focus sitting outside the region — and leaves
+  everything in between to the browser's own tab order. There is no document-level `focusin`
+  guard: fighting focus moved by a screen reader's virtual cursor is how a trap becomes something
+  a user cannot escape.
+
+  A root with **nothing focusable holds focus itself** under a temporary `tabindex="-1"`, removed
+  on release — the case that otherwise turns a trap into a lock. What counts as tabbable is
+  decided **without reading layout**, because a forced layout per Tab press is not a price a
+  keyboard user should pay.
+
+  `saveFocus()` is the restore half on its own, for a component that moves focus without trapping
+  it — and `loadingOverlay` now calls it instead of keeping its own copy, so there is one
+  implementation of "put focus back where it was" in the library.
+
+  `liveRegion` **never moves focus**, which is what lets a keyboard handler say what it did.
+  Announcing the same message twice really announces it twice. It closes a gap ADR-0069 named: a
+  column moved by the keyboard was announced to nobody.
+
+- ffee54d: **Breakpoint observation on `egl-utils-js/ui`** (ROADMAP 20.4, spec 07 F108,
+  [ADR-0074](docs/adr/0074-bootstraps-own-mixins-five-queries-and-a-seam-written-once.md)).
+
+  Two new exports, `createBreakpoints` and the frozen `BOOTSTRAP_BREAKPOINTS` map, and no new
+  `exports`-map path.
+
+  ```js
+  import { createBreakpoints } from 'egl-utils-js/ui';
+
+  const screen = createBreakpoints();
+
+  screen.current(); // 'lg'
+  if (screen.down('md')) collapseTheSidebar();
+
+  screen.on(({ current, previous }) => render(current));
+  ```
+
+  Ask once, be told when it changes — instead of a resize listener per component, each reading
+  layout on the hot path of a drag, or a hand-written `min-width` that has to agree with the CSS
+  forever.
+
+  **Bootstrap's own names and Bootstrap's own meanings**, read from its SCSS rather than from what
+  the names suggest: `up('md')` is md and wider (always true for `xs`, which has no query),
+  `down('md')` is **narrower than md** — the Bootstrap 5 change people trip over — `only('md')` is
+  md and nothing wider, and `between('md','xl')` is half-open, excluding xl.
+
+  **`on()` reports a crossing, not a resize.** A drag from 800 px to 900 px says nothing; a jump
+  from 500 to 1500 says it once, though four media queries flipped. Two questions deliberately
+  throw rather than answer: `down('xs')`, since nothing is narrower than the base, and a reversed
+  `between`, since it can never match.
+
+  `createBreakpoints` measures 1 237 B against a 9 567 B entry, so a page that wants only
+  breakpoints pays for none of the three managers.
+
+  **Additive only.** No existing export, option, error code or `exports` path changed: the surface
+  goes from 130 exports to 132 across the same eleven entries. The `matchMedia` seam the F106 theme
+  manager introduced is now shared internally rather than copied — no behaviour change, and one
+  answer instead of two for what an absent `matchMedia` means.
+
+- 5d3cff9: **Promise-based dialogs on a new `egl-utils-js/ui` entry** (ROADMAP 20.1, spec 07 F101–F103,
+  [ADR-0071](docs/adr/0071-a-manager-not-three-globals-and-a-dismissal-is-an-answer.md)).
+
+  One export, `createDialogs`, and one new `exports`-map path.
+
+  ```js
+  import { createDialogs } from 'egl-utils-js/ui';
+
+  const dialogs = createDialogs({ labels: { confirm: 'Delete' }, variant: 'danger' });
+
+  if (await dialogs.confirm(`Delete ${row.name}?`)) {
+    await api.delete(row.id);
+  }
+  ```
+
+  A dialog is a question with one answer arriving later, so it hands back a promise instead of
+  taking an `onOk`/`onCancel` pair that cannot compose. **A dismissal is an answer, not an
+  error**: Escape, the backdrop, the close control and the cancel button all _resolve_ — `false`
+  for a confirm, `null` for a prompt, your own `dismissValue` for the general `open` form. A
+  rejection means the question could not be _asked_ — `EGL_DOM_CONTRACT` with no document,
+  `EGL_PEER_MISSING` with no Bootstrap — which stays a different fact from the user saying no.
+
+  Exactly one settlement survives any race of dismissals, because the answer is recorded before
+  anything starts closing. Focus is trapped while the dialog is open and restored to whatever
+  opened it when it settles, through the F109 `/dom` primitives rather than a second
+  implementation — proven on three engines, one of which (WebKit) is why the dialog places focus
+  itself rather than trusting Bootstrap to.
+
+  **Why a new entry:** ADR-0041 sized the `/bootstrap` clause at 25 kB for the finished
+  catalogue, and 482 B of it were left. This wave goes elsewhere rather than stretching a clause
+  written for something else (spec 07 NFR-32).
+
+  **Additive only.** No existing export, option, error code or `exports` path changed: the
+  surface goes from 126 exports across ten entries to 127 across eleven.
+
+- 4485f59: **A reduced-motion query point on `egl-utils-js/dom`** (ROADMAP 20.6, spec 07 F111,
+  [ADR-0075](docs/adr/0075-one-query-point-and-a-seam-that-crossed-a-boundary.md)).
+
+  One new export, `reducedMotion`, and no new `exports`-map path.
+
+  ```js
+  import { reducedMotion } from 'egl-utils-js/dom';
+
+  const motion = reducedMotion();
+
+  bsCarousel(el, { items, ride: !motion.prefersReduced() });
+  motion.on((prefers) => carousel.cycle());
+  ```
+
+  One place components ask whether the visitor wants less motion, instead of five separate
+  `matchMedia` calls each risking a slightly different query string. **A helper, not a manager**:
+  there is no animation-preset system to configure, and this does not smuggle one in — the
+  `MotionManager` design ADR-0046 rejected stays rejected.
+
+  Absent `matchMedia` (Node, an exotic host) reports `false`: no evidence of a preference is not
+  evidence of one, so the safe default is to animate as designed.
+
+  The `matchMedia` seam this composes moved from `egl-utils-js/ui`'s internals to
+  `egl-utils-js/dom`'s, since `/ui` already depends on `/dom` primitives and never the other way —
+  no behaviour change, one shared answer for what an absent `matchMedia` means instead of a third
+  copy.
+
+  **Additive only.** No existing export, option, error code or `exports` path changed: the surface
+  goes from 132 exports to 133 across the same eleven entries.
+
+- cec8fb2: **Theme management on `egl-utils-js/ui`** (ROADMAP 20.3, spec 07 F106–F107,
+  [ADR-0073](docs/adr/0073-bootstraps-own-attribute-and-a-snippet-that-cannot-drift.md)).
+
+  Two new exports, `createTheme` and `themeSnippet`, and no new `exports`-map path.
+
+  ```js
+  import { createTheme, themeSnippet } from 'egl-utils-js/ui';
+
+  const theme = createTheme();
+
+  theme.get(); // 'auto' — no choice expressed yet
+  theme.toggle(); // 'light', and remembered
+  theme.set('auto'); // back to following the system
+  ```
+
+  Bootstrap 5.3's own `data-bs-theme` and nothing beside it: no class to keep in step, and the
+  attribute name is deliberately not an option.
+
+  **`'auto'` is the absence of a stored choice, not a third state**, so "no choice yet" and
+  "follow the system" are one condition that cannot drift apart. The half usually forgotten is
+  the other one — a site that remembered your choice at 6 pm has lost it by 7, when the OS
+  switches — and here an expressed choice stops the tracking until it is withdrawn. `get()`
+  answers the preference, `resolved()` answers what is on the attribute, because a settings UI
+  and a component are asking different questions.
+
+  **No flash.** A theme applied by a module shows one frame of the wrong one, every load. The fix
+  has to be a synchronous script in `<head>`, so the library **emits** it — `themeSnippet()` is a
+  pure 421 B function returning that source, readable by a server render or a build step, from
+  the same key and attribute the manager uses. A snippet documented in a README shares those by
+  coincidence; the suite asserts these two agree by running the string.
+
+  **A control that says what it will do**, not what the page is: `theme.control()` names the state
+  it will move to and relabels itself whenever the theme changes, including a system change it did
+  not cause. Icons are your nodes — no icon font is bundled, imported or assumed.
+
+  `set` applies the theme **before** it persists it, so a quota failure arrives with the page
+  already correct — failing to remember must not stop a choice taking effect, and must not be
+  silent either.
+
+  **Additive only.** No existing export, option, error code or `exports` path changed: the surface
+  goes from 128 exports to 130 across the same eleven entries.
+
+- 5be6954: **A toast manager on `egl-utils-js/ui`** (ROADMAP 20.2, spec 07 F104–F105,
+  [ADR-0072](docs/adr/0072-a-queue-a-rule-nobody-has-to-guess-and-one-toast-per-story.md)).
+
+  One new export, `createToasts`, and no new `exports`-map path.
+
+  ```js
+  import { createToasts } from 'egl-utils-js/ui';
+
+  const toasts = createToasts({ placement: 'bottom-end', maxVisible: 3 });
+
+  toasts.add('Saved.');
+  for (const row of rows) toasts.add(`${row.name} imported`); // 40 arrivals, 3 on screen
+  ```
+
+  `bsToast` gives a page toasts; this gives it a **policy**. A cap with a queue promoted in
+  arrival order, and two admission rules with the vagueness taken out of them: adding again with
+  an **id** the manager still holds updates that toast rather than joining it with a second, and
+  an **identical** message is dropped rather than shown twice — where identical means the same
+  `variant`, `title` and `message`, and only when the message and title are both strings. Node
+  content is exempt rather than compared by a rule that could never fire; a dropped duplicate
+  restarts the lifetime of the toast already up, so a repeated event still reads as recent; and an
+  explicit `id` leaves the dedupe system entirely, because an id is an assertion of distinct
+  identity.
+
+  **One operation, one toast.** `promise()` shows the pending message with no auto-hide — an
+  operation of unknown duration has no honest timer — and replaces it in place on settlement, with
+  `success` and `error` allowed to be functions of the value and the reason. It returns **your own
+  promise**, unchanged: the settlement passes through and an unhandled rejection stays yours to
+  handle rather than being absorbed by the observer.
+
+  Every node is still built, timed, escaped, announced, dismissed and disposed by `bsToast`. This
+  manager contributes the queue, the rules and the transition, and nothing that draws.
+
+  **Additive only.** No existing export, option, error code or `exports` path changed: the surface
+  goes from 127 exports to 128 across the same eleven entries.
+
 All notable changes to `egl-utils-js` are documented here, following
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) and
 [Semantic Versioning 2.0.0](https://semver.org/).
@@ -83,9 +303,9 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - **A new `egl-utils-js/ui` entry, with promise-based dialogs** — `createDialogs` returns a
   manager whose `confirm`, `prompt` and `open` each hand back a promise, over the F70 modal
   wrapper rather than a reimplementation of it. **A dismissal is an answer, not an error**:
-  Escape, the backdrop, the close control and the cancel button all *resolve* — `false` for a
+  Escape, the backdrop, the close control and the cancel button all _resolve_ — `false` for a
   confirm, `null` for a prompt (distinguishable from the empty string a user may have typed),
-  your own `dismissValue` for `open`. A rejection means the question could not be *asked*, and
+  your own `dismissValue` for `open`. A rejection means the question could not be _asked_, and
   keeps the two existing codes: `EGL_DOM_CONTRACT` with no document, `EGL_PEER_MISSING` with no
   Bootstrap. Exactly one settlement survives any race, because the answer is recorded before
   anything starts closing. Focus is trapped while the dialog is open and **restored to whatever
@@ -153,11 +373,11 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 - **NFR-22's artifact ceiling is re-derived to 57 kB** — the second recomputation, not a
   raise: the sum-of-measured-entry-figures method spec 05 defined now has an eleventh input and
   reads 57 278 B. The size-limit row stays the gate and is re-pinned to 42 kB (measured 41 119 B
-  + 2.1%). Adding the eleventh entry also cost `/bootstrap` 9 B and `/dom` 2 B **without either
-  entry changing a line** — esbuild re-split the shared chunks around a new consumer — and cost
-  their no-bundler deep-ESM routes considerably more (`/bootstrap` +2 607 B and two extra
-  requests, `/dom` +524 B and one), which is what spec 05 F87's served-byte accounting exists to
-  keep visible rather than silent (ROADMAP 20.1, ADR-0071).
+  - 2.1%). Adding the eleventh entry also cost `/bootstrap` 9 B and `/dom` 2 B **without either
+    entry changing a line** — esbuild re-split the shared chunks around a new consumer — and cost
+    their no-bundler deep-ESM routes considerably more (`/bootstrap` +2 607 B and two extra
+    requests, `/dom` +524 B and one), which is what spec 05 F87's served-byte accounting exists to
+    keep visible rather than silent (ROADMAP 20.1, ADR-0071).
 
 ### Deprecated
 
