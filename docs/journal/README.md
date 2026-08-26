@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-26 — One attribute, and a snippet that cannot drift (roadmap 20.3)](2026/08/2026-08-26-theme-manager.md)
 - [2026-08-26 — A queue, and a rule nobody has to guess (roadmap 20.2)](2026/08/2026-08-26-toast-manager.md)
 - [2026-08-25 — Promise-based dialogs, and an eleventh entry (roadmap 20.1)](2026/08/2026-08-25-promise-dialogs.md)
 - [2026-08-25 — Two primitives, and a ceiling recomputed (roadmap 20.5)](2026/08/2026-08-25-a11y-primitives.md)

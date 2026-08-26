@@ -36,3 +36,8 @@ export { createDialogs } from './ui-dialogs.js';
 
 // The toast manager (spec 07 §2 items F104-F105, ADR-0072).
 export { createToasts } from './ui-toasts.js';
+
+// Theme management over Bootstrap's own `data-bs-theme` (spec 07 §2 items
+// F106-F107, ADR-0073). `themeSnippet` is pure and DOM-free, so a server render
+// or a build step can emit the before-first-paint script.
+export { createTheme, themeSnippet } from './ui-theme.js';

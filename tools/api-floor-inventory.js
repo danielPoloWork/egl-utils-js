@@ -112,6 +112,13 @@ export const GLOBALS = {
     bcd: 'api.Window.sessionStorage',
     guarded: 'same write+remove probe and in-memory fallback as localStorage (ADR-0010)',
   },
+  matchMedia: {
+    guardReason: 'context',
+    bcd: 'api.Window.matchMedia',
+    guarded:
+      'ui-theme.js reads it through an injectable `matchMedia` seam and treats its ABSENCE as a legal state rather than a failure: with no way to ask the system, an `auto` preference resolves to the `fallback` option and no system tracking happens (spec 07 F106, ADR-0073). That is the documented degradation, not a silent one — and it is why /ui stays loadable on a server render, where the global does not exist. The seam is also what lets the suite drive both branches of a media query without a browser.',
+    why: 'The floor is not the interesting part — Safari 5.1 — but the `change` event below is, and both are declared together so a reader sees the pair the subscription actually needs. NFR-34 (spec 07) asked for this amendment against F108/F111; F106 needed it first, because "follow the system" is a media query.',
+  },
   getComputedStyle: {
     guardReason: 'context',
     bcd: 'api.Window.getComputedStyle',
@@ -360,6 +367,27 @@ export const MEMBERS = {
   // platform call. So this entry exists for check 2, the BCD floor comparison,
   // rather than for the deny-by-default scan, and that remains true after the
   // 19.8 rewrite (ADR-0064). It is the one shape a source scanner cannot own.
+  // --- The system colour-scheme preference (spec 07 F106/NFR-34, roadmap 20.3) ---
+  //
+  // Reached on a `MediaQueryList` this library holds in a local, so neither is
+  // visible to the scanner — which polices globals and their members. They are
+  // declared for check 2, the BCD floor comparison, which is the question that
+  // matters here: `change` on a MediaQueryList is **Safari 14**, recent enough by
+  // this file's standards to be worth confirming rather than assuming, and it is
+  // what makes the deprecated `addListener` (Safari 5.1) unnecessary at a 16.4
+  // floor. Checking is the whole reason an entry exists instead of a comment.
+  'MediaQueryList.change': {
+    guardReason: 'context',
+    bcd: 'api.MediaQueryList.change_event',
+    guarded:
+      'subscribed only when the `matchMedia` seam resolved to something, and the manager validates that what it resolved to has `addEventListener` before subscribing — so an exotic host or a caller-supplied fake fails by contract rather than on an undefined call (ADR-0073)',
+  },
+  'MediaQueryList.matches': {
+    guardReason: 'context',
+    bcd: 'api.MediaQueryList.matches',
+    guarded: 'read only through the same resolved seam, and only while the preference is `auto`',
+  },
+
   'Window.popstate': {
     guardReason: 'context',
     bcd: 'api.Window.popstate_event',
