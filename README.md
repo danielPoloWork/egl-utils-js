@@ -953,6 +953,80 @@ it. A per-call `signal` does the same for one dialog.
 | `html` + `sanitize` | Opt into markup, with the sanitizer required (the F52 pair) |
 | `document`, `signal`, `class` | As everywhere else on this library's surface |
 
+### Theme, over Bootstrap's own attribute (`egl-utils-js/ui`)
+
+Bootstrap 5.3 themes off `data-bs-theme`, and that attribute is the whole state this manages —
+no class of ours to keep in step with it, and the attribute name is deliberately not an option
+([ADR-0073](docs/adr/0073-bootstraps-own-attribute-and-a-snippet-that-cannot-drift.md)).
+
+```js
+import { createTheme } from 'egl-utils-js/ui';
+
+const theme = createTheme(); // applies immediately, and starts following the system
+
+theme.get();      // 'auto' — no choice expressed yet
+theme.resolved(); // 'dark', if that is what the system says
+theme.toggle();   // 'light', and remembered
+theme.set('auto') // back to following the system
+```
+
+**`'auto'` is the absence of a stored choice, not a third state.** So "no choice yet" and
+"follow the system" are one condition, and they cannot drift apart: `set('auto')` removes the
+key. The half that usually gets forgotten is the other one — a site that remembered your choice
+at 6 pm has lost it by 7, when the OS switches to dark. Here an expressed choice stops the
+tracking, and only withdrawing it starts it again.
+
+`get()` and `resolved()` are different questions on purpose: a settings UI needs to know whether
+"System" is selected, a component needs to know which colours to draw.
+
+**No flash.** A theme applied by a module shows one frame of the wrong one, every load, because
+the module runs after first paint. The fix must be a synchronous script in `<head>` — so the
+library **emits** it rather than documenting it, from the same key and attribute the manager
+reads:
+
+```html
+<!-- above your stylesheets -->
+<script>/* the string themeSnippet() returns */</script>
+```
+
+```js
+import { themeSnippet } from 'egl-utils-js/ui';
+
+// Pure — no DOM, no storage — so a server render or a build step can call it.
+const head = `<script>${themeSnippet()}</script>`;
+
+// Give both the same key, or neither, and they agree by construction.
+const head2 = `<script>${themeSnippet({ key: 'acme-theme' })}</script>`;
+const theme = createTheme({ key: 'acme-theme' });
+```
+
+**A control that says what it will do**, not what the page is — a button labelled "Dark" on a
+dark page is announced as a statement of fact rather than an offer:
+
+```js
+navbar.append(theme.control());                                  // visible text
+navbar.append(theme.control({ icons: { dark: moon(), light: sun() } })); // icon + aria-label
+```
+
+It relabels itself whenever the theme changes, including a system change it did not cause. Icons
+are your nodes: no icon font is bundled, imported or assumed.
+
+| Option | Meaning |
+|---|---|
+| `root` | Where the attribute goes (default `<html>`, where Bootstrap's docs put it) |
+| `storage`, `key` | Persistence through the F21 wrapper, so private mode degrades instead of throwing |
+| `matchMedia` | The system-preference seam. **Absent** (Node, an exotic host) means `auto` resolves to `fallback` and nothing is tracked |
+| `fallback` | What `auto` resolves to when the system cannot be asked (default `'light'`) |
+| `document`, `signal` | As everywhere else on this library's surface |
+
+`on(handler)` reports `{preference, resolved}` on every change. `destroy()` stops managing and
+**leaves the page themed** — the attribute is the page's state, not this manager's node, and
+removing it would flash the default theme at every navigation.
+
+One thing worth knowing about failure: `set` applies the theme **before** it persists it, so a
+quota error arrives with the page already correct. Failing to remember a choice must not stop it
+taking effect — and must not be silent either, so the `StorageError` still reaches you.
+
 ### Toasts with a policy (`egl-utils-js/ui`)
 
 `bsToast` gives a page toasts. This gives it a **notification system**: a cap, a queue, and
@@ -1726,18 +1800,18 @@ own response:
 | `/text` | 3 | 1.67 kB |
 | `/sanitize` | 3 | 3.01 kB |
 | `/logging` | 3 | 3.06 kB |
-| `/storage` | 4 | 4.34 kB |
+| `/storage` | 5 | 4.50 kB |
 | `/table` | 5 | 11.82 kB |
 | root (`index.js`) | 7 | 13.57 kB |
 | `/dom` | 9 | 15.50 kB |
-| `/ui` | 6 | 17.89 kB |
+| `/ui` | 8 | 22.50 kB |
 | `/bootstrap` | 10 | 44.28 kB |
-| **the global artifact** | **1** | **42.43 kB** |
+| **the global artifact** | **1** | **43.43 kB** |
 
 Three things worth reading off it. **If you need `/bootstrap` — or `/ui`, which composes it —
 take the artifact**: the whole surface in one request costs *less* than that one entry costs
 in ten, because the deep route downloads whole shared chunks whether or not you use all of
-them. **`/ui` is two and a half times its bundled size here** (7.33 kB tree-shaken, 17.89 kB served),
+them. **`/ui` is two and a half times its bundled size here** (8.80 kB tree-shaken, 22.50 kB served),
 and the gap is the composition: it borrows the modal wrapper, the buttons and the focus
 primitives rather than reimplementing them, which is free for a bundler consumer and billed
 by the file for a static page. And these figures are larger than the per-function budgets
@@ -1749,7 +1823,7 @@ ships after tree-shaking. Both are real; they just belong to different consumers
 `egl-utils-js` is **1.x**, and the number is meant literally. MAJOR-protected — these change only
 in a 2.0:
 
-- **Every named export**: 128 across the root and the ten subpath entries (116 distinct names —
+- **Every named export**: 130 across the root and the ten subpath entries (118 distinct names —
   the error classes are reachable from both the root and `/errors`).
 - **Every `EGL_*` error code**, and the `.code`-not-`instanceof` identity contract.
 - **Every `exports`-map path** — a deep import that resolves today keeps resolving.

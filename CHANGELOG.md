@@ -12,6 +12,26 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **Theme management on `egl-utils-js/ui`** — `createTheme` over Bootstrap 5.3's own
+  `data-bs-theme` and nothing beside it: no class of ours to keep in step, and the attribute name
+  deliberately not an option, because a configurable one is how a second theming mechanism
+  starts. **`'auto'` is the absence of a stored choice rather than a third state**, so "no choice
+  yet" and "follow the system" are one condition that cannot drift apart — and the half usually
+  forgotten is the other one: an expressed choice **stops** the system tracking until it is
+  withdrawn with `set('auto')`, which is why a site that remembered your preference at 6 pm still
+  has it at 7. `get()` answers the preference and `resolved()` what is on the attribute, because
+  a settings UI and a component ask different questions. **`themeSnippet()`** is a pure 421 B
+  function returning the synchronous `<head>` script that applies a persisted theme **before
+  first paint** — emitted rather than documented, because a README snippet shares the storage key
+  and the attribute with the manager only by coincidence, and the suite asserts these two agree
+  by running the string. **`theme.control()`** builds a toggle whose accessible name is the state
+  it will move to, relabelling itself on every change including a system one it did not cause;
+  icons are the caller's nodes, with no icon font bundled or assumed. Persistence goes through
+  the F21 storage wrapper, so private mode degrades instead of throwing — and `set` applies the
+  theme **before** persisting it, so a quota failure arrives with the page already correct
+  without being swallowed (spec 07 F106–F107, ROADMAP 20.3,
+  [ADR-0073](docs/adr/0073-bootstraps-own-attribute-and-a-snippet-that-cannot-drift.md)).
+
 - **A toast manager on `egl-utils-js/ui`** — `createToasts` adds to `bsToast` the thing it has
   no opinion about: a **policy**. A cap with a queue promoted in arrival order, so a loop of
   forty notifications shows three at a time instead of burying the page it is reporting on; and
@@ -67,6 +87,18 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- **The platform api-floor gate now knows about `matchMedia`** — added to the scanner's policed
+  globals, so a bare use anywhere in the library is checked rather than invisible, with three
+  inventory entries declared: `matchMedia` (Safari 5.1), `MediaQueryList.matches` (5.1) and
+  `MediaQueryList.change` (**Safari 14**, the one worth confirming rather than assuming, and what
+  makes the deprecated `addListener` unnecessary at a 16.4 floor). This is the NFR-34 amendment
+  spec 07 attributed to F108/F111; F106 needed it first, because "follow the system" is a media
+  query (ROADMAP 20.3, ADR-0073).
+- **NFR-22's artifact ceiling is re-derived to 60 kB** — the fourth recomputation, reading
+  60 914 B. `/ui` grew 1 464 B for the theme manager, and `/storage` grew **3 B without changing
+  a line**: the manager persists through the F21 wrapper, so the two entries now share a chunk
+  and esbuild re-split it. The size-limit row stays the gate and is re-pinned to 44.4 kB
+  (measured 43 460 B + 2.1%) (ROADMAP 20.3, ADR-0073).
 - **NFR-22's artifact ceiling is re-derived to 59 kB** — the third recomputation, and the first
   with no new entry in it: the same sum-of-measured-entry-figures method reads 59 447 B, all of
   the movement being `/ui` growing 2 169 B for the toast manager. The rule this establishes is

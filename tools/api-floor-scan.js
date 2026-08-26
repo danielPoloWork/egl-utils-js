@@ -70,6 +70,7 @@ export const POLICED = [
   'history',
   'localStorage',
   'location',
+  'matchMedia',
   'navigator',
   'performance',
   'queueMicrotask',

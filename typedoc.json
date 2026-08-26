@@ -108,6 +108,9 @@
     "TableStateFromParamsOptions",
     "TableStateToParamsOptions",
     "TableUrlState",
+    "Theme",
+    "ThemeInstance",
+    "ThemeOptions",
     "ToastsInstance",
     "ToastsOptions"
   ]

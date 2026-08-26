@@ -173,6 +173,16 @@ implementation.
       **43.3 kB**, measured + 2.1%, holding ADR-0059's rule that the tight row does the per-PR
       work.
 
+  - **Re-derived a fourth time (roadmap 20.3, [ADR-0073](../adr/0073-bootstraps-own-attribute-and-a-snippet-that-cannot-drift.md)),
+    under spec 07 NFR-33:** the ceiling is **<= 60 kB**. The method reads **60 914 B**: `root`
+    6 103, `/storage` 2 107, `/sanitize` 1 491, `/text` 924, `/net` 770, `/table` 6 861,
+    `/logging` 1 475, `/dom` 7 483, `/bootstrap` 24 527, `/errors` 377, `/ui` 8 796. `/ui` grew
+    1 464 B for the F106 manager and the F107 snippet, and `/storage` **3 B** without changing a
+    line — the theme manager persists through the F21 wrapper, so the two entries now share a
+    chunk and esbuild re-split it.
+    - **The gate is still the row.** The artifact measures **43 430 B served**, re-pinned to
+      **44.4 kB** (measured + 2.1%).
+
 - NFR-23 **Bundler-consumer non-regression (hard):** the `exports` map's shape and
   resolution semantics are untouched by this wave; `sideEffects: false` continues to hold
   for every module including the new artifact's source; runtime dependencies stay **zero**

@@ -88,3 +88,5 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0070](0070-two-primitives-extracted-and-a-ceiling-recomputed.md) | Two primitives extracted, a trap that knows what it does not do, and a ceiling recomputed rather than raised | Accepted |
 | [0071](0071-a-manager-not-three-globals-and-a-dismissal-is-an-answer.md) | A manager, not three globals — a dismissal is an answer, and an eleventh entry | Accepted |
 | [0072](0072-a-queue-a-rule-nobody-has-to-guess-and-one-toast-per-story.md) | A queue, a rule nobody has to guess, and one toast per story | Accepted |
+| [0073](0073-bootstraps-own-attribute-and-a-snippet-that-cannot-drift.md) | Bootstrap's own attribute, a preference that is not a third state, and a snippet that cannot drift | Accepted |
+| [0073](0073-bootstraps-own-attribute-and-a-snippet-that-cannot-drift.md) | Bootstrap's own attribute, a preference that is not a third state, and a snippet that cannot drift | Accepted |
