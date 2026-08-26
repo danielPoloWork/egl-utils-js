@@ -107,6 +107,8 @@
     "TableState",
     "TableStateFromParamsOptions",
     "TableStateToParamsOptions",
-    "TableUrlState"
+    "TableUrlState",
+    "ToastsInstance",
+    "ToastsOptions"
   ]
 }

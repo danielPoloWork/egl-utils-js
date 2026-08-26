@@ -133,10 +133,10 @@ export const TRANSFER_ROUTES = {
   ui: {
     file: 'dist/esm/ui.js',
     requests: 6,
-    measured: 15709,
-    budget: 16800,
+    measured: 17887,
+    budget: 19100,
     why:
-      'The application-UX entry (spec 07 NFR-32). Three times its 5 163 B size-limit row, and the gap is the point ' +
+      'The application-UX entry (spec 07 NFR-32). +2 178 B in 20.2 for the toast manager, on a route that still costs SIX requests — the queue and the promise helper landed inside files this route already downloaded whole. Two and a half times its 7 332 B size-limit row, and the gap is the point ' +
       'of this file: a bundler consumer importing `createDialogs` ships the tree-shaken 5 kB, while a static page ' +
       'downloads ui.js plus the five chunks it imports whole — the F70 modal wrapper, the F55/F56 buttons, the F109 ' +
       'focus primitives and the builder contract underneath them. Composition is free for the bundler consumer and ' +
@@ -147,13 +147,13 @@ export const TRANSFER_ROUTES = {
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 41063,
-    budget: 42000,
+    measured: 42432,
+    budget: 43300,
     why:
-      'Re-pinned for 20.1 (+1367 B for the /ui entry: the F101-F103 dialogs and the module that composes them), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
+      'Re-pinned for 20.2 (+1369 B for the F104 queue and the F105 promise helper, after 20.1’s +1367 B for the entry itself), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
       "20.5 is where two waves of pressure resolved. NFR-22's ceiling is RE-DERIVED to 52 kB rather than raised, by spec 05's own method — the sum of the measured entry figures, an upper bound on a deduplicated single file, which reads 52104 B today against 39.8 kB at M18. That recomputation, and not a bigger number, is the condition spec 07 NFR-33 attached (ADR-0070). " +
       'The budget here stays tight on purpose: 40400 B is measured + 1.8%, not the ADR-0015 + 7%. The clause is an authoring bound with 12 kB of slack in it — that gap IS the deduplication the derivation always assumed — and a clause with slack does no per-PR work, while this row does. Two instruments, different jobs: the split ADR-0041 already made for the /bootstrap entry. ' +
-      '20.1 recomputes the clause a second time, by the same method and with an ELEVENTH input — the /ui entry itself — reading 57278 B, so NFR-22 becomes 57 kB and this row moves to 42 kB (measured + 2.3%). ' +
+      '20.2 recomputes the clause a THIRD time, by the same method and with the same eleven inputs, reading 59447 B — so NFR-22 becomes 59 kB and this row moves to 43.3 kB (measured + 2.1%). The derivation is redone whenever ANY of its inputs moves, not only when an entry is added: a clause nobody recomputes is a number rather than a bound. ' +
       "The sibling constraint is unchanged and still the tighter one for M20's remaining items: ADR-0041's 25 kB /bootstrap clause has 473 B left after 20.1 spent 9 B of it on a chunk re-split, and 20.2-20.4 land on the new entry for exactly the reason 20.1 did (spec 07 NFR-32).",
   },
 };

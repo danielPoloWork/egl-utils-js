@@ -953,6 +953,79 @@ it. A per-call `signal` does the same for one dialog.
 | `html` + `sanitize` | Opt into markup, with the sanitizer required (the F52 pair) |
 | `document`, `signal`, `class` | As everywhere else on this library's surface |
 
+### Toasts with a policy (`egl-utils-js/ui`)
+
+`bsToast` gives a page toasts. This gives it a **notification system**: a cap, a queue, and
+admission rules — because six `add` calls in a loop otherwise stack six toasts over the page
+they are reporting on
+([ADR-0072](docs/adr/0072-a-queue-a-rule-nobody-has-to-guess-and-one-toast-per-story.md)).
+
+```js
+import { createToasts } from 'egl-utils-js/ui';
+
+// No container to author: it builds and owns one, positioned with Bootstrap's
+// own utilities. Pass `container` to fill markup you already have.
+const toasts = createToasts({ placement: 'bottom-end', maxVisible: 3 });
+
+toasts.add('Saved.');
+toasts.add('Could not reach the server.', { variant: 'danger', autoHideMs: false });
+```
+
+**Three toasts visible, the rest queued** — and promoted as slots free, in arrival order:
+
+```js
+for (const row of rows) toasts.add(`${row.name} imported`); // 40 arrivals, 3 on screen
+```
+
+**What "identical" means is part of the contract**, not left for you to discover. Two toasts
+are identical when their `variant`, `title` and `message` all match — and only when the message
+and title are both **strings**. Node content is never deduplicated (reference equality would
+never match a caller who builds per call, and a rule that silently never fires is worse than an
+honest exemption). A duplicate is *dropped*, and the toast already up has its lifetime
+restarted, so a repeated event still reads as recent:
+
+```js
+toasts.add('Saved.');
+toasts.add('Saved.'); // same toast, timer restarted — not a second one
+toasts.add('Saved.', { dedupeKey: 'network' }); // or name the identity yourself
+toasts.add('Saved.', { dedupe: false }); // or opt out
+```
+
+An explicit `id` is an assertion of *distinct* identity, so it leaves the dedupe system
+entirely — and adding again with an id still on the manager **updates that toast** rather than
+joining it with a second:
+
+```js
+const id = toasts.add('Uploading…', { id: 'upload', autoHideMs: false });
+toasts.add('Uploaded.', { id, variant: 'success' }); // one toast, updated
+toasts.dismiss(id); // or take it away early
+```
+
+**One operation, one toast** — not three that tell the story out of order the moment the
+network is slow. `promise()` returns *your* promise, unchanged, so the settlement passes
+through and a rejection stays yours to handle:
+
+```js
+const rows = await toasts.promise(save(form), {
+  pending: 'Saving…',           // no auto-hide: an unknown duration has no honest timer
+  success: (saved) => `Saved ${saved.length} rows.`,
+  error: (error) => `Could not save: ${error.message}`,
+});
+```
+
+| Option | Meaning |
+|---|---|
+| `container`, `placement` | Fill your markup, or let it own a positioned container (7 placements) |
+| `maxVisible` | How many are up at once; the rest queue (default 3) |
+| `dedupe`, `dedupeKey` | The admission rule above, per manager or per call |
+| `variant`, `autoHideMs`, `animation`, `dismissible`, `closeLabel`, `class` | Passed to `bsToast` as they are |
+| `html` + `sanitize` | Opt into markup, with the sanitizer required (the F52 pair) |
+| `document`, `signal`, `bootstrap` | As everywhere else on this library's surface |
+
+`state()` answers what is up and what is waiting — the query the cap invariant is tested
+through, and the one a caller coordinating with it needs. `clear()` drops the queue and hides
+everything; `destroy()` does that and removes an owned container.
+
 ### UI components (`egl-utils-js/dom`)
 
 Instance-based and framework-agnostic. Each alert owns its nodes, its timer, and its close
@@ -1657,14 +1730,14 @@ own response:
 | `/table` | 5 | 11.82 kB |
 | root (`index.js`) | 7 | 13.57 kB |
 | `/dom` | 9 | 15.50 kB |
-| `/ui` | 6 | 15.71 kB |
+| `/ui` | 6 | 17.89 kB |
 | `/bootstrap` | 10 | 44.28 kB |
-| **the global artifact** | **1** | **41.06 kB** |
+| **the global artifact** | **1** | **42.43 kB** |
 
 Three things worth reading off it. **If you need `/bootstrap` — or `/ui`, which composes it —
 take the artifact**: the whole surface in one request costs *less* than that one entry costs
 in ten, because the deep route downloads whole shared chunks whether or not you use all of
-them. **`/ui` is three times its bundled size here** (5.16 kB tree-shaken, 15.71 kB served),
+them. **`/ui` is two and a half times its bundled size here** (7.33 kB tree-shaken, 17.89 kB served),
 and the gap is the composition: it borrows the modal wrapper, the buttons and the focus
 primitives rather than reimplementing them, which is free for a bundler consumer and billed
 by the file for a static page. And these figures are larger than the per-function budgets
@@ -1676,7 +1749,7 @@ ships after tree-shaking. Both are real; they just belong to different consumers
 `egl-utils-js` is **1.x**, and the number is meant literally. MAJOR-protected — these change only
 in a 2.0:
 
-- **Every named export**: 127 across the root and the ten subpath entries (115 distinct names —
+- **Every named export**: 128 across the root and the ten subpath entries (116 distinct names —
   the error classes are reachable from both the root and `/errors`).
 - **Every `EGL_*` error code**, and the `.code`-not-`instanceof` identity contract.
 - **Every `exports`-map path** — a deep import that resolves today keeps resolving.

@@ -632,13 +632,13 @@
     "limit": "1.35 kB"
   },
   {
-    "name": "/ui - full import (spec 07 NFR-32: the new entry, measured 5163 B - the promise and settlement rules over F70/F55/F56/F109, which it composes rather than reimplements. Limit 5.5 kB, measured + 6.5%. **No separate per-function row yet**: the entry has exactly one export, so it would measure the same file to the byte - 20.2-20.4 add theirs as they add exports)",
+    "name": "/ui - full import (spec 07 NFR-32: measured 7332 B, +2169 B in 20.2 for the F104 queue and the F105 promise helper - which is what a policy costs on top of the component it governs: the admission rules, the cap and the transition, with every node still drawn by F69. Limit 7.8 kB, measured + 6.4%. **Still no per-function row**: both exports pull the same shared builder contract, so a single-import row would measure within a few dozen bytes of this one - 20.3 and 20.4 add theirs if that stops being true)",
     "path": "dist/esm/ui.js",
-    "limit": "5.5 kB"
+    "limit": "7.8 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 41119 B, re-pinned for 20.1. **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1 - the /ui entry). NFR-22\u2019s ceiling is RE-DERIVED to 57 kB in this PR, not raised: the same sum-of-entry-figures method now has an eleventh input and reads 57278 B, and spec 07 NFR-33 requires the recomputation rather than a bigger number (ADR-0071). THIS ROW IS STILL THE GATE: pinned at measured + 2.1%, because a clause with 16 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 42398 B, re-pinned for 20.2. **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1 - the /ui entry), 42398 (20.2 - the toast manager). NFR-22 is RE-DERIVED to 59 kB in this PR, not raised: the same sum-of-entry-figures method reads 59447 B, and spec 07 NFR-33 requires the recomputation rather than a bigger number (ADR-0072). THIS ROW IS STILL THE GATE: pinned at measured + 2.1%, because a clause with 17 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "42 kB"
+    "limit": "43.3 kB"
   }
 ]
