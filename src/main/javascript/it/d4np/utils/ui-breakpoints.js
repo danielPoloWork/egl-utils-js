@@ -41,11 +41,11 @@
 
 import { assertPlainObject } from './bootstrap-elements.js';
 import { isAbortSignal } from './dom-helpers.js';
-import { mediaResolver } from './ui-media.js';
+import { mediaResolver } from './dom-media.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 
 /**
- * @typedef {import('./ui-media.js').MediaQueryLike} MediaQueryLike
+ * @typedef {import('./dom-media.js').MediaQueryLike} MediaQueryLike
  */
 
 /**

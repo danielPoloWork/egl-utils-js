@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-26 — the breakpoint observer`](docs/journal/2026/08/2026-08-26-breakpoint-observer.md).
+  [`2026-08-26 — reduced motion, the last capability in M20`](docs/journal/2026/08/2026-08-26-reduced-motion.md).
 
 ## Model & effort routing
 
@@ -356,7 +356,7 @@ Raising the number without redoing the derivation is the one thing that clause f
 - [x] 20.4 Breakpoint observation (spec 07 **F108**): `matchMedia` over Bootstrap's breakpoint names with a subscribe API and a current-value read, so a component asks once instead of every component re-deriving the same query. **The NFR-34 api-floor amendment this item was written to owe already landed in 20.3**, which needed a media query first — `matchMedia`, `MediaQueryList.matches` and `MediaQueryList.change` are declared and the scanner polices the global (ADR-0073); what remains here is the breakpoint vocabulary and the subscribe shape _(route: standard/medium)_ — `createBreakpoints` and the frozen `BOOTSTRAP_BREAKPOINTS` map on `/ui`, per [ADR-0074](docs/adr/0074-bootstraps-own-mixins-five-queries-and-a-seam-written-once.md). The four predicates are Bootstrap's four SCSS mixins **with the meanings its source gives them rather than the ones their names suggest** — `down('md')` is *narrower than md*, the BS4→BS5 change people trip over — read from `scss/mixins/_breakpoints.scss`, whose own inline comment contradicts its code. **Five queries, not eleven**: BS5's `-down` is the complement of `-up` and `-only`/`-between` are intersections of two `-up`s, so one `min-width` per non-zero breakpoint derives the whole vocabulary and the 0.02px subtraction never appears in this library. The two places a mixin degenerates — `down('xs')`, and a reversed `between` — **throw** rather than return a plausible boolean. `on()` reports a *crossing* rather than a media change, so a drag from 800 to 900 px says nothing and a jump from 500 to 1500 says it once. The `matchMedia` seam is **extracted on its third use** and the F106 manager rewritten onto it, because "what does an absent `matchMedia` mean" is exactly the answer that drifts when written twice; 20.6 inherits it. `createBreakpoints` measures 1 237 B against a 9 567 B entry — NFR-02 as a number. NFR-22 re-derived a **fifth** time to 61 kB (61 685 B)
 - [x] 20.5 A11y primitives on `/dom` (spec 07 **F109–F110**): a reusable focus trap and focus save/restore **extracted** from the F50 overlay — where a correct implementation already exists and nothing else can reach it — including the empty-root case that turns a trap into a lock; plus a live-region announcer that leaves focus unmoved. F110 closes the gap [ADR-0069](docs/adr/0069-an-order-is-a-permutation-and-the-ceiling-held.md) named: a column moved by F100's keyboard path is announced to nobody today _(route: standard/high — focus and live-region timing are classically bug-prone)_ — `focusTrap`, `saveFocus` and `liveRegion`, per [ADR-0070](docs/adr/0070-two-primitives-extracted-and-a-ceiling-recomputed.md). **`saveFocus` is the extraction and the trap is new**: the overlay had focus save/restore and never had a trap, so the honest half is lifted out and `loadingOverlay` now calls it — one implementation of "put focus back where it was", three callers. The trap is **scoped to Tab and says so**, with no document-level `focusin` guard, because a primitive that fights focus moved by assistive technology is the wrong primitive; everything between the edges is left to the platform's own tab order. No layout is read to decide tabbability — a forced layout per Tab press is the cost F98 refused. An empty root focuses **itself** under a temporary `tabindex="-1"`, which is the case that turns a trap into a lock. **NFR-22 is re-derived, not raised**: spec 05's own method (the sum of the measured entry figures) reads 52 104 B today against ≈39.8 kB at M18, so the clause becomes 52 kB while the size-limit row stays pinned at measured + 2% and remains the gate
 - [ ] 20.7 Make the Playwright suite deterministic under local parallelism. Measured while verifying 20.1: a full `pnpm test:browser --project=chromium` run fails **2 of 142 tests on `main` and 3 of 150 with 20.1 applied**, always a different pair, always passing on a re-run in isolation — so it is contention, not a defect. The suite is `fullyParallel` with one worker per core, and each worker asks the repo's minimal static server for Bootstrap's bundle and stylesheet per test; 20.1 removed its own share of that by inlining both from `node_modules` and raising its file's timeout, which is a fix for one file rather than for the cause. Bound the workers, serve the peer assets from memory, or pin the timeouts deliberately — and decide whether the same shape can bite CI, where a red run people learn to re-run is worse than no gate at all _(route: standard/medium — a verification-infrastructure defect, filed by 20.1 rather than folded into it)_
-- [ ] 20.6 Reduced-motion policy helper on `/dom` (spec 07 **F111**): one query point components consult, on the same subscribe shape as F108. A helper, not a manager — a MotionManager stays rejected (ADR-0046) _(route: fast/low)_
+- [x] 20.6 Reduced-motion policy helper on `/dom` (spec 07 **F111**): one query point components consult, on the same subscribe shape as F108. A helper, not a manager — a MotionManager stays rejected (ADR-0046) _(route: fast/low)_ — `reducedMotion` on `/dom`, per [ADR-0075](docs/adr/0075-one-query-point-and-a-seam-that-crossed-a-boundary.md). **The interesting problem was not the helper — it was the seam.** `mediaResolver` (ADR-0074) was `/ui`-internal because its first two consumers were both there; F111 sits on the other side of the boundary spec 07 §4 draws (`/ui` depends on `/dom` primitives, never the reverse), so the seam moved to `dom-media.js` rather than being copied a third time — one answer to "does absent `matchMedia` throw or degrade" instead of a plausible second. `on()` passes the new boolean directly rather than F108's `{current, previous}` pair, since `previous` is always the logical negation for one axis and would carry no information. **The measurement discipline caught a real mistake**: a first draft imported `bootstrap-elements.js`'s `assertPlainObject` for one validation, which cost `/dom`'s deep-ESM route **over 4 kB** — the whole atom builder contract — for a helper that itself measures under 300 B; replaced with the same three-line inline check `dom-a11y.js`'s primitives already use, which is exactly the dependency spec 07 §4 sends this item to `/dom` to avoid. NFR-22 re-derived a **fifth** time to 62 kB (61 938 B) — the first re-derivation in the wave that `/dom`, not `/ui`, caused
 
 
 ---
@@ -436,12 +436,12 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 (07) | Objective & business context | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
-| §2 (07) | Functional requirements F101–F111 | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
-| §3 (07) | Non-functional requirements | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
-| §4 (07) | Logical architecture | 20.1, 20.5 | 🚧 |
-| §5 (07) | Public interface | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
-| §6 (07) | Verification & test strategy | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
+| §1 (07) | Objective & business context | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ✅ |
+| §2 (07) | Functional requirements F101–F111 | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ✅ |
+| §3 (07) | Non-functional requirements | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ✅ |
+| §4 (07) | Logical architecture | 20.1, 20.5, 20.6 | ✅ |
+| §5 (07) | Public interface | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ✅ |
+| §6 (07) | Verification & test strategy | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ✅ |
 
 ### Spec 05 — browser distribution (F82–F87)
 
@@ -449,7 +449,7 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 |--------|-------------|---------------|--------|
 | §1 (05) | Objective & business context | 17.6, 18.1, 18.2, 18.3, 18.4, 18.5 | ✅ |
 | §2 (05) | Functional requirements F82–F87 | 17.6, 18.1, 18.2, 18.3, 18.4, 18.5 | ✅ |
-| §3 (05) | Non-functional requirements | 18.2, 18.3, 18.5, 20.5, 20.1, 20.2 | ✅ |
+| §3 (05) | Non-functional requirements | 18.2, 18.3, 18.5, 20.5, 20.1, 20.2, 20.3, 20.4, 20.6 | ✅ |
 | §4 (05) | Logical architecture | 18.2, 18.3 | ✅ |
 | §5 (05) | Public interface | 18.1, 18.2, 18.3, 20.1 | ✅ |
 | §6 (05) | Verification & test strategy | 18.1, 18.5 | ✅ |

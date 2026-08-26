@@ -111,10 +111,10 @@ export const TRANSFER_ROUTES = {
   logging: { file: 'dist/esm/logging.js', requests: 3, measured: 3063, budget: 3270 },
   dom: {
     file: 'dist/esm/dom.js',
-    requests: 9,
-    measured: 15495,
-    budget: 16400,
-    why: '+524 B and a NINTH request in 20.1, for a wave that added nothing to this entry: the new /ui entry became an eleventh consumer of the shared chunks and esbuild re-split them, so a deep-ESM /dom page now fetches one more file. This is the cost F87 exists to keep visible - a bundler consumer sees 2 B of it (the size-limit row), a static page sees 524 B and a round trip. Before 20.1: +2683 B and an eighth request for bindTableHistory (spec 06 F93, roadmap 19.2, ADR-0063) and the F92 pair it composes. The largest single-item growth this route has taken; the per-function size-limit rows are what bound what an individual import costs, and they did not move.',
+    requests: 10,
+    measured: 16419,
+    budget: 17600,
+    why: '+924 B and a TENTH request in 20.6, for the F111 reduced-motion helper (291 B on its own) plus the chunk re-split around it. +524 B and a NINTH request in 20.1, for a wave that added nothing to this entry: the new /ui entry became an eleventh consumer of the shared chunks and esbuild re-split them, so a deep-ESM /dom page now fetches one more file. This is the cost F87 exists to keep visible - a bundler consumer sees 2 B of it (the size-limit row), a static page sees 524 B and a round trip. Before 20.1: +2683 B and an eighth request for bindTableHistory (spec 06 F93, roadmap 19.2, ADR-0063) and the F92 pair it composes.',
   },
   bootstrap: {
     file: 'dist/esm/bootstrap.js',
@@ -138,11 +138,11 @@ export const TRANSFER_ROUTES = {
 
   ui: {
     file: 'dist/esm/ui.js',
-    requests: 8,
-    measured: 23462,
-    budget: 25100,
+    requests: 9,
+    measured: 23723,
+    budget: 25400,
     why:
-      'The application-UX entry (spec 07 NFR-32). +4 612 B and TWO more requests in 20.3, and the cause is worth reading: the F106 theme manager persists through the F21 storage wrapper, which a bundler consumer pays 1 464 B for and a static page pays 4 612 B and two round trips for, because this route downloads whole files. Reusing the wrapper is a spec requirement and the right call - it is also the clearest example on this table of the same decision costing two consumers very different amounts. Before that, +2 178 B in 20.2 for the toast manager, on a route that then cost six requests — the queue and the promise helper landed inside files this route already downloaded whole. Two and a half times its 7 332 B size-limit row, and the gap is the point ' +
+      'The application-UX entry (spec 07 NFR-32). +261 B and a NINTH request in 20.6, for the F111 reduced-motion helper - most of the movement is the shared chunks re-splitting, not the helper itself, which lives on /dom and is imported by nothing here. Before that: +4 612 B and TWO more requests in 20.3, and the cause is worth reading: the F106 theme manager persists through the F21 storage wrapper, which a bundler consumer pays 1 464 B for and a static page pays 4 612 B and two round trips for, because this route downloads whole files. Reusing the wrapper is a spec requirement and the right call - it is also the clearest example on this table of the same decision costing two consumers very different amounts. Before that, +2 178 B in 20.2 for the toast manager, on a route that then cost six requests — the queue and the promise helper landed inside files this route already downloaded whole. Two and a half times its 7 332 B size-limit row, and the gap is the point ' +
       'of this file: a bundler consumer importing `createDialogs` ships the tree-shaken 5 kB, while a static page ' +
       'downloads ui.js plus the five chunks it imports whole — the F70 modal wrapper, the F55/F56 buttons, the F109 ' +
       'focus primitives and the builder contract underneath them. Composition is free for the bundler consumer and ' +
@@ -153,13 +153,13 @@ export const TRANSFER_ROUTES = {
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 44214,
-    budget: 45100,
+    measured: 44374,
+    budget: 45300,
     why:
-      'Re-pinned for 20.3 (+998 B for the F106 theme manager and the F107 snippet), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
+      'Re-pinned for 20.6 (+160 B for the F111 reduced-motion helper), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
       "20.5 is where two waves of pressure resolved. NFR-22's ceiling is RE-DERIVED to 52 kB rather than raised, by spec 05's own method — the sum of the measured entry figures, an upper bound on a deduplicated single file, which reads 52104 B today against 39.8 kB at M18. That recomputation, and not a bigger number, is the condition spec 07 NFR-33 attached (ADR-0070). " +
       'The budget here stays tight on purpose: 40400 B is measured + 1.8%, not the ADR-0015 + 7%. The clause is an authoring bound with 12 kB of slack in it — that gap IS the deduplication the derivation always assumed — and a clause with slack does no per-PR work, while this row does. Two instruments, different jobs: the split ADR-0041 already made for the /bootstrap entry. ' +
-      '20.3 recomputes the clause a FOURTH time, reading 60914 B — so NFR-22 becomes 60 kB and this row moves to 44.4 kB (measured + 2.1%). The derivation is redone whenever ANY of its inputs moves, not only when an entry is added: a clause nobody recomputes is a number rather than a bound. ' +
-      "The sibling constraint is unchanged and still the tighter one for M20's remaining items: ADR-0041's 25 kB /bootstrap clause has 473 B left after 20.1 spent 9 B of it on a chunk re-split, and 20.2-20.4 land on the new entry for exactly the reason 20.1 did (spec 07 NFR-32).",
+      '20.3 recomputed it a fourth time (60914 B → 60 kB), and 20.6 recomputes it a FIFTH, reading 61938 B — so NFR-22 becomes 62 kB and this row moves to 45.3 kB (measured + 2.1%). The derivation is redone whenever ANY of its inputs moves, not only when an entry is added: a clause nobody recomputes is a number rather than a bound. ' +
+      "The sibling constraint is unchanged: ADR-0041's 25 kB /bootstrap clause held at 473 B free through 20.2-20.4, and 20.6 touches /dom and /ui rather than /bootstrap, so it is unaffected here.",
   },
 };

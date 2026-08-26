@@ -12,6 +12,15 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **A reduced-motion query point on `egl-utils-js/dom`** — `reducedMotion` gives every component
+  one place to ask whether the visitor wants less motion, instead of five separate `matchMedia`
+  calls each risking a slightly different query string. **A helper, not a manager**: there is no
+  animation-preset system to configure, and `ADR-0046`'s rejected `MotionManager` stays rejected.
+  Absent `matchMedia` (Node, an exotic host) reports `false` — no evidence of a preference is not
+  evidence of one, so the safe default is to animate as designed rather than assume every host
+  wants less motion (spec 07 F111, ROADMAP 20.6,
+  [ADR-0075](docs/adr/0075-one-query-point-and-a-seam-that-crossed-a-boundary.md)).
+
 - **Breakpoint observation on `egl-utils-js/ui`** — `createBreakpoints` over Bootstrap's own
   `$grid-breakpoints`, plus the map itself as frozen data (`BOOTSTRAP_BREAKPOINTS`) so a caller can
   read the same numbers rather than repeat them. **Ask once, be told when it changes**, instead of
@@ -106,6 +115,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- **The `matchMedia` seam moved from `egl-utils-js/ui`'s internals to `egl-utils-js/dom`'s.**
+  F111's reduced-motion helper is the first consumer on the `/dom` side of the entry boundary
+  (`/ui` already depends on `/dom` primitives, never the reverse), so the seam followed it rather
+  than being copied a third time — no behaviour change, one shared answer for what an absent
+  `matchMedia` means (ROADMAP 20.6, ADR-0075).
+- **NFR-22's artifact ceiling is re-derived to 62 kB** — the sixth recomputation, reading
+  61 938 B. The size-limit row stays the gate and is re-pinned to 45.3 kB (measured 44 390 B +
+  2.0%) (ROADMAP 20.6, ADR-0075).
 - **The `matchMedia` seam is shared rather than copied.** The F106 theme manager's resolver moved
   into an internal module the F108 observer uses too, and the manager was rewritten onto it — no
   behaviour change, and one answer instead of two for the question that would otherwise have

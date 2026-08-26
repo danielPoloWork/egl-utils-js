@@ -95,6 +95,8 @@
     "LoadingOverlayOptions",
     "MeasureResult",
     "PopperOverlayInstance",
+    "ReducedMotionInstance",
+    "ReducedMotionOptions",
     "RemotePipelineOptions",
     "Resource",
     "ResourceOptions",

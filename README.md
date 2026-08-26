@@ -885,6 +885,30 @@ Worth knowing:
   what it did. Announcing the same message twice really announces it twice, which needs a
   trick and gets one. Politeness is fixed at construction — for both, make two announcers.
 
+### Reduced motion, one query point (`egl-utils-js/dom`)
+
+One place components consult for `prefers-reduced-motion`, instead of five separate
+`matchMedia` calls that could each get the query string slightly wrong
+([ADR-0075](docs/adr/0075-one-query-point-and-a-seam-that-crossed-a-boundary.md)). A **helper**,
+not a manager — there is no animation-preset system to configure, and this does not smuggle
+one in.
+
+```js
+import { reducedMotion } from 'egl-utils-js/dom';
+
+const motion = reducedMotion();
+
+bsCarousel(el, { items, ride: !motion.prefersReduced() });
+
+const off = motion.on((prefers) => {
+  carousel.cycle(); // pause or resume — the visitor can flip this OS setting mid-session
+});
+```
+
+Absent `matchMedia` (Node, an exotic host) reports `false`: no evidence of a preference is not
+evidence of one, so the safe default is to animate as designed rather than assume every host
+wants less motion. `destroy()` detaches the listener.
+
 ### Promise-based dialogs (`egl-utils-js/ui`)
 
 A dialog is a question with one answer arriving later — which is what a promise is. So `await`
@@ -1856,15 +1880,15 @@ own response:
 | `/storage` | 5 | 4.50 kB |
 | `/table` | 5 | 11.82 kB |
 | root (`index.js`) | 7 | 13.57 kB |
-| `/dom` | 9 | 15.50 kB |
-| `/ui` | 8 | 23.46 kB |
+| `/dom` | 10 | 16.42 kB |
+| `/ui` | 9 | 23.72 kB |
 | `/bootstrap` | 10 | 44.28 kB |
-| **the global artifact** | **1** | **44.21 kB** |
+| **the global artifact** | **1** | **44.37 kB** |
 
 Three things worth reading off it. **If you need `/bootstrap` — or `/ui`, which composes it —
 take the artifact**: the whole surface in one request costs *less* than that one entry costs
 in ten, because the deep route downloads whole shared chunks whether or not you use all of
-them. **`/ui` is two and a half times its bundled size here** (9.57 kB tree-shaken, 23.46 kB served),
+them. **`/ui` is two and a half times its bundled size here** (9.53 kB tree-shaken, 23.72 kB served),
 and the gap is the composition: it borrows the modal wrapper, the buttons and the focus
 primitives rather than reimplementing them, which is free for a bundler consumer and billed
 by the file for a static page. And these figures are larger than the per-function budgets
@@ -1876,7 +1900,7 @@ ships after tree-shaking. Both are real; they just belong to different consumers
 `egl-utils-js` is **1.x**, and the number is meant literally. MAJOR-protected — these change only
 in a 2.0:
 
-- **Every named export**: 132 across the root and the ten subpath entries (120 distinct names —
+- **Every named export**: 133 across the root and the ten subpath entries (121 distinct names —
   the error classes are reachable from both the root and `/errors`).
 - **Every `EGL_*` error code**, and the `.code`-not-`instanceof` identity contract.
 - **Every `exports`-map path** — a deep import that resolves today keeps resolving.
