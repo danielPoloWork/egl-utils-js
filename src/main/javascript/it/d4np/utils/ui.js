@@ -33,3 +33,6 @@
 
 // Promise-based dialogs (spec 07 §2 items F101-F103, ADR-0071).
 export { createDialogs } from './ui-dialogs.js';
+
+// The toast manager (spec 07 §2 items F104-F105, ADR-0072).
+export { createToasts } from './ui-toasts.js';

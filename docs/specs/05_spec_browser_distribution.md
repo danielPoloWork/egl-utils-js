@@ -160,6 +160,19 @@ implementation.
       size-limit row is re-pinned to **42 kB**, measured + 2.1%, holding ADR-0059's rule
       that the tight row does the per-PR work.
 
+  - **Re-derived a third time (roadmap 20.2, [ADR-0072](../adr/0072-a-queue-a-rule-nobody-has-to-guess-and-one-toast-per-story.md)),
+    under spec 07 NFR-33:** the ceiling is **<= 59 kB**. The inputs are the same eleven entries —
+    no new one this time — and the method reads **59 447 B**: `root` 6 103, `/storage` 2 104,
+    `/sanitize` 1 491, `/text` 924, `/net` 770, `/table` 6 861, `/logging` 1 475, `/dom` 7 483,
+    `/bootstrap` 24 527, `/errors` 377, `/ui` 7 332. The whole movement is `/ui`, which grew
+    2 169 B for the F104 queue and the F105 promise helper. **The derivation is redone whenever
+    any input moves**, not only when an entry is added: a clause nobody recomputes is a number
+    rather than a bound.
+    - **The gate is still the row.** The artifact measures **42 432 B served** against the
+      recomputed 59 kB, so the slack widened again; the size-limit row is re-pinned to
+      **43.3 kB**, measured + 2.1%, holding ADR-0059's rule that the tight row does the per-PR
+      work.
+
 - NFR-23 **Bundler-consumer non-regression (hard):** the `exports` map's shape and
   resolution semantics are untouched by this wave; `sideEffects: false` continues to hold
   for every module including the new artifact's source; runtime dependencies stay **zero**

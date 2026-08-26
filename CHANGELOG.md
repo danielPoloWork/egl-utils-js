@@ -12,6 +12,26 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **A toast manager on `egl-utils-js/ui`** — `createToasts` adds to `bsToast` the thing it has
+  no opinion about: a **policy**. A cap with a queue promoted in arrival order, so a loop of
+  forty notifications shows three at a time instead of burying the page it is reporting on; and
+  two admission rules with the vagueness taken out of them. Adding again with an **id** the
+  manager still holds updates that toast rather than joining it with a second, whether it is
+  visible or still queued. An **identical** message is dropped rather than shown twice — where
+  identical means the same `variant`, `title` and `message`, and **only when the message and
+  title are both strings**, because node content can only be compared by reference and a rule
+  that silently never fires is worse than an honest exemption. A dropped duplicate restarts the
+  lifetime of the toast already up, so a repeated event still reads as recent, and an explicit
+  `id` leaves the dedupe system entirely in both directions, since an id is an assertion of
+  distinct identity. **`promise()` tells one story with one toast**: the pending message with no
+  auto-hide, replaced in place on settlement, with `success` and `error` allowed to be functions
+  of the value and the reason — and it returns **your own promise**, so the settlement passes
+  through untouched and an unhandled rejection stays yours to handle. Without a `container` it
+  builds and owns a positioned one (seven placements, all Bootstrap's own utilities) and removes
+  it on `destroy`. Every node is still built, timed, escaped, announced and disposed by
+  `bsToast` (spec 07 F104–F105, ROADMAP 20.2,
+  [ADR-0072](docs/adr/0072-a-queue-a-rule-nobody-has-to-guess-and-one-toast-per-story.md)).
+
 - **A new `egl-utils-js/ui` entry, with promise-based dialogs** — `createDialogs` returns a
   manager whose `confirm`, `prompt` and `open` each hand back a promise, over the F70 modal
   wrapper rather than a reimplementation of it. **A dismissal is an answer, not an error**:
@@ -47,6 +67,13 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- **NFR-22's artifact ceiling is re-derived to 59 kB** — the third recomputation, and the first
+  with no new entry in it: the same sum-of-measured-entry-figures method reads 59 447 B, all of
+  the movement being `/ui` growing 2 169 B for the toast manager. The rule this establishes is
+  the point — **the derivation is redone whenever any input moves**, not only when an entry is
+  added, because a clause nobody recomputes is a number rather than a bound. The size-limit row
+  stays the gate and is re-pinned to 43.3 kB (measured 42 398 B + 2.1%) (ROADMAP 20.2,
+  ADR-0072).
 - **NFR-22's artifact ceiling is re-derived to 57 kB** — the second recomputation, not a
   raise: the sum-of-measured-entry-figures method spec 05 defined now has an eleventh input and
   reads 57 278 B. The size-limit row stays the gate and is re-pinned to 42 kB (measured 41 119 B

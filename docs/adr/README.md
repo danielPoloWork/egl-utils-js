@@ -87,3 +87,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0069](0069-an-order-is-a-permutation-and-the-ceiling-held.md) | An order is a permutation, a drag is a displacement — and the ceiling held | Accepted |
 | [0070](0070-two-primitives-extracted-and-a-ceiling-recomputed.md) | Two primitives extracted, a trap that knows what it does not do, and a ceiling recomputed rather than raised | Accepted |
 | [0071](0071-a-manager-not-three-globals-and-a-dismissal-is-an-answer.md) | A manager, not three globals — a dismissal is an answer, and an eleventh entry | Accepted |
+| [0072](0072-a-queue-a-rule-nobody-has-to-guess-and-one-toast-per-story.md) | A queue, a rule nobody has to guess, and one toast per story | Accepted |
