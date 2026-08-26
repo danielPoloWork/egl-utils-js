@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-26 — reduced motion, the last capability in M20`](docs/journal/2026/08/2026-08-26-reduced-motion.md).
+  [`2026-08-26 — planning the form engine (spec 08, M21)`](docs/journal/2026/08/2026-08-26-form-engine-planning.md).
 
 ## Model & effort routing
 
@@ -363,17 +363,35 @@ Raising the number without redoing the derivation is the one thing that clause f
 
 ## Milestone 21 — Form engine
 
-Provisional wave ([ADR-0046](docs/adr/0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md)):
-the largest adopted gap, and the one behind a frozen non-goal — spec 04 §1 excludes "a
-form-validation framework", so this wave's spec (08) formally supersedes that clause
-before any implementation. Same rules as M19/M20; execution order is the owner's post-1.0
-call.
+The largest adopted gap in the
+[ADR-0046](docs/adr/0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md) triage, and
+the one behind a frozen non-goal: spec 04 §1 excludes "a form-validation framework". Spec:
+[`docs/specs/08_spec_form_engine.md`](docs/specs/08_spec_form_engine.md), which **supersedes
+that clause** for one bounded thing — an engine over native controls, composed and
+destroyable like every other instance here — and leaves the rest of the phrase intact
+(no schema language, no field widgets, no framework bindings, no reactive state, no
+`data-*` auto-discovery). It owns **F112–F125** and **NFR-37–NFR-44**.
 
-- [ ] 21.1 Form value binding & serialization: `getValues`/`setValues` over native controls, JSON and `FormData` output, reset-to-initial _(route: frontier-reasoning/high — sets-pattern: the form contract everything below builds on)_
-- [ ] 21.2 Validation engine: declarative sync/async/cross-field rules, severity levels, incremental validation _(route: standard/high)_
-- [ ] 21.3 Bootstrap adapter: `is-invalid`/`invalid-feedback`/`was-validated` wiring over the engine _(route: standard/medium)_
-- [ ] 21.4 Submit lifecycle: busy state, double-submit guard, `HttpError` body → field-error mapping _(route: standard/high — security: mapping untrusted server payloads onto the DOM)_
-- [ ] 21.5 Dirty/touched tracking and an unsaved-changes guard _(route: standard/medium)_
+Three facts the spec settles before any of it is written. **The read half of the DOM seam is
+what is actually missing**: F45's `setValue` writes a native control correctly and there is no
+`getValue`, which is why every application hand-rolls the same four coercion bugs. **The
+Bootstrap adapter is the `bsAlert` shape, not a new idea** — the engine takes an injected
+class map (ADR-0031) and Bootstrap's names are a frozen constant plus a thin call (ADR-0038),
+which resolves the layering question the word "adapter" usually hides. And **F123 is this
+library's first untrusted-payload path**: a server's error body reaching the DOM is a new
+trust boundary, so NFR-42 makes the threat-model update part of the item rather than a
+follow-up.
+
+Also the first wave authored after the 1.0 surface contracts, so NFR-39 binds it to
+ADR-0047 (unknown option keys), ADR-0048 (one word, one meaning) and ADR-0049 (commands
+throw, queries answer) explicitly — a fresh subsystem full of words like `message`, `label`,
+`value` and `reset` is exactly where a second vocabulary grows.
+
+- [ ] 21.1 Form value binding & serialization (spec 08 **F112–F115**): an instance over a caller-supplied root that knows its fields by name, `getValues`/`setValues` with the coercion rules as contract (unchecked checkbox `false`, empty number `null`, radio group one value or `null`, `multiple` select always an array), `toJSON`/`toFormData` that agree on names, and a reset to the **loaded** baseline rather than `HTMLFormElement.reset()`'s markup defaults. Owes the ADR that fixes the composition shape — one instance owning the form, or a shakeable family — and the entry name, since an `exports`-map path is MAJOR-protected the moment it ships (spec 08 §4) _(route: frontier-reasoning/high — sets-pattern + decision-heavy: the form contract everything below builds on)_
+- [ ] 21.2 Validation engine (spec 08 **F116–F119**): rules as plain functions, sync or async; cross-field rules that **declare their dependencies** so validating one field re-runs exactly what named it; `error`/`warning`/`info` with only `error` blocking; abortable and latest-wins on async, the F88 discipline for the same reason; and the platform's own `ValidityState` read and folded into one finding shape rather than re-declared, with `setCustomValidity` keeping the native bubble and the engine from ever disagreeing _(route: frontier-reasoning/high — the async race is the hard part, and the native-constraint seam is a contract decision)_
+- [ ] 21.3 Bootstrap costume for the findings (spec 08 **F120–F121**): `is-invalid`/`is-valid`, the feedback slots, `was-validated` and the `aria-invalid`/`aria-describedby` wiring — supplied to the engine's injected class map, never hardcoded inside it. Plus the half a red border cannot do: focus to the first `error` on a blocked submit and a summary announced through F110. **Measure before choosing where it lands** — `/bootstrap` has 473 B under ADR-0041's 25 kB clause, and if the costume does not fit, the recorded reason is the ceiling and not the layering (spec 08 NFR-38) _(route: standard/medium)_
+- [ ] 21.4 Submit lifecycle (spec 08 **F122–F123**): one call that validates, refuses on `error`, marks the form busy, disables what the caller nominated and restores **exactly** that, and awaits the caller's handler; the double-submit guard structural — a second call gets the first call's promise, not a refusal. Then the untrusted half: an injected mapper from an `HttpError` body to field findings, a server field name that matches no control reported rather than dropped, and every message crossing into the DOM as text. Ships the `docs/security/threat-model.md` update in the same PR (spec 08 NFR-42) _(route: standard/high — security: this is the library's first untrusted-payload path onto the DOM)_
+- [ ] 21.5 Dirty/touched tracking and an unsaved-changes guard (spec 08 **F124–F125**): *dirty* is "differs from the F115 baseline" and *touched* is "the user has interacted", per field and per form, because the two useful behaviours want different ones. The guard registers `beforeunload` only while dirty and detaches on teardown (an api-floor amendment, NFR-40, and a leak test as much as a behaviour test), plus an explicit check for the in-app route change `beforeunload` cannot see — where the F101 dialogs can ask a real question _(route: standard/medium)_
 
 
 ---
@@ -442,6 +460,17 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 | §4 (07) | Logical architecture | 20.1, 20.5, 20.6 | ✅ |
 | §5 (07) | Public interface | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ✅ |
 | §6 (07) | Verification & test strategy | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | ✅ |
+
+### Spec 08 — the form engine: binding, validation & submission (F112–F125)
+
+| Spec § | Requirement | Roadmap items | Status |
+|--------|-------------|---------------|--------|
+| §1 (08) | Objective & business context | 21.1, 21.2, 21.3, 21.4, 21.5 | ⏳ |
+| §2 (08) | Functional requirements F112–F125 | 21.1, 21.2, 21.3, 21.4, 21.5 | ⏳ |
+| §3 (08) | Non-functional requirements | 21.1, 21.2, 21.3, 21.4, 21.5 | ⏳ |
+| §4 (08) | Logical architecture | 21.1, 21.3 | ⏳ |
+| §5 (08) | Public interface | 21.1, 21.3 | ⏳ |
+| §6 (08) | Verification & test strategy | 21.1, 21.2, 21.3, 21.4, 21.5 | ⏳ |
 
 ### Spec 05 — browser distribution (F82–F87)
 

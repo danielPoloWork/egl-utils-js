@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-26 — Planning the form engine (spec 08, M21)](2026/08/2026-08-26-form-engine-planning.md)
 - [2026-08-26 — A worker count decided, and a diagnosis disproved (roadmap 20.7)](2026/08/2026-08-26-deterministic-browser-suite.md)
 - [2026-08-26 — One query point, and a seam that crossed a boundary (roadmap 20.6)](2026/08/2026-08-26-reduced-motion.md)
 - [2026-08-26 — Five queries, and a seam written once (roadmap 20.4)](2026/08/2026-08-26-breakpoint-observer.md)
