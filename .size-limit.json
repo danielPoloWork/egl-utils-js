@@ -131,9 +131,9 @@
     "limit": "850 B"
   },
   {
-    "name": "/dom - full import (NFR-12: measured 7483 B; +757 B in 20.5 for the F109 focus primitives and the F110 announcer, then +2 B in 20.1 from the chunk re-split the new /ui entry caused. Nothing on this entry changed in 20.1 - the movement is the build reorganising shared code, and it is recorded because a figure nobody re-reads is a figure that drifts)",
+    "name": "/dom - full import (NFR-12: measured 7774 B, +291 B in 20.6 for the F111 reduced-motion helper. Small on purpose: the helper is under 300 B of its own, kept there by NOT reaching for `bootstrap-elements.js`'s `assertPlainObject` for one validation check - that import alone cost this entry 4 kB served on the deep-ESM route before it was removed, which is what NFR-02 exists to catch. Limit 8.3 kB, measured + 6.8%)",
     "path": "dist/esm/dom.js",
-    "limit": "7.95 kB"
+    "limit": "8.3 kB"
   },
   {
     "name": "single: bindElements (NFR-12 <= 1 kB / NFR-02)",
@@ -632,7 +632,7 @@
     "limit": "1.35 kB"
   },
   {
-    "name": "/ui - full import (spec 07 NFR-32: measured 9567 B, +771 B in 20.4 for the F108 breakpoint observer and the shared media seam it extracted from the F106 manager. Limit 10.2 kB, measured + 6.6%. Two per-function rows below now, and they are the two worth having: `themeSnippet` because it imports nothing, and `createBreakpoints` because a caller who wants only breakpoints should not pay for three managers - which is the NFR-02 claim, measured rather than asserted)",
+    "name": "/ui - full import (spec 07 NFR-32: measured 9529 B - down 38 B from 20.4's reading as the shared chunks re-split around 20.6's /dom change, not because anything on this entry moved. Limit 10.2 kB, measured + 7.0%. Two per-function rows: `themeSnippet` (imports nothing) and `createBreakpoints` (NFR-02 as a number))",
     "path": "dist/esm/ui.js",
     "limit": "10.2 kB"
   },
@@ -649,8 +649,8 @@
     "limit": "1.32 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 44210 B, re-pinned for 20.4. **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4 - the breakpoint observer). NFR-22 is RE-DERIVED to 61 kB in this PR, not raised: the same sum-of-entry-figures method reads 61685 B, and spec 07 NFR-33 requires the recomputation rather than a bigger number (ADR-0074). THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 17 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 44390 B, re-pinned for 20.6. **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6 - the reduced-motion helper). NFR-22 is RE-DERIVED to 62 kB in this PR: the same sum-of-entry-figures method reads 61938 B, and spec 07 NFR-33 requires the recomputation rather than a bigger number (ADR-0075). THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 17 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "45.1 kB"
+    "limit": "45.3 kB"
   }
 ]

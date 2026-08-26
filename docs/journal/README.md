@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-26 — One query point, and a seam that crossed a boundary (roadmap 20.6)](2026/08/2026-08-26-reduced-motion.md)
 - [2026-08-26 — Five queries, and a seam written once (roadmap 20.4)](2026/08/2026-08-26-breakpoint-observer.md)
 - [2026-08-26 — One attribute, and a snippet that cannot drift (roadmap 20.3)](2026/08/2026-08-26-theme-manager.md)
 - [2026-08-26 — A queue, and a rule nobody has to guess (roadmap 20.2)](2026/08/2026-08-26-toast-manager.md)

@@ -90,4 +90,5 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0072](0072-a-queue-a-rule-nobody-has-to-guess-and-one-toast-per-story.md) | A queue, a rule nobody has to guess, and one toast per story | Accepted |
 | [0073](0073-bootstraps-own-attribute-and-a-snippet-that-cannot-drift.md) | Bootstrap's own attribute, a preference that is not a third state, and a snippet that cannot drift | Accepted |
 | [0074](0074-bootstraps-own-mixins-five-queries-and-a-seam-written-once.md) | Bootstrap's own mixins, five queries instead of eleven, and a seam written once | Accepted |
+| [0075](0075-one-query-point-and-a-seam-that-crossed-a-boundary.md) | One query point, and a seam that crossed a boundary | Accepted |
 | [0073](0073-bootstraps-own-attribute-and-a-snippet-that-cannot-drift.md) | Bootstrap's own attribute, a preference that is not a third state, and a snippet that cannot drift | Accepted |

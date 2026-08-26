@@ -1,9 +1,10 @@
 /**
- * egl-utils-js/ui — the shared `matchMedia` seam.
+ * egl-utils-js — the shared `matchMedia` seam, internal to `/dom` and reused by
+ * `/ui`.
  *
- * Three items on this entry ask the platform the same kind of question — the
- * F106 theme manager reads `prefers-color-scheme`, the F108 breakpoint observer
- * reads a set of `min-width`s, and the F111 reduced-motion helper will read
+ * Three call sites ask the platform the same kind of question — the F106 theme
+ * manager and F108 breakpoint observer (both on `/ui`) read `prefers-color-scheme`
+ * and a set of `min-width`s, and the F111 reduced-motion helper (on `/dom`) reads
  * `prefers-reduced-motion` — and each needs the same three things: resolve the
  * seam (injected first, ambient second), refuse a fake that cannot be subscribed
  * to, and treat **absence** of the platform API as a legal state rather than a
@@ -14,16 +15,25 @@
  * `matchMedia` throws or degrades, and whether a caller's fake is validated at
  * all.
  *
- * **Absence is documented degradation.** Node has no `matchMedia`, and `/ui` is
- * an entry a server render legitimately loads (ADR-0017's context guard, declared
- * in the floor inventory by ADR-0073). So a resolver may be `undefined`, and each
- * caller says what that means for it — the theme manager falls back to an option,
- * the breakpoint observer reports the smallest breakpoint.
+ * **This lives on the `/dom` side of the boundary, not `/ui`'s**, because F111
+ * needs no component library — spec 07 §4 sends the two accessibility primitives
+ * and the motion helper to `/dom` for exactly that reason, and `/ui` already
+ * depends on `/dom` internals (`ui-dialogs.js` composes `dom-a11y.js`'s
+ * `focusTrap`), never the other way. A module `/ui` needs has to be one `/dom`
+ * could also own without pulling in anything Bootstrap-flavoured, and this one
+ * qualifies: no peer, no builder contract, just the platform seam.
+ *
+ * **Absence is documented degradation.** Node has no `matchMedia`, and both `/dom`
+ * and `/ui` are entries a server render legitimately loads (ADR-0017's context
+ * guard, declared in the floor inventory by ADR-0073). So a resolver may be
+ * `undefined`, and each caller says what that means for it — the theme manager
+ * falls back to an option, the breakpoint observer reports the smallest
+ * breakpoint, the motion helper reports no preference for reduced motion.
  *
  * **A fake that cannot be subscribed to is a mistake, not a host limitation**, and
  * the two must not look the same: absence degrades, a malformed injection throws.
  *
- * @module egl-utils-js/ui
+ * @module egl-utils-js/dom
  */
 
 /**

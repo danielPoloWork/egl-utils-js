@@ -50,3 +50,8 @@ export { focusTrap, liveRegion, saveFocus } from './dom-a11y.js';
 // The clipboard write (spec 06 §2 item F97, ADR-0066). The text it moves is built
 // by `tableCsv` on `egl-utils-js/table`, which needs no DOM at all.
 export { copyToClipboard } from './dom-clipboard.js';
+
+// One reduced-motion query point (spec 07 §2 item F111, ADR-0075). A helper, not
+// a manager — ADR-0046 rejected an animation-preset system, and this does not
+// smuggle one in.
+export { reducedMotion } from './dom-motion.js';

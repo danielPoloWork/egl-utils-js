@@ -42,7 +42,7 @@ import {
 import { isAbortSignal, isElement } from './dom-helpers.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 import { localStorageWrapper } from './storage.js';
-import { mediaResolver } from './ui-media.js';
+import { mediaResolver } from './dom-media.js';
 
 /**
  * @typedef {import('./bootstrap-elements.js').Content} Content
@@ -76,7 +76,7 @@ const DEFAULT_KEY = 'egl-theme';
  */
 
 /**
- * @typedef {import('./ui-media.js').MediaQueryLike} MediaQueryLike
+ * @typedef {import('./dom-media.js').MediaQueryLike} MediaQueryLike
  */
 
 /**
