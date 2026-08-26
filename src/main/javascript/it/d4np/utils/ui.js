@@ -41,3 +41,8 @@ export { createToasts } from './ui-toasts.js';
 // F106-F107, ADR-0073). `themeSnippet` is pure and DOM-free, so a server render
 // or a build step can emit the before-first-paint script.
 export { createTheme, themeSnippet } from './ui-theme.js';
+
+// Breakpoint observation over Bootstrap's own `$grid-breakpoints` (spec 07 §2
+// item F108, ADR-0074). The map is exported as frozen data so a caller can read
+// the same numbers the observer does.
+export { BOOTSTRAP_BREAKPOINTS, createBreakpoints } from './ui-breakpoints.js';

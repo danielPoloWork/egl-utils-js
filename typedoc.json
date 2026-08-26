@@ -33,6 +33,8 @@
     "BindTableControlsOptions",
     "BindTableHistoryOptions",
     "BoundElements",
+    "BreakpointsInstance",
+    "BreakpointsOptions",
     "BsAccordionInstance",
     "BsAccordionOptions",
     "BsAlertOptions",

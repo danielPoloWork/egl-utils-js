@@ -139,8 +139,8 @@ export const TRANSFER_ROUTES = {
   ui: {
     file: 'dist/esm/ui.js',
     requests: 8,
-    measured: 22499,
-    budget: 24000,
+    measured: 23462,
+    budget: 25100,
     why:
       'The application-UX entry (spec 07 NFR-32). +4 612 B and TWO more requests in 20.3, and the cause is worth reading: the F106 theme manager persists through the F21 storage wrapper, which a bundler consumer pays 1 464 B for and a static page pays 4 612 B and two round trips for, because this route downloads whole files. Reusing the wrapper is a spec requirement and the right call - it is also the clearest example on this table of the same decision costing two consumers very different amounts. Before that, +2 178 B in 20.2 for the toast manager, on a route that then cost six requests — the queue and the promise helper landed inside files this route already downloaded whole. Two and a half times its 7 332 B size-limit row, and the gap is the point ' +
       'of this file: a bundler consumer importing `createDialogs` ships the tree-shaken 5 kB, while a static page ' +
@@ -153,8 +153,8 @@ export const TRANSFER_ROUTES = {
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 43430,
-    budget: 44400,
+    measured: 44214,
+    budget: 45100,
     why:
       'Re-pinned for 20.3 (+998 B for the F106 theme manager and the F107 snippet), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
       "20.5 is where two waves of pressure resolved. NFR-22's ceiling is RE-DERIVED to 52 kB rather than raised, by spec 05's own method — the sum of the measured entry figures, an upper bound on a deduplicated single file, which reads 52104 B today against 39.8 kB at M18. That recomputation, and not a bigger number, is the condition spec 07 NFR-33 attached (ADR-0070). " +
