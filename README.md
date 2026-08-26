@@ -953,6 +953,59 @@ it. A per-call `signal` does the same for one dialog.
 | `html` + `sanitize` | Opt into markup, with the sanitizer required (the F52 pair) |
 | `document`, `signal`, `class` | As everywhere else on this library's surface |
 
+### Breakpoints, asked once (`egl-utils-js/ui`)
+
+A component that needs to know whether it is on a narrow screen otherwise reads `innerWidth` on
+a resize listener — dozens of layout reads a drag — or writes its own
+`matchMedia('(min-width: 768px)')`, putting a number in the JavaScript that has to agree with
+the CSS forever. Or every component does one of those separately, which is the state this
+replaces: **ask once, be told when it changes**
+([ADR-0074](docs/adr/0074-bootstraps-own-mixins-five-queries-and-a-seam-written-once.md)).
+
+```js
+import { createBreakpoints } from 'egl-utils-js/ui';
+
+const screen = createBreakpoints();
+
+screen.current(); // 'lg'
+if (screen.down('md')) collapseTheSidebar();
+
+const off = screen.on(({ current, previous }) => {
+  table.setDensity(screen.up('lg') ? 'comfortable' : 'compact');
+});
+```
+
+**Bootstrap's own names, and Bootstrap's own meanings** — read from its SCSS, not from what the
+names suggest:
+
+| Predicate | Means | Careful |
+|---|---|---|
+| `up('md')` | md and wider | always `true` for `xs`, which has no query |
+| `down('md')` | **narrower than md** | not "md and narrower" — the Bootstrap 5 change people trip over |
+| `only('md')` | md and nothing wider | |
+| `between('md','xl')` | md up to but **not including** xl | half-open, as the mixin is |
+
+`current()` is the largest breakpoint whose minimum the viewport meets; `names` is the ascending
+list, so you can iterate without hardcoding the vocabulary.
+
+**`on()` reports a crossing, not a resize.** A drag from 800 px to 900 px says nothing — it
+crosses no breakpoint — and a jump from 500 to 1500 says it *once*, even though four media
+queries flipped. Debouncing is not left to you.
+
+Two questions deliberately **throw** instead of answering: `down('xs')`, because nothing is
+narrower than the base (Bootstrap's own mixin says `true` there only because its `@if` falls
+through), and `between('lg','md')`, because a reversed range can never match. A plausible
+boolean would hide the mistake.
+
+| Option | Meaning |
+|---|---|
+| `breakpoints` | Your own map, **only** if your SCSS changed `$grid-breakpoints`. Validated ascending and starting at zero |
+| `matchMedia` | The media seam, shared with the theme manager. **Absent** (Node, an exotic host) means `current()` reports the smallest breakpoint |
+| `signal` | Detaches every media listener when aborted |
+
+`BOOTSTRAP_BREAKPOINTS` is exported as frozen data, so you can read the same numbers the
+observer does rather than repeat them.
+
 ### Theme, over Bootstrap's own attribute (`egl-utils-js/ui`)
 
 Bootstrap 5.3 themes off `data-bs-theme`, and that attribute is the whole state this manages —
@@ -1804,14 +1857,14 @@ own response:
 | `/table` | 5 | 11.82 kB |
 | root (`index.js`) | 7 | 13.57 kB |
 | `/dom` | 9 | 15.50 kB |
-| `/ui` | 8 | 22.50 kB |
+| `/ui` | 8 | 23.46 kB |
 | `/bootstrap` | 10 | 44.28 kB |
-| **the global artifact** | **1** | **43.43 kB** |
+| **the global artifact** | **1** | **44.21 kB** |
 
 Three things worth reading off it. **If you need `/bootstrap` — or `/ui`, which composes it —
 take the artifact**: the whole surface in one request costs *less* than that one entry costs
 in ten, because the deep route downloads whole shared chunks whether or not you use all of
-them. **`/ui` is two and a half times its bundled size here** (8.80 kB tree-shaken, 22.50 kB served),
+them. **`/ui` is two and a half times its bundled size here** (9.57 kB tree-shaken, 23.46 kB served),
 and the gap is the composition: it borrows the modal wrapper, the buttons and the focus
 primitives rather than reimplementing them, which is free for a bundler consumer and billed
 by the file for a static page. And these figures are larger than the per-function budgets
@@ -1823,7 +1876,7 @@ ships after tree-shaking. Both are real; they just belong to different consumers
 `egl-utils-js` is **1.x**, and the number is meant literally. MAJOR-protected — these change only
 in a 2.0:
 
-- **Every named export**: 130 across the root and the ten subpath entries (118 distinct names —
+- **Every named export**: 132 across the root and the ten subpath entries (120 distinct names —
   the error classes are reachable from both the root and `/errors`).
 - **Every `EGL_*` error code**, and the `.code`-not-`instanceof` identity contract.
 - **Every `exports`-map path** — a deep import that resolves today keeps resolving.

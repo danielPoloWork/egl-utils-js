@@ -42,6 +42,7 @@ import {
 import { isAbortSignal, isElement } from './dom-helpers.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 import { localStorageWrapper } from './storage.js';
+import { mediaResolver } from './ui-media.js';
 
 /**
  * @typedef {import('./bootstrap-elements.js').Content} Content
@@ -75,13 +76,7 @@ const DEFAULT_KEY = 'egl-theme';
  */
 
 /**
- * The part of `MediaQueryList` this module uses. Narrower than the platform type
- * on purpose, so a test can supply four lines instead of a fake DOM.
- *
- * @typedef {object} MediaQueryLike
- * @property {boolean} matches
- * @property {(type: string, listener: () => void) => void} addEventListener
- * @property {(type: string, listener: () => void) => void} [removeEventListener]
+ * @typedef {import('./ui-media.js').MediaQueryLike} MediaQueryLike
  */
 
 /**
@@ -293,9 +288,6 @@ export function createTheme(options = {}) {
   if (typeof key !== 'string' || key === '') {
     throw new TypeError(`${api}: options.key must be a non-empty string`);
   }
-  if (mediaSeam !== undefined && typeof mediaSeam !== 'function') {
-    throw new TypeError(`${api}: options.matchMedia must be a function`);
-  }
   if (fallback !== 'light' && fallback !== 'dark') {
     throw new TypeError(`${api}: options.fallback must be 'light' or 'dark'`);
   }
@@ -306,32 +298,14 @@ export function createTheme(options = {}) {
   const doc = resolveDocument({ document: explicitDocument }, api);
   const target = root ?? /** @type {Element} */ (doc.documentElement);
 
-  // Resolved once. `matchMedia` is a `window` member with no Node counterpart, so
-  // its absence is a legal state rather than a failure — and reading it through
-  // an injectable seam is what lets the suite drive both branches of a media
-  // query without a browser (ADR-0017's context guard).
-  const resolveSeam =
-    mediaSeam ??
-    (typeof (/** @type {{ matchMedia?: unknown }} */ (globalThis).matchMedia) === 'function'
-      ? /** @type {(query: string) => MediaQueryLike} */ (
-          (query) => /** @type {any} */ (globalThis).matchMedia(query)
-        )
-      : undefined);
-
-  /** @type {MediaQueryLike | undefined} */
-  let query;
-  if (resolveSeam !== undefined) {
-    query = resolveSeam(DARK_QUERY);
-    if (
-      query === null ||
-      typeof query !== 'object' ||
-      typeof query.addEventListener !== 'function'
-    ) {
-      throw new TypeError(
-        `${api}: options.matchMedia must return a MediaQueryList with addEventListener`,
-      );
-    }
-  }
+  // Resolved through the seam this entry shares with the F108 observer (20.4):
+  // injected first, ambient second, and **absent** is a legal state rather than a
+  // failure, because `matchMedia` has no Node counterpart and `/ui` is an entry a
+  // server render legitimately loads (ADR-0017's context guard). Written once
+  // there rather than a second time here — the behaviour that would otherwise
+  // drift is exactly this: whether absence throws or degrades.
+  const openQuery = mediaResolver(mediaSeam, api);
+  const query = openQuery?.(DARK_QUERY);
 
   /** @type {Set<(change: ThemeChange) => void>} */
   const subscribers = new Set();

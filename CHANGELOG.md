@@ -12,6 +12,25 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **Breakpoint observation on `egl-utils-js/ui`** — `createBreakpoints` over Bootstrap's own
+  `$grid-breakpoints`, plus the map itself as frozen data (`BOOTSTRAP_BREAKPOINTS`) so a caller can
+  read the same numbers rather than repeat them. **Ask once, be told when it changes**, instead of
+  a resize listener per component reading layout on the hot path of a drag, or a hand-written
+  `min-width` that has to agree with the CSS forever. The four predicates are Bootstrap's four SCSS
+  mixins with the meanings **its source** gives them rather than the ones the names suggest:
+  `up('md')` is md and wider and is always true for `xs` (which has no query), `down('md')` is
+  **narrower than md** — the Bootstrap 5 change people trip over — `only('md')` is md and nothing
+  wider, and `between('md','xl')` is half-open. Internally it opens **five** `min-width` queries
+  rather than eleven, because BS5's `-down` is the complement of `-up` and `-only`/`-between` are
+  intersections of two of them, which is also why the `0.02px` subtraction that a hand-rolled
+  version mistypes appears nowhere in this library. `on()` reports a **crossing** rather than a
+  media change, so a drag from 800 px to 900 px says nothing and a jump from 500 to 1500 says it
+  once. Two questions **throw** instead of returning a plausible boolean: `down('xs')`, since
+  nothing is narrower than the base, and a reversed `between`, since it can never match. Absent
+  `matchMedia` (Node, an exotic host) degrades to the smallest breakpoint; a seam that cannot be
+  subscribed to throws (spec 07 F108, ROADMAP 20.4,
+  [ADR-0074](docs/adr/0074-bootstraps-own-mixins-five-queries-and-a-seam-written-once.md)).
+
 - **Theme management on `egl-utils-js/ui`** — `createTheme` over Bootstrap 5.3's own
   `data-bs-theme` and nothing beside it: no class of ours to keep in step, and the attribute name
   deliberately not an option, because a configurable one is how a second theming mechanism
@@ -87,6 +106,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- **The `matchMedia` seam is shared rather than copied.** The F106 theme manager's resolver moved
+  into an internal module the F108 observer uses too, and the manager was rewritten onto it — no
+  behaviour change, and one answer instead of two for the question that would otherwise have
+  drifted: whether an absent `matchMedia` throws or degrades, and whether a caller's fake is
+  validated at all. F111's reduced-motion helper inherits it (ROADMAP 20.4, ADR-0074).
+- **NFR-22's artifact ceiling is re-derived to 61 kB** — the fifth recomputation, reading
+  61 685 B, all of the movement being `/ui` growing 771 B. The size-limit row stays the gate and is
+  re-pinned to 45.1 kB (measured 44 210 B + 2.0%) (ROADMAP 20.4, ADR-0074).
 - **The platform api-floor gate now knows about `matchMedia`** — added to the scanner's policed
   globals, so a bare use anywhere in the library is checked rather than invisible, with three
   inventory entries declared: `matchMedia` (Safari 5.1), `MediaQueryList.matches` (5.1) and

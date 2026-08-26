@@ -632,9 +632,9 @@
     "limit": "1.35 kB"
   },
   {
-    "name": "/ui - full import (spec 07 NFR-32: measured 8796 B, +1464 B in 20.3 for the F106 theme manager and the F107 snippet, on top of 20.2\u2019s +2169 B. Limit 9.4 kB, measured + 6.9%. **Still no per-function row**: the three managers share the builder contract and the option helper, so a single-import row measures within a few hundred bytes of this one - `themeSnippet` is the exception worth knowing, and it has its own row below because it is the one export here that pulls NOTHING)",
+    "name": "/ui - full import (spec 07 NFR-32: measured 9567 B, +771 B in 20.4 for the F108 breakpoint observer and the shared media seam it extracted from the F106 manager. Limit 10.2 kB, measured + 6.6%. Two per-function rows below now, and they are the two worth having: `themeSnippet` because it imports nothing, and `createBreakpoints` because a caller who wants only breakpoints should not pay for three managers - which is the NFR-02 claim, measured rather than asserted)",
     "path": "dist/esm/ui.js",
-    "limit": "9.4 kB"
+    "limit": "10.2 kB"
   },
   {
     "name": "single: themeSnippet (spec 07 F107: measured 421 B, on its own because it is the only export on /ui that reaches NO platform API and imports nothing - it returns a string. A server render or a build step pays this and not a byte more, which is the whole reason the before-first-paint script is emitted rather than documented)",
@@ -643,8 +643,14 @@
     "limit": "450 B"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 43460 B, re-pinned for 20.3. **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3 - the theme manager). NFR-22 is RE-DERIVED to 60 kB in this PR, not raised: the same sum-of-entry-figures method reads 60914 B, and spec 07 NFR-33 requires the recomputation rather than a bigger number (ADR-0073). THIS ROW IS STILL THE GATE: pinned at measured + 2.1%, because a clause with 17 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split",
+    "name": "single: createBreakpoints (spec 07 F108: measured 1237 B against a 9567 B entry - 13% of it, which is the NFR-02 shakeability claim as a number rather than an assertion. A page that wants only breakpoints pays for the observer, the shared media seam and the option check, and for none of the three managers)",
+    "path": "dist/esm/ui.js",
+    "import": "{ createBreakpoints }",
+    "limit": "1.32 kB"
+  },
+  {
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 44210 B, re-pinned for 20.4. **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4 - the breakpoint observer). NFR-22 is RE-DERIVED to 61 kB in this PR, not raised: the same sum-of-entry-figures method reads 61685 B, and spec 07 NFR-33 requires the recomputation rather than a bigger number (ADR-0074). THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 17 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "44.4 kB"
+    "limit": "45.1 kB"
   }
 ]
