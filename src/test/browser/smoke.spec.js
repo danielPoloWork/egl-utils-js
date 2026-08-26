@@ -409,7 +409,8 @@ test.describe('sanitizeHtml — non-execution in a real engine', () => {
   }
 
   test('no sanitized payload executes when inserted into a live DOM', async ({ page }) => {
-    test.setTimeout(60_000); // 18 payloads x a 400 ms settle window, x3 engines
+    // Genuinely slow work, not slack: 18 payloads x a 400 ms settle window, x3
+    // engines. It fits the suite-wide 60 s budget the config pins (ADR-0076).
     for (const payload of PAYLOADS) {
       const outcome = await insertAndProvoke(page, payload, { sanitize: true });
       expect(
@@ -493,7 +494,6 @@ test.describe('sanitize bypass corpus — real engines, where mXSS actually live
   // rewritten to poke a test flag — and attributes each call to its payload id.
 
   test('no corpus payload executes in this engine', async ({ page }) => {
-    test.setTimeout(60_000);
     const outcome = await page.evaluate(async (corpus) => {
       /** @type {string[]} */
       const executed = [];

@@ -25,12 +25,15 @@ import { test, expect } from '@playwright/test';
 
 const FIXTURE = '/src/test/browser/fixture.html';
 // Both read once, here, and injected as CONTENT rather than fetched per test by
-// URL. The bytes are Bootstrap's own either way; what changes is that eight
-// parallel workers no longer ask this repo's minimal static server for a 230 kB
-// stylesheet and an 80 kB bundle once per test — which is what made the first run
-// of this file time out in `beforeEach` on a developer machine, and what made a
-// neighbouring spec flake in the same full-suite run. A flaky gate is a gate
-// people stop reading.
+// URL. The bytes are Bootstrap's own either way; what changes is that the
+// parallel workers no longer ask this repo's minimal static server for a 227 kB
+// stylesheet and a 79 kB bundle once per test.
+//
+// Worth recording, since this file is where the suspicion started: 20.7 measured
+// the server and it was never the bottleneck — it serves 140 concurrent fixture
+// loads in 1.1 s. What timed this file out was the worker count, now bounded in
+// `playwright.config.js` (ADR-0076). Injecting the bytes is still the right shape
+// — it is less work for everyone — it just was not the cure it looked like.
 const BOOTSTRAP_BUNDLE = readFileSync(
   'node_modules/bootstrap/dist/js/bootstrap.bundle.min.js',
   'utf8',
@@ -38,14 +41,9 @@ const BOOTSTRAP_BUNDLE = readFileSync(
 const BOOTSTRAP_CSS = readFileSync('node_modules/bootstrap/dist/css/bootstrap.min.css', 'utf8');
 
 test.beforeEach(async ({ page }) => {
-  // Twice the default, and earned rather than defensive: each test here drives
-  // REAL Bootstrap transitions in a real engine with the real stylesheet applied,
-  // and the suite runs one worker per core. Measured on a loaded developer
-  // machine, a single test in this file takes 10-30 s of wall clock — inside the
-  // default 30 s often enough to pass and near enough to it to flake, which is
-  // the worst of both. The work is genuine; the window was too tight.
-  test.setTimeout(60_000);
-
+  // The 60 s budget this file used to set for itself now belongs to the whole
+  // suite (`playwright.config.js`, ADR-0076): five specs had grown the same line
+  // for the same reason, and the sixth had not, which is how 20.7 was found.
   /** @type {string[]} */
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(String(error)));

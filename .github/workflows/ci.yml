@@ -240,6 +240,12 @@ jobs:
       # verified — not the sources.
       - name: Build
         run: pnpm build
+      # Concurrency and the per-test budget are pinned in `playwright.config.js`
+      # rather than inherited from Playwright's half-the-cores default, which
+      # scales with the runner (ADR-0076, roadmap 20.7). On this 4-core runner the
+      # formula yields the 2 workers the default already gave, so behaviour here
+      # is unchanged — what it buys is that a larger runner cannot silently
+      # reintroduce the oversubscription that made the suite flaky locally.
       - name: Run the browser smoke suite
         run: pnpm test:browser
       - name: Upload the Playwright report on failure

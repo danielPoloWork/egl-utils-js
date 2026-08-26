@@ -1950,7 +1950,7 @@ inside their declared ranges — keeping those patched is yours. Full detail:
 | 17 | v1.0.0 readiness & the first stable release | ✅ done |
 | 18 | Browser distribution | ✅ done |
 | 19 | Table data & bsTable extras | ✅ done |
-| 20 | Application UX utilities | 🚧 in progress |
+| 20 | Application UX utilities | ✅ done |
 | 21 | Form engine | ⏳ planned |
 
 
