@@ -10,6 +10,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createTheme, themeSnippet } from '../../../../../main/javascript/it/d4np/utils/ui.js';
 import { StorageError } from '../../../../../main/javascript/it/d4np/utils/errors.js';
+import { localStorageWrapper } from '../../../../../main/javascript/it/d4np/utils/storage.js';
 
 /**
  * A storage wrapper's shape, backed by a Map.
@@ -67,10 +68,34 @@ function fakeMedia(dark = false) {
 /** @returns {string | null} */
 const applied = () => document.documentElement.getAttribute('data-bs-theme');
 
+/**
+ * A `localStorage` the snippet can read, installed as a global for the tests that
+ * need one.
+ *
+ * **Stubbed rather than borrowed from the host**, and Node 26 is why: the ambient
+ * `globalThis.localStorage` a jsdom environment exposes is not there on every
+ * runtime in the support matrix, so a test that reached for it passed on Node 22
+ * and 24 and failed on 26. The snippet's contract is "it reads `localStorage`";
+ * supplying one is the test's job, not the host's.
+ *
+ * @param {Record<string, string>} [seed]
+ */
+function stubStorage(seed = {}) {
+  const map = new Map(Object.entries(seed));
+  const store = {
+    getItem: (key) => (map.has(key) ? /** @type {string} */ (map.get(key)) : null),
+    setItem: (key, value) => void map.set(key, String(value)),
+    removeItem: (key) => void map.delete(key),
+  };
+  vi.stubGlobal('localStorage', store);
+  return { store, map };
+}
+
 afterEach(() => {
   document.documentElement.removeAttribute('data-bs-theme');
   document.body.innerHTML = '';
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe('F106 — reading, setting and resolving', () => {
@@ -235,16 +260,19 @@ describe('F106 — persistence through the F21 wrapper', () => {
     expect(theme.resolved()).toBe('dark');
   });
 
-  it('defaults to the real localStorage wrapper', () => {
-    // The F21 wrapper, whose in-memory fallback is why private mode degrades
-    // instead of throwing (ADR-0010). Asserted through the real one rather than a
-    // double, because the default is the thing being checked.
-    globalThis.localStorage.removeItem('egl-theme');
+  it('defaults to the real F21 wrapper', () => {
+    // Asserted THROUGH the wrapper rather than through whatever store it resolved
+    // to: the claim is "the default is `localStorageWrapper`", and the wrapper's
+    // whole point is that it works whether or not a real Web Storage exists
+    // (ADR-0010). Reaching past it to `globalThis.localStorage` would make this
+    // test a claim about the host instead — which is exactly what broke it on
+    // Node 26.
+    localStorageWrapper.remove('egl-theme');
     const theme = createTheme({ matchMedia: fakeMedia().seam });
     theme.set('dark');
-    expect(globalThis.localStorage.getItem('egl-theme')).toBe('"dark"');
+    expect(localStorageWrapper.get('egl-theme')).toBe('dark');
     theme.destroy();
-    globalThis.localStorage.removeItem('egl-theme');
+    localStorageWrapper.remove('egl-theme');
   });
 });
 
@@ -422,33 +450,42 @@ describe('F107 — the snippet, which cannot drift', () => {
   };
 
   it('applies a persisted theme, decoding what the F21 wrapper wrote', () => {
-    globalThis.localStorage.setItem('egl-theme', JSON.stringify('dark'));
+    stubStorage({ 'egl-theme': JSON.stringify('dark') });
     run(themeSnippet());
     expect(applied()).toBe('dark');
-    globalThis.localStorage.removeItem('egl-theme');
   });
 
   it('accepts a hand-set bare value too, so a key set by other means still works', () => {
-    globalThis.localStorage.setItem('egl-theme', 'dark');
+    stubStorage({ 'egl-theme': 'dark' });
     run(themeSnippet());
     expect(applied()).toBe('dark');
-    globalThis.localStorage.removeItem('egl-theme');
   });
 
   it('falls through to the system, and then to the fallback', () => {
-    globalThis.localStorage.removeItem('egl-theme');
-    // jsdom has no matchMedia unless a test supplies one; the snippet's own
-    // `window.matchMedia &&` guard is what makes that a fall-through rather than
-    // a page error.
+    stubStorage();
+    // No matchMedia here; the snippet's own `window.matchMedia &&` guard is what
+    // makes that a fall-through rather than a page error.
     run(themeSnippet({ fallback: 'dark' }));
     expect(applied()).toBe('dark');
   });
 
   it('ignores a corrupt stored value rather than applying it', () => {
-    globalThis.localStorage.setItem('egl-theme', JSON.stringify('chartreuse'));
+    stubStorage({ 'egl-theme': JSON.stringify('chartreuse') });
     run(themeSnippet({ fallback: 'light' }));
     expect(applied()).toBe('light');
-    globalThis.localStorage.removeItem('egl-theme');
+  });
+
+  it('survives a storage that throws on access alone', () => {
+    // A blocked-cookies context can throw on the accessor itself, and a theme is
+    // never worth a page error — which is why the whole snippet is in a `try`.
+    vi.stubGlobal('localStorage', {
+      getItem: () => {
+        throw new Error('access denied');
+      },
+    });
+    expect(() => run(themeSnippet({ fallback: 'dark' }))).not.toThrow();
+    // Nothing applied, because the throw happened before the fall-through could.
+    expect(applied()).toBeNull();
   });
 
   it('agrees with the manager, key for key and value for value', () => {
@@ -461,20 +498,30 @@ describe('F107 — the snippet, which cannot drift', () => {
       [undefined, false, 'light'],
     ]) {
       const key = 'acme-theme';
-      globalThis.localStorage.removeItem(key);
-      if (stored !== undefined) globalThis.localStorage.setItem(key, JSON.stringify(stored));
+      // One store for both sides, seeded the way the F21 wrapper writes.
+      const { store } = stubStorage(stored === undefined ? {} : { [key]: JSON.stringify(stored) });
+      /** @type {any} */ (globalThis.window).matchMedia = () => ({ matches: systemDark });
 
-      // The snippet's path: a real localStorage and a stubbed system query.
-      const matchMedia = vi.fn(() => ({ matches: systemDark }));
-      /** @type {any} */ (globalThis.window).matchMedia = matchMedia;
+      // The snippet's path.
       document.documentElement.removeAttribute('data-bs-theme');
       run(themeSnippet({ key }));
       const fromSnippet = applied();
 
-      // The manager's path: the same key, the same system answer.
+      // The manager's path: the same key, the same store, the same system answer.
       document.documentElement.removeAttribute('data-bs-theme');
       const theme = createTheme({
         key,
+        storage: {
+          get: (k, fallback) => {
+            const raw = store.getItem(k);
+            return raw === null ? fallback : JSON.parse(raw);
+          },
+          set: (k, value) => store.setItem(k, JSON.stringify(value)),
+          remove: (k) => store.removeItem(k),
+          clear: () => {},
+          has: (k) => store.getItem(k) !== null,
+          isPersistent: () => true,
+        },
         matchMedia: () => ({
           matches: systemDark,
           addEventListener: () => {},
@@ -486,7 +533,6 @@ describe('F107 — the snippet, which cannot drift', () => {
 
       expect(fromSnippet).toBe(expected);
       expect(fromManager).toBe(expected);
-      globalThis.localStorage.removeItem(key);
       delete (/** @type {any} */ (globalThis.window).matchMedia);
     }
   });

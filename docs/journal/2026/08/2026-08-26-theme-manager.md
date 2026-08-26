@@ -6,7 +6,7 @@
   `data-bs-theme`.
   [ADR-0073](../../adr/0073-bootstraps-own-attribute-and-a-snippet-that-cannot-drift.md).
 - **The NFR-34 api-floor amendment** — which this item turned out to owe, not 20.4.
-- 47 unit tests over an injected storage and an injected `matchMedia`, plus 4 three-engine
+- 48 unit tests over an injected storage and an injected `matchMedia`, plus 4 three-engine
   browser tests for the one claim jsdom cannot make; `ui-theme.js` at 100% statements, branches,
   functions and lines.
 - NFR-22 re-derived a **fourth** time (60 kB, 60 914 B); the artifact row re-pinned to 44.4 kB;
@@ -44,6 +44,28 @@ turned out the second half of that rule was unimplemented.
 So the preference is now held in memory, read from storage once at construction, with storage as
 its **mirror**. A failed persist costs the next page load, not this one. As a bonus it keeps a
 value components read on every render off the storage accessor.
+
+## What Node 26 caught, and why the matrix has three cells
+
+CI failed on **node-26 only**, with node-22 and node-24 green: five of the new tests reached for
+`globalThis.localStorage` — the ambient store a jsdom environment usually exposes — and on Node 26
+it was `undefined`.
+
+Nothing in the library was wrong. `createTheme` defaults to the F21 wrapper, whose whole point is
+that it works whether or not a real Web Storage exists (ADR-0010), so the *implementation* was
+already host-independent; the *tests* were not. Two fixes, and they are different in kind:
+
+- the "defaults to the real wrapper" test now asserts **through** `localStorageWrapper` rather
+  than through whatever store it resolved to. The claim was always "the default is the F21
+  wrapper", and reaching past it made the test a claim about the host instead;
+- the snippet tests **stub** a Web Storage of their own (`vi.stubGlobal`). The snippet's contract
+  is "it reads `localStorage`", so supplying one is the test's job. That also bought a new test
+  for free: a store that throws on the accessor alone, which is the blocked-cookies case the
+  snippet's outer `try` exists for.
+
+This is what a three-version matrix is for, and it is worth noticing that the failure was
+*eight percent* of the runtimes rather than all of them — the kind of thing a single-version CI
+would have shipped.
 
 ## Three decisions worth their paragraphs
 
