@@ -34,6 +34,7 @@ const SUBPATHS = [
   'dom',
   'bootstrap',
   'ui',
+  'forms',
 ];
 
 /** @type {string[]} */

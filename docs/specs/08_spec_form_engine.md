@@ -269,12 +269,14 @@ Bootstrap-flavoured code, the general-purpose read primitive on `/dom`** — and
 for `/ui`, the **names are proposals** (§5), because an `exports`-map path is MAJOR-protected
 the moment it ships.
 
-**What the first item owes an ADR.** Two shapes remain defensible for the engine's surface —
-one instance owning the whole form, or a small family of composable pieces (a value binder, a
-validator, a submitter) that a caller assembles. The first is what an application wants; the
-second is what NFR-02's shakeability rewards, since a filter form needs values and neither
-validation nor submission. F112–F125 fix the **observable contract**; the composition shape
-and the entry name are the implementing item's ADR, on the precedent of
+**What the first item owed an ADR, and how it was answered.** Two shapes were defensible for
+the engine's surface — one instance owning the whole form, or a small family of composable
+pieces that a caller assembles. The first is what an application wants; the second is what
+NFR-02's shakeability rewards, since a filter form needs values and neither validation nor
+submission. 21.1 chose the **family, composed by injection**: `createForm` owns values, and
+21.2/21.4/21.5 are factories that *take* a form instance, the way `bindTableControls` takes a
+pipeline (ADR-0025, ADR-0077). F112–F125 fixed the **observable contract** here; the shape and
+the entry name were the implementing item's to settle, on the precedent of
 [ADR-0062](../adr/0062-a-sibling-not-a-wrapper.md) and ADR-0071.
 
 ## 5. Public Interface
@@ -282,13 +284,16 @@ and the entry name are the implementing item's ADR, on the precedent of
 New, SemVer-protected once shipped. Names are **indicative** where §4 defers the shape; what
 is contractual is the set of capabilities and their error model.
 
-- **A new entry** for the engine — proposed `egl-utils-js/forms`, proposed rather than frozen
-  for the reason §4 gives. A normal subpath in every other respect: named exports only,
+- **A new entry** for the engine — **`egl-utils-js/forms`**, proposed here and **fixed by
+  [ADR-0077](../adr/0077-a-subject-entry-a-primitive-that-stayed-one-and-a-family-not-a-god-object.md)
+  in 21.1**, which also records why `/dom` and `/ui` were the wrong homes and what the split
+  cost in served bytes. A *subject* entry, the shape `/table` and `/net` already are. A normal subpath in every other respect: named exports only,
   `sideEffects: false`, no bare specifier at module scope, both no-bundler routes carrying it
   (spec 05), and its own measured budget row.
-- **On `egl-utils-js/dom`**: the F113 read primitive, if it is general-purpose enough to be
-  one — the judgement §4 leaves to the implementing item, and the only part of this wave that
-  touches an existing entry.
+- **On `egl-utils-js/dom`**: the F113 read primitive — **`getValue`, and it is one**
+  (ADR-0077): 280 B beside the `setValue` it completes, against 1 840 B for the entry that
+  would otherwise have been the only way to reach it. The only part of this wave that touches
+  an existing entry.
 - **The Bootstrap costume** (F120) on `/bootstrap` if NFR-38's measurement allows, otherwise
   on `/ui` with the ceiling recorded as the reason.
 - **Error model**, continuing ADR-0003 and the boundary ADR-0047 wrote down — `EGL_*` for what

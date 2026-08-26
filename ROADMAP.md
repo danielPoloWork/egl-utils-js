@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-26 — planning the form engine (spec 08, M21)`](docs/journal/2026/08/2026-08-26-form-engine-planning.md).
+  [`2026-08-26 — a subject entry, and the primitive that stayed one (21.1)`](docs/journal/2026/08/2026-08-26-form-values.md).
 
 ## Model & effort routing
 
@@ -387,7 +387,7 @@ ADR-0047 (unknown option keys), ADR-0048 (one word, one meaning) and ADR-0049 (c
 throw, queries answer) explicitly — a fresh subsystem full of words like `message`, `label`,
 `value` and `reset` is exactly where a second vocabulary grows.
 
-- [ ] 21.1 Form value binding & serialization (spec 08 **F112–F115**): an instance over a caller-supplied root that knows its fields by name, `getValues`/`setValues` with the coercion rules as contract (unchecked checkbox `false`, empty number `null`, radio group one value or `null`, `multiple` select always an array), `toJSON`/`toFormData` that agree on names, and a reset to the **loaded** baseline rather than `HTMLFormElement.reset()`'s markup defaults. Owes the ADR that fixes the composition shape — one instance owning the form, or a shakeable family — and the entry name, since an `exports`-map path is MAJOR-protected the moment it ships (spec 08 §4) _(route: frontier-reasoning/high — sets-pattern + decision-heavy: the form contract everything below builds on)_
+- [x] 21.1 Form value binding & serialization (spec 08 **F112–F115**): an instance over a caller-supplied root that knows its fields by name, `getValues`/`setValues` with the coercion rules as contract (unchecked checkbox `false`, empty number `null`, radio group one value or `null`, `multiple` select always an array), `toJSON`/`toFormData` that agree on names, and a reset to the **loaded** baseline rather than `HTMLFormElement.reset()`'s markup defaults. Owes the ADR that fixes the composition shape — one instance owning the form, or a shakeable family — and the entry name, since an `exports`-map path is MAJOR-protected the moment it ships (spec 08 §4) _(route: frontier-reasoning/high — sets-pattern + decision-heavy: the form contract everything below builds on)_ — `createForm` on a **twelfth entry, `egl-utils-js/forms`**, and `getValue` on `/dom` beside the `setValue` it completes: 280 B for a page that wants one control against 1 840 B for the entry. Three deferred decisions settled by [ADR-0077](docs/adr/0077-a-subject-entry-a-primitive-that-stayed-one-and-a-family-not-a-god-object.md) — a **subject** entry (the `/table` shape, not a layer), the read half kept a **primitive** (the F109 lesson, so the next person does not write a fourth copy of the same four coercion bugs), and a **family composed by injection** rather than one instance, so 21.2/21.4/21.5 take the form the way `bindTableControls` takes a pipeline and a filter form links none of them. The four coercions are contract and property-tested as a round trip; NFR-22 re-derived to 64 kB on a twelfth input (63 862 B)
 - [ ] 21.2 Validation engine (spec 08 **F116–F119**): rules as plain functions, sync or async; cross-field rules that **declare their dependencies** so validating one field re-runs exactly what named it; `error`/`warning`/`info` with only `error` blocking; abortable and latest-wins on async, the F88 discipline for the same reason; and the platform's own `ValidityState` read and folded into one finding shape rather than re-declared, with `setCustomValidity` keeping the native bubble and the engine from ever disagreeing _(route: frontier-reasoning/high — the async race is the hard part, and the native-constraint seam is a contract decision)_
 - [ ] 21.3 Bootstrap costume for the findings (spec 08 **F120–F121**): `is-invalid`/`is-valid`, the feedback slots, `was-validated` and the `aria-invalid`/`aria-describedby` wiring — supplied to the engine's injected class map, never hardcoded inside it. Plus the half a red border cannot do: focus to the first `error` on a blocked submit and a summary announced through F110. **Measure before choosing where it lands** — `/bootstrap` has 473 B under ADR-0041's 25 kB clause, and if the costume does not fit, the recorded reason is the ceiling and not the layering (spec 08 NFR-38) _(route: standard/medium)_
 - [ ] 21.4 Submit lifecycle (spec 08 **F122–F123**): one call that validates, refuses on `error`, marks the form busy, disables what the caller nominated and restores **exactly** that, and awaits the caller's handler; the double-submit guard structural — a second call gets the first call's promise, not a refusal. Then the untrusted half: an injected mapper from an `HttpError` body to field findings, a server field name that matches no control reported rather than dropped, and every message crossing into the DOM as text. Ships the `docs/security/threat-model.md` update in the same PR (spec 08 NFR-42) _(route: standard/high — security: this is the library's first untrusted-payload path onto the DOM)_
@@ -465,12 +465,12 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 (08) | Objective & business context | 21.1, 21.2, 21.3, 21.4, 21.5 | ⏳ |
-| §2 (08) | Functional requirements F112–F125 | 21.1, 21.2, 21.3, 21.4, 21.5 | ⏳ |
-| §3 (08) | Non-functional requirements | 21.1, 21.2, 21.3, 21.4, 21.5 | ⏳ |
-| §4 (08) | Logical architecture | 21.1, 21.3 | ⏳ |
-| §5 (08) | Public interface | 21.1, 21.3 | ⏳ |
-| §6 (08) | Verification & test strategy | 21.1, 21.2, 21.3, 21.4, 21.5 | ⏳ |
+| §1 (08) | Objective & business context | 21.1, 21.2, 21.3, 21.4, 21.5 | 🚧 |
+| §2 (08) | Functional requirements F112–F125 | 21.1, 21.2, 21.3, 21.4, 21.5 | 🚧 |
+| §3 (08) | Non-functional requirements | 21.1, 21.2, 21.3, 21.4, 21.5 | 🚧 |
+| §4 (08) | Logical architecture | 21.1, 21.3 | 🚧 |
+| §5 (08) | Public interface | 21.1, 21.3 | 🚧 |
+| §6 (08) | Verification & test strategy | 21.1, 21.2, 21.3, 21.4, 21.5 | 🚧 |
 
 ### Spec 05 — browser distribution (F82–F87)
 

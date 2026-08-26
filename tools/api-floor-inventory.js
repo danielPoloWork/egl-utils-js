@@ -52,6 +52,7 @@ export const GLOBALS = {
   AbortSignal: { bcd: 'api.AbortSignal' },
   AggregateError: { bcd: 'javascript.builtins.AggregateError' },
   DOMException: { bcd: 'api.DOMException.DOMException' },
+  FormData: { bcd: 'api.FormData.FormData' },
   Headers: { bcd: 'api.Headers.Headers' },
   Response: { bcd: 'api.Response.Response' },
   TextEncoder: { bcd: 'api.TextEncoder.TextEncoder' },

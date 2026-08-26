@@ -35,7 +35,7 @@
       // page silently going blank.
       window.__eglEsm = (async () => {
         try {
-          const [root, text, table, bootstrap, ui] = await Promise.all([
+          const [root, text, table, bootstrap, ui, forms] = await Promise.all([
             import('/dist/esm/index.js'),
             import('/dist/esm/text.js'),
             import('/dist/esm/table.js'),
@@ -45,9 +45,10 @@
             // with no import map: everything it needs has to resolve by relative
             // chunk path, and nothing may reach for a bare specifier.
             import('/dist/esm/ui.js'),
+            import('/dist/esm/forms.js'),
           ]);
-          window.__eglModules = { root, text, table, bootstrap, ui };
-          return { ok: true, entries: ['root', 'text', 'table', 'bootstrap', 'ui'] };
+          window.__eglModules = { root, text, table, bootstrap, ui, forms };
+          return { ok: true, entries: ['root', 'text', 'table', 'bootstrap', 'ui', 'forms'] };
         } catch (error) {
           return {
             ok: false,

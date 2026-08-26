@@ -88,7 +88,7 @@ test.describe('the deep-ESM route', () => {
     expect(load.message ?? '').not.toMatch(/resolve module specifier/i);
     expect(pageErrors).toEqual([]);
     expect(failedRequests).toEqual([]);
-    expect(load.entries).toEqual(['root', 'text', 'table', 'bootstrap', 'ui']);
+    expect(load.entries).toEqual(['root', 'text', 'table', 'bootstrap', 'ui', 'forms']);
   });
 
   test('VERSION matches package.json', async ({ page }) => {
