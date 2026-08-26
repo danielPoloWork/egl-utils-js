@@ -20,8 +20,10 @@ import { test, expect } from '@playwright/test';
 //    races.
 //
 // Assets are read once here and injected as content rather than fetched per test,
-// and the timeout is doubled — both for the reasons `ui-dialogs.spec.js` records
-// and ROADMAP 20.7 exists to fix properly.
+// for the reason `ui-dialogs.spec.js` records. The timeout is no longer this
+// file's business: 20.7 pinned one budget for the whole suite in
+// `playwright.config.js` and bounded the worker count that made the old one too
+// tight (ADR-0076).
 
 const FIXTURE = '/src/test/browser/fixture.html';
 const BOOTSTRAP_BUNDLE = readFileSync(
@@ -31,8 +33,6 @@ const BOOTSTRAP_BUNDLE = readFileSync(
 const BOOTSTRAP_CSS = readFileSync('node_modules/bootstrap/dist/css/bootstrap.min.css', 'utf8');
 
 test.beforeEach(async ({ page }) => {
-  test.setTimeout(60_000);
-
   /** @type {string[]} */
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(String(error)));

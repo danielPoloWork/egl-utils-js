@@ -71,7 +71,6 @@ async function serve(target, html) {
 }
 
 test.beforeEach(async ({ page: target }) => {
-  test.setTimeout(60_000);
   // An origin first, so `localStorage` can be written before the fixture loads.
   await target.goto('/src/test/browser/fixture.html');
 });

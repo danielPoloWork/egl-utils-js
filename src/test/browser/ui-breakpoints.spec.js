@@ -21,7 +21,6 @@ const FIXTURE = '/src/test/browser/fixture.html';
 const UI_ENTRY = '/dist/esm/ui.js';
 
 test.beforeEach(async ({ page }) => {
-  test.setTimeout(60_000);
   await page.goto(FIXTURE);
   const ready = await page.evaluate(() => window.__eglReady);
   expect(ready.ok, `fixture failed to load the built bundles: ${ready.message ?? ''}`).toBe(true);
