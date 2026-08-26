@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-25 — Promise-based dialogs, and an eleventh entry (roadmap 20.1)](2026/08/2026-08-25-promise-dialogs.md)
 - [2026-08-25 — Two primitives, and a ceiling recomputed (roadmap 20.5)](2026/08/2026-08-25-a11y-primitives.md)
 - [2026-08-24 — Planning the application-UX wave (spec 07, M20)](2026/08/2026-08-24-spec-07-planning.md)
 - [2026-08-24 — The cell that was never there (roadmap 19.9)](2026/08/2026-08-24-filter-row-leading-cell.md)

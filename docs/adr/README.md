@@ -86,3 +86,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0068](0068-a-colgroup-a-separator-and-a-ceiling-in-sight.md) | A colgroup, a separator, and a ceiling now in sight | Accepted |
 | [0069](0069-an-order-is-a-permutation-and-the-ceiling-held.md) | An order is a permutation, a drag is a displacement — and the ceiling held | Accepted |
 | [0070](0070-two-primitives-extracted-and-a-ceiling-recomputed.md) | Two primitives extracted, a trap that knows what it does not do, and a ceiling recomputed rather than raised | Accepted |
+| [0071](0071-a-manager-not-three-globals-and-a-dismissal-is-an-answer.md) | A manager, not three globals — a dismissal is an answer, and an eleventh entry | Accepted |

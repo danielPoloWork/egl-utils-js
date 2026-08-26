@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-21 — the remote pipeline`](docs/journal/2026/08/2026-08-21-remote-pipeline.md).
+  [`2026-08-25 — promise-based dialogs`](docs/journal/2026/08/2026-08-25-promise-dialogs.md).
 
 ## Model & effort routing
 
@@ -350,11 +350,12 @@ lands in it wherever it lives: at 38 911 B against NFR-22's 40 kB there are 1 08
 wave **re-derives that ceiling by spec 05's own method** and commits the arithmetic (NFR-33).
 Raising the number without redoing the derivation is the one thing that clause forbids.
 
-- [ ] 20.1 Promise-based dialogs over `bsModal` (spec 07 **F101–F103**): `confirm`/`prompt`/custom returning a promise that **resolves** with the dialog's answer — a dismissal is an answer, not an error, and exactly one settlement survives any race of dismissals — with focus trapped while open and restored to where it came from, through the F109 primitives rather than a second implementation. Owes the ADR that fixes the surface shape (free functions vs a manager instance) and the new entry's name, both deferred by spec 07 §4 _(route: frontier-reasoning/high — sets-pattern: the promise-wrapper shape later dialogs copy, and it carries the entry decision)_
+- [x] 20.1 Promise-based dialogs over `bsModal` (spec 07 **F101–F103**): `confirm`/`prompt`/custom returning a promise that **resolves** with the dialog's answer — a dismissal is an answer, not an error, and exactly one settlement survives any race of dismissals — with focus trapped while open and restored to where it came from, through the F109 primitives rather than a second implementation. Owes the ADR that fixes the surface shape (free functions vs a manager instance) and the new entry's name, both deferred by spec 07 §4 _(route: frontier-reasoning/high — sets-pattern: the promise-wrapper shape later dialogs copy, and it carries the entry decision)_ — `createDialogs` on the new **`egl-utils-js/ui`** entry, per [ADR-0071](docs/adr/0071-a-manager-not-three-globals-and-a-dismissal-is-an-answer.md). **A manager, not three free functions**: spec 07 §6 asks for a `destroy()` that settles a dialog open *now*, and a returned promise has nowhere to hang one — plus thirteen shared options that want defaulting once, and `confirm`/`prompt` as module exports would shadow the platform globals at every import site. Only "could not be asked" rejects (`EGL_DOM_CONTRACT`, `EGL_PEER_MISSING`); the answer is recorded **before** anything starts closing, so exactly-once stops depending on transition timing, and the suite counts settlements rather than reading values. The three-engine suite earned its place: **WebKit moved focus out of the dialog on the first Tab** with Bootstrap left to place it, so the dialog now places focus itself and ADR-0070's trap keeps the narrow scope it documented. NFR-22 is **re-derived a second time to 57 kB** (eleventh input, 57 278 B) with the row re-pinned to 42 kB — and the eleventh entry cost `/bootstrap` 9 B and `/dom` 2 B without either changing a line, which their deep-ESM routes paid for at +2 607 B / +2 requests and +524 B / +1
 - [ ] 20.2 Toast manager over `bsToast` (spec 07 **F104–F105**): a queue with a max-visible cap, dedupe and update-by-id — with what "identical" means part of the contract — plus a `promise()` helper that shows **one** toast and transitions it rather than three that tell the story out of order, passing the caller's settlement through untouched _(route: standard/medium)_
 - [ ] 20.3 Theme management (spec 07 **F106–F107**): `data-bs-theme` get/set/toggle over Bootstrap's own mechanism, `prefers-color-scheme` tracking that follows the system only while the user has expressed no choice, persistence through the F21 storage wrapper, a documented `<head>` snippet that applies a persisted theme **before first paint**, and a toggle control whose accessible name names the state it will move to _(route: standard/medium)_
 - [ ] 20.4 Breakpoint observation (spec 07 **F108**): `matchMedia` over Bootstrap's breakpoint names with a subscribe API and a current-value read, so a component asks once instead of every component re-deriving the same query. Api-floor amendment: `matchMedia` and `MediaQueryList` change events (NFR-34) _(route: standard/medium)_
 - [x] 20.5 A11y primitives on `/dom` (spec 07 **F109–F110**): a reusable focus trap and focus save/restore **extracted** from the F50 overlay — where a correct implementation already exists and nothing else can reach it — including the empty-root case that turns a trap into a lock; plus a live-region announcer that leaves focus unmoved. F110 closes the gap [ADR-0069](docs/adr/0069-an-order-is-a-permutation-and-the-ceiling-held.md) named: a column moved by F100's keyboard path is announced to nobody today _(route: standard/high — focus and live-region timing are classically bug-prone)_ — `focusTrap`, `saveFocus` and `liveRegion`, per [ADR-0070](docs/adr/0070-two-primitives-extracted-and-a-ceiling-recomputed.md). **`saveFocus` is the extraction and the trap is new**: the overlay had focus save/restore and never had a trap, so the honest half is lifted out and `loadingOverlay` now calls it — one implementation of "put focus back where it was", three callers. The trap is **scoped to Tab and says so**, with no document-level `focusin` guard, because a primitive that fights focus moved by assistive technology is the wrong primitive; everything between the edges is left to the platform's own tab order. No layout is read to decide tabbability — a forced layout per Tab press is the cost F98 refused. An empty root focuses **itself** under a temporary `tabindex="-1"`, which is the case that turns a trap into a lock. **NFR-22 is re-derived, not raised**: spec 05's own method (the sum of the measured entry figures) reads 52 104 B today against ≈39.8 kB at M18, so the clause becomes 52 kB while the size-limit row stays pinned at measured + 2% and remains the gate
+- [ ] 20.7 Make the Playwright suite deterministic under local parallelism. Measured while verifying 20.1: a full `pnpm test:browser --project=chromium` run fails **2 of 142 tests on `main` and 3 of 150 with 20.1 applied**, always a different pair, always passing on a re-run in isolation — so it is contention, not a defect. The suite is `fullyParallel` with one worker per core, and each worker asks the repo's minimal static server for Bootstrap's bundle and stylesheet per test; 20.1 removed its own share of that by inlining both from `node_modules` and raising its file's timeout, which is a fix for one file rather than for the cause. Bound the workers, serve the peer assets from memory, or pin the timeouts deliberately — and decide whether the same shape can bite CI, where a red run people learn to re-run is worse than no gate at all _(route: standard/medium — a verification-infrastructure defect, filed by 20.1 rather than folded into it)_
 - [ ] 20.6 Reduced-motion policy helper on `/dom` (spec 07 **F111**): one query point components consult, on the same subscribe shape as F108. A helper, not a manager — a MotionManager stays rejected (ADR-0046) _(route: fast/low)_
 
 
@@ -438,7 +439,7 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 | §1 (07) | Objective & business context | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
 | §2 (07) | Functional requirements F101–F111 | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
 | §3 (07) | Non-functional requirements | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
-| §4 (07) | Logical architecture | 20.1, 20.5 | ⏳ |
+| §4 (07) | Logical architecture | 20.1, 20.5 | 🚧 |
 | §5 (07) | Public interface | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
 | §6 (07) | Verification & test strategy | 20.1, 20.2, 20.3, 20.4, 20.5, 20.6 | 🚧 |
 
@@ -448,9 +449,9 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 |--------|-------------|---------------|--------|
 | §1 (05) | Objective & business context | 17.6, 18.1, 18.2, 18.3, 18.4, 18.5 | ✅ |
 | §2 (05) | Functional requirements F82–F87 | 17.6, 18.1, 18.2, 18.3, 18.4, 18.5 | ✅ |
-| §3 (05) | Non-functional requirements | 18.2, 18.3, 18.5 | ✅ |
+| §3 (05) | Non-functional requirements | 18.2, 18.3, 18.5, 20.5, 20.1 | ✅ |
 | §4 (05) | Logical architecture | 18.2, 18.3 | ✅ |
-| §5 (05) | Public interface | 18.1, 18.2, 18.3 | ✅ |
+| §5 (05) | Public interface | 18.1, 18.2, 18.3, 20.1 | ✅ |
 | §6 (05) | Verification & test strategy | 18.1, 18.5 | ✅ |
 
 ### Spec 06 — table data, selection & column ergonomics (F88–F100)

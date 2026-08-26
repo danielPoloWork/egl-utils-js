@@ -885,6 +885,74 @@ Worth knowing:
   what it did. Announcing the same message twice really announces it twice, which needs a
   trick and gets one. Politeness is fixed at construction — for both, make two announcers.
 
+### Promise-based dialogs (`egl-utils-js/ui`)
+
+A dialog is a question with one answer arriving later — which is what a promise is. So `await`
+it, and stop threading `onOk`/`onCancel` callbacks through the code that asked
+([ADR-0071](docs/adr/0071-a-manager-not-three-globals-and-a-dismissal-is-an-answer.md)).
+
+Needs the `bootstrap` peer, resolved at first use and never imported, so this entry loads on a
+page that has never heard of it (ADR-0041).
+
+```js
+import { createDialogs } from 'egl-utils-js/ui';
+
+// Defaults live on the manager; every one of them is overridable per call.
+const dialogs = createDialogs({ labels: { confirm: 'Delete' }, variant: 'danger' });
+
+if (await dialogs.confirm(`Delete ${row.name}?`)) {
+  await api.delete(row.id);
+}
+```
+
+**A dismissal is an answer, not an error.** Escape, the backdrop, the close control and the
+cancel button all *resolve* — `false` for a confirm, `null` for a prompt. There is nothing to
+catch, and no `catch` block that quietly logs "the user said no" as a failure:
+
+```js
+const name = await dialogs.prompt('New folder name', { value: 'Untitled' });
+if (name !== null) create(name); // '' is a real answer; null is a dismissal
+```
+
+A rejection means the question could not be **asked** — no document (`EGL_DOM_CONTRACT`) or no
+Bootstrap on the page (`EGL_PEER_MISSING`). Those are a different fact, and they stay
+distinguishable.
+
+For anything past yes/no, `open` takes your content and your own named answers:
+
+```js
+const choice = await dialogs.open({
+  title: 'Unsaved changes',
+  content: 'Save before closing?',
+  actions: [
+    { label: 'Discard', value: 'discard' },
+    { label: 'Cancel', value: 'cancel' },
+    { label: 'Save', value: 'save', variant: 'primary' },
+  ],
+  dismissValue: 'cancel', // what Escape and the backdrop resolve with
+});
+```
+
+Focus is trapped in the dialog while it is open and **restored to whatever opened it** when it
+settles, through the `/dom` F109 primitives rather than a second implementation — verified on
+three engines, because "where focus went" is a question only a real one answers. A prompt
+focuses its field; anything else focuses the dialog, never the affirming button, because Enter
+should not agree to a question by default.
+
+`destroy()` tears the manager down and **settles every dialog still open** with its dismissal
+answer — a pending promise nobody will settle is a leak with an `await` on the other end of
+it. A per-call `signal` does the same for one dialog.
+
+| Option | Meaning |
+|---|---|
+| `labels` | `{confirm, cancel, close}`, merged key by key over the defaults |
+| `variant` | Bootstrap variant for the affirming button (`'danger'` is the one worth setting) |
+| `size`, `centered` | `modal-<size>`; centred by default, unlike Bootstrap's own modal |
+| `dismissible` | The header close control. Escape and the backdrop are `keyboard`/`backdrop` |
+| `backdrop`, `keyboard`, `bootstrap` | Passed to the F70 wrapper as they are |
+| `html` + `sanitize` | Opt into markup, with the sanitizer required (the F52 pair) |
+| `document`, `signal`, `class` | As everywhere else on this library's surface |
+
 ### UI components (`egl-utils-js/dom`)
 
 Instance-based and framework-agnostic. Each alert owns its nodes, its timer, and its close
@@ -1513,9 +1581,9 @@ downloads the overlapping code twice and can end up running two separate copies 
 class (the classic dual-instance hazard ADR-0003 already documents for the ESM/CJS build —
 branch on `.code`, never cross-instance `instanceof`, and that advice applies here too).
 
-Any of the ten entries works this way: swap `index.js` for `storage.js`, `sanitize.js`,
-`errors.js`, `text.js`, `net.js`, `table.js`, `logging.js`, `dom.js`, or `bootstrap.js` —
-the same names the npm `exports` map already uses.
+Any of the eleven entries works this way: swap `index.js` for `storage.js`, `sanitize.js`,
+`errors.js`, `text.js`, `net.js`, `table.js`, `logging.js`, `dom.js`, `bootstrap.js`, or
+`ui.js` — the same names the npm `exports` map already uses.
 
 ### One `<script>`, the whole surface — the global artifact
 
@@ -1588,23 +1656,27 @@ own response:
 | `/storage` | 4 | 4.34 kB |
 | `/table` | 5 | 11.82 kB |
 | root (`index.js`) | 7 | 13.57 kB |
-| `/dom` | 8 | 13.96 kB |
-| `/bootstrap` | 8 | 38.06 kB |
-| **the global artifact** | **1** | **36.91 kB** |
+| `/dom` | 9 | 15.50 kB |
+| `/ui` | 6 | 15.71 kB |
+| `/bootstrap` | 10 | 44.28 kB |
+| **the global artifact** | **1** | **41.06 kB** |
 
-Two things worth reading off it. **If you need `/bootstrap`, take the artifact** — the whole
-surface in one request now costs *less* than that one entry costs in seven, because
-`/bootstrap` pulls the shared table chunk whether or not it uses all of it. And these figures
-are larger than the per-function budgets quoted elsewhere in this README, which is not a
-contradiction: those measure what a *bundler* ships after tree-shaking, while a static page
-downloads whole files. Both are real; they just belong to different consumers.
+Three things worth reading off it. **If you need `/bootstrap` — or `/ui`, which composes it —
+take the artifact**: the whole surface in one request costs *less* than that one entry costs
+in ten, because the deep route downloads whole shared chunks whether or not you use all of
+them. **`/ui` is three times its bundled size here** (5.16 kB tree-shaken, 15.71 kB served),
+and the gap is the composition: it borrows the modal wrapper, the buttons and the focus
+primitives rather than reimplementing them, which is free for a bundler consumer and billed
+by the file for a static page. And these figures are larger than the per-function budgets
+quoted elsewhere in this README, which is not a contradiction: those measure what a *bundler*
+ships after tree-shaking. Both are real; they just belong to different consumers.
 
 ## Stability promise
 
 `egl-utils-js` is **1.x**, and the number is meant literally. MAJOR-protected — these change only
 in a 2.0:
 
-- **Every named export**: 123 across the root and the nine subpath entries (111 distinct names —
+- **Every named export**: 127 across the root and the ten subpath entries (115 distinct names —
   the error classes are reachable from both the root and `/errors`).
 - **Every `EGL_*` error code**, and the `.code`-not-`instanceof` identity contract.
 - **Every `exports`-map path** — a deep import that resolves today keeps resolving.

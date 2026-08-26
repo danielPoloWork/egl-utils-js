@@ -22,7 +22,7 @@ const ROOT = new URL('../', import.meta.url);
 const ARTIFACT = fileURLToPath(new URL('dist/global/egl-utils.global.js', ROOT));
 const SOURCE_DIR = new URL('src/main/javascript/it/d4np/utils/', ROOT);
 
-/** The nine subpaths, each a sub-namespace on `egl` named after its exports path. */
+/** The ten subpaths, each a sub-namespace on `egl` named after its exports path. */
 const SUBPATHS = [
   'storage',
   'sanitize',
@@ -33,6 +33,7 @@ const SUBPATHS = [
   'logging',
   'dom',
   'bootstrap',
+  'ui',
 ];
 
 /** @type {string[]} */
@@ -91,7 +92,7 @@ check(
 const egl = /** @type {Record<string, unknown>} */ (context.egl);
 check(egl !== undefined && egl !== null, 'the artifact did not produce an `egl` namespace');
 
-// --- 3. The surface matches the ten entries, nothing renamed ----------------
+// --- 3. The surface matches the eleven entries, nothing renamed -------------
 
 const entryNames = async () => {
   /** @type {Record<string, string[]>} */
