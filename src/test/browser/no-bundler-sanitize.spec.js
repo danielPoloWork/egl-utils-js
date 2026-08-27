@@ -125,7 +125,11 @@ test.describe('with no bundler, no import map and no peer', () => {
     expect(load.message ?? '').not.toMatch(/resolve module specifier/i);
     expect(pageErrors).toEqual([]);
     expect(failedRequests).toEqual([]);
-    expect(load.exports).toEqual(['defaultSanitizeProfile', 'sanitizeHtml']);
+    // The entry's public surface, pinned: a no-bundler page sees exactly these.
+    // `safeUrl` joined in 23.1 (spec 09 F126) — a protocol allow-list is the same
+    // job as an HTML one, and it needs no peer, which is why it can live on an
+    // entry whose other export throws without DOMPurify (ADR-0084).
+    expect(load.exports).toEqual(['defaultSanitizeProfile', 'safeUrl', 'sanitizeHtml']);
   });
 
   test('the profile is readable without the peer — only sanitizing needs it', async ({ page }) => {
