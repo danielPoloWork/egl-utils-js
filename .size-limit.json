@@ -1,16 +1,16 @@
 [
   {
-    "name": "root - full import (NFR-01: measured 6100 B, ceiling amended to 6.25 kB in 19.4; the 6.1 kB of ADR-0053 left 0 B of headroom once ClipboardError reached the root, which is not a margin to ship on. The +28 B is the ADR-0053 contract doing what it says: the full EGL_* taxonomy is reachable from the root, so a new code costs this row)",
+    "name": "root - full import (NFR-01: measured 6103 B, ceiling amended to 6.25 kB in 19.4; the 6.1 kB of ADR-0053 left 0 B of headroom once ClipboardError reached the root, which is not a margin to ship on. The +28 B is the ADR-0053 contract doing what it says: the full EGL_* taxonomy is reachable from the root, so a new code costs this row)",
     "path": "dist/esm/index.js",
     "limit": "6.25 kB"
   },
   {
-    "name": "/storage - full import (2.15 kB - documented NFR-01 divergence, ADR-0024, amended by ADR-0047: measured 2106 B)",
+    "name": "/storage - full import (2.15 kB - documented NFR-01 divergence, ADR-0024, amended by ADR-0047: measured 2107 B)",
     "path": "dist/esm/storage.js",
     "limit": "2.15 kB"
   },
   {
-    "name": "/storage - wrappers only (NFR-02: F39 costs non-importers nothing; measured 1764 B incl. the ADR-0047 option-key contract)",
+    "name": "/storage - wrappers only (NFR-02: F39 costs non-importers nothing; measured 1762 B incl. the ADR-0047 option-key contract)",
     "path": "dist/esm/storage.js",
     "import": "{ localStorageWrapper, sessionStorageWrapper, cookieHelper }",
     "limit": "1.8 kB"
@@ -22,7 +22,7 @@
     "limit": "1.02 kB"
   },
   {
-    "name": "/sanitize (measured 1484 B; +27 B for the ADR-0055 peer lookup, and DOMPurify is now absent from the module graph entirely rather than external to it)",
+    "name": "/sanitize (measured 1491 B; +27 B for the ADR-0055 peer lookup, and DOMPurify is now absent from the module graph entirely rather than external to it)",
     "path": "dist/esm/sanitize.js",
     "limit": "1.55 kB"
   },
@@ -55,9 +55,9 @@
     "limit": "1 kB"
   },
   {
-    "name": "/net (NFR-08: measured 709 B)",
+    "name": "/net (NFR-08: measured 770 B. Re-pinned at 0.87 kB, the row own +12.8% margin and still inside NFR-08 1 kB clause. It had reached 30 B of headroom while its text still advertised 709 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/net.js",
-    "limit": "0.8 kB"
+    "limit": "0.87 kB"
   },
   {
     "name": "/table - full import (NFR-12: measured 6861 B; +585 B for tableCsv, spec 06 F96 / ADR-0066, on top of 19.1-19.3. Five siblings behind one entry now, and the per-function rows below are what bound each one)",
@@ -65,19 +65,19 @@
     "limit": "7.3 kB"
   },
   {
-    "name": "/table - query primitives only (NFR-08/NFR-12: measured 1780 B, 6 B BELOW the 1786 B of 19.1 - the entry gained a second sibling module and this import got marginally smaller, which is the shakeability claim (NFR-02) holding rather than being asserted)",
+    "name": "/table - query primitives only (NFR-08/NFR-12: measured 1781 B, 6 B BELOW the 1786 B of 19.1 - the entry gained a second sibling module and this import got marginally smaller, which is the shakeability claim (NFR-02) holding rather than being asserted)",
     "path": "dist/esm/table.js",
     "import": "{ compileFilter, comparator, paginate }",
     "limit": "1.9 kB"
   },
   {
-    "name": "single: tablePipeline (3.45 kB - documented NFR-12 composing-facade row, ADR-0034; measured 3397 B, +8 B for the BUG-0004 fix - building the view's filter map through Object.fromEntries instead of by assignment. The row had 11 B of headroom, which is not a margin to ship on, so it is re-pinned rather than squeezed)",
+    "name": "single: tablePipeline (3.46 kB - documented NFR-12 composing-facade row, ADR-0034; measured 3399 B, +8 B for the BUG-0004 fix - building the view's filter map through Object.fromEntries instead of by assignment. The row had 11 B of headroom, which is not a margin to ship on, so it is re-pinned rather than squeezed. Re-pinned at the row own +1.6% margin - deliberately the thinnest in the file, which is why ADR-0034 clause moves with it to 3.5 kB rather than being exceeded. It had reached 51 B of headroom while its text still advertised 3397 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/table.js",
     "import": "{ tablePipeline }",
-    "limit": "3.45 kB"
+    "limit": "3.46 kB"
   },
   {
-    "name": "single: remotePipeline (spec 06 F88-F91: measured 1939 B. Owns query state, the F89 race rules and the F91 status - the transport is injected, so no fetch/httpClient is in this figure, ADR-0062)",
+    "name": "single: remotePipeline (spec 06 F88-F91: measured 1959 B. Owns query state, the F89 race rules and the F91 status - the transport is injected, so no fetch/httpClient is in this figure, ADR-0062)",
     "path": "dist/esm/table.js",
     "import": "{ remotePipeline }",
     "limit": "2.05 kB"
@@ -89,13 +89,13 @@
     "limit": "205 B"
   },
   {
-    "name": "single: compileFilter (1.03 kB - named NFR-08 exception per ADR-0047: measured 1010 B, ten bytes over the 1 kB clause, all of it the option-key check)",
+    "name": "single: compileFilter (1.03 kB - named NFR-08 exception per ADR-0047: measured 1009 B, ten bytes over the 1 kB clause, all of it the option-key check)",
     "path": "dist/esm/table.js",
     "import": "{ compileFilter }",
     "limit": "1.03 kB"
   },
   {
-    "name": "single: comparator (1.1 kB - documented NFR-08 exception, ADR-0022, amended by ADR-0047: measured 1067 B)",
+    "name": "single: comparator (1.1 kB - documented NFR-08 exception, ADR-0022, amended by ADR-0047: measured 1052 B)",
     "path": "dist/esm/table.js",
     "import": "{ comparator }",
     "limit": "1.1 kB"
@@ -119,7 +119,7 @@
     "limit": "575 B"
   },
   {
-    "name": "single: tableSelection (spec 06 F94: measured 1433 B — a Set of keys, an emitter and the page/off-page arithmetic. The whole model, and the figure a /table consumer pays for selection without bsTable)",
+    "name": "single: tableSelection (spec 06 F94: measured 1434 B — a Set of keys, an emitter and the page/off-page arithmetic. The whole model, and the figure a /table consumer pays for selection without bsTable)",
     "path": "dist/esm/table.js",
     "import": "{ tableSelection }",
     "limit": "1.53 kB"
@@ -131,7 +131,7 @@
     "limit": "850 B"
   },
   {
-    "name": "/dom - full import (NFR-12: measured 7882 B, +108 B in 21.1 for the F113 `getValue` read primitive - the twin `setValue` never had (ADR-0077). Small on purpose, and it stays that way because the form ENGINE went to /forms while only the single-element read came here. Limit 8.3 kB unchanged, now measured + 5.3%: a ceiling that still holds is not re-pinned upward for the sake of the formula)",
+    "name": "/dom - full import (NFR-12: measured 7878 B, +108 B in 21.1 for the F113 `getValue` read primitive - the twin `setValue` never had (ADR-0077). Small on purpose, and it stays that way because the form ENGINE went to /forms while only the single-element read came here. Limit 8.3 kB unchanged, now measured + 5.3%: a ceiling that still holds is not re-pinned upward for the sake of the formula)",
     "path": "dist/esm/dom.js",
     "limit": "8.3 kB"
   },
@@ -196,25 +196,25 @@
     "limit": "1 kB"
   },
   {
-    "name": "single: inlineAlert (1.58 kB - NFR-12 clause amended from 1.5 kB by ADR-0049: measured 1533 B, the price of isShown + element + the injectable api name)",
+    "name": "single: inlineAlert (1.58 kB - NFR-12 clause amended from 1.5 kB by ADR-0049: measured 1535 B, the price of isShown + element + the injectable api name)",
     "path": "dist/esm/dom.js",
     "import": "{ inlineAlert }",
     "limit": "1.58 kB"
   },
   {
-    "name": "single: bindTableControls (2.3 kB - documented NFR-12 composing-facade row, ADR-0035, amended by ADR-0056: measured 2242 B, +149 B for the bindings/sortHeaders/pagination descriptor checks)",
+    "name": "single: bindTableControls (2.33 kB - documented NFR-12 composing-facade row, ADR-0035, amended by ADR-0056: measured 2262 B, +149 B for the bindings/sortHeaders/pagination descriptor checks. Re-pinned at the row own +2.6% margin; the 2.3 kB clause ADR-0056 set is amended to 2.35 kB by ADR-0082. It had reached 38 B of headroom while its text still advertised 2242 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/dom.js",
     "import": "{ bindTableControls }",
-    "limit": "2.3 kB"
+    "limit": "2.33 kB"
   },
   {
-    "name": "single: loadingOverlay (NFR-12 component row: measured 1127 B, clause 1.25 kB; +105 B for the ADR-0049 guards, then +64 B in 20.5 when it dropped its own focus save/restore for F109's saveFocus. That figure is the price of the extraction and it is paid on purpose: two copies of focus-restore logic drift, and only one of them gets fixed)",
+    "name": "single: loadingOverlay (NFR-12 component row: measured 1126 B, clause 1.25 kB; +105 B for the ADR-0049 guards, then +64 B in 20.5 when it dropped its own focus save/restore for F109's saveFocus. That figure is the price of the extraction and it is paid on purpose: two copies of focus-restore logic drift, and only one of them gets fixed)",
     "path": "dist/esm/dom.js",
     "import": "{ loadingOverlay }",
     "limit": "1.2 kB"
   },
   {
-    "name": "single: bindTableHistory (2.05 kB - NFR-12 composing-facade row, ADR-0063: measured 1920 B, which includes the F92 pair it composes. Named and measured, per the ADR-0058 rule for this clause)",
+    "name": "single: bindTableHistory (2.05 kB - NFR-12 composing-facade row, ADR-0063: measured 1924 B, which includes the F92 pair it composes. Named and measured, per the ADR-0058 rule for this clause)",
     "path": "dist/esm/dom.js",
     "import": "{ bindTableHistory }",
     "limit": "2.05 kB"
@@ -231,10 +231,10 @@
     "limit": "24.9 kB"
   },
   {
-    "name": "single: bsIcon (NFR-17 <= 1.2 kB per ADR-0037; measured 933 B incl. the ADR-0047 option-key contract)",
+    "name": "single: bsIcon (NFR-17 <= 1.2 kB per ADR-0037; measured 950 B incl. the ADR-0047 option-key contract. Re-pinned at the row own +2.9% margin, comfortably inside ADR-0037 1.2 kB clause. It had reached 10 B of headroom while its text still advertised 933 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsIcon }",
-    "limit": "0.96 kB"
+    "limit": "0.98 kB"
   },
   {
     "name": "single: bootstrapIconsSet (NFR-02: a data preset costs nothing once marked pure, ADR-0038; measured 43 B)",
@@ -249,142 +249,142 @@
     "limit": "1.15 kB"
   },
   {
-    "name": "single: bsButton (1.9 kB - documented NFR-17 composing row, ADR-0037: composes bsIcon; measured 1763 B)",
+    "name": "single: bsButton (2.02 kB - documented NFR-17 composing row, ADR-0037: composes bsIcon; measured 1872 B. Row clause amended from 1.9 kB by ADR-0082, at the row own +7.8% margin. It had reached 28 B of headroom while its text still advertised 1763 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsButton }",
-    "limit": "1.9 kB"
+    "limit": "2.02 kB"
   },
   {
-    "name": "single: bsButtonGroup (NFR-17 <= 1.2 kB per ADR-0037; measured 911 B incl. the ADR-0047 option-key contract)",
+    "name": "single: bsButtonGroup (NFR-17 <= 1.2 kB per ADR-0037; measured 916 B incl. the ADR-0047 option-key contract)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsButtonGroup }",
     "limit": "0.94 kB"
   },
   {
-    "name": "single: bsCloseButton (NFR-17 <= 1.2 kB per ADR-0037; measured 835 B - the smallest builder, so it carries the shared F52 + ADR-0047 option-key contract floor most visibly)",
+    "name": "single: bsCloseButton (NFR-17 <= 1.2 kB per ADR-0037; measured 840 B - the smallest builder, so it carries the shared F52 + ADR-0047 option-key contract floor most visibly)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsCloseButton }",
     "limit": "0.86 kB"
   },
   {
-    "name": "single: bsSpinner (NFR-17 <= 1.2 kB per ADR-0037; measured 844 B incl. the ADR-0047 option-key contract)",
+    "name": "single: bsSpinner (NFR-17 <= 1.2 kB per ADR-0037; measured 848 B incl. the ADR-0047 option-key contract)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsSpinner }",
     "limit": "0.87 kB"
   },
   {
-    "name": "single: bsProgress (NFR-17 <= 1.2 kB per ADR-0037; measured 1162 B - the destroyed guard ADR-0049 required, right at the clause)",
+    "name": "single: bsProgress (NFR-17 <= 1.2 kB per ADR-0037; measured 1164 B - the destroyed guard ADR-0049 required, right at the clause)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsProgress }",
     "limit": "1.2 kB"
   },
   {
-    "name": "single: bsPlaceholder (NFR-17 <= 1.2 kB per ADR-0037; measured 1026 B incl. the ADR-0047 option-key contract)",
+    "name": "single: bsPlaceholder (NFR-17 <= 1.2 kB per ADR-0037; measured 1023 B incl. the ADR-0047 option-key contract)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsPlaceholder }",
     "limit": "1.05 kB"
   },
   {
-    "name": "single: bsCard (NFR-17 composite row, clause 1.5 kB per ADR-0038; measured 1418 B)",
+    "name": "single: bsCard (NFR-17 composite row, clause 1.5 kB per ADR-0038; measured 1507 B. NFR-17 composite clause amended from 1.5 kB to 1.65 kB by ADR-0082 - **this row breached it**: 1507 B against a 1500 B clause, which no gate could report because the row own limit had already been set 20 B above the clause it cites. Re-pinned at the row own +7.2% margin. It had reached 13 B of headroom while its text still advertised 1418 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsCard }",
-    "limit": "1.52 kB"
+    "limit": "1.62 kB"
   },
   {
-    "name": "single: bsListGroup (2.2 kB - documented NFR-17 composing row, ADR-0038, amended by ADR-0056: composes bsBadge + delegation; measured 2153 B, +147 B for the per-item and badge descriptor checks)",
+    "name": "single: bsListGroup (2.22 kB - documented NFR-17 composing row, ADR-0038, amended by ADR-0056: composes bsBadge + delegation; measured 2167 B, +147 B for the per-item and badge descriptor checks. Re-pinned at the row own +2.2% margin, inside the 2.2 kB clause ADR-0056 set... which it now exceeds by 14 B, so ADR-0082 amends that clause to 2.25 kB too. It had reached 33 B of headroom while its text still advertised 2153 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsListGroup }",
-    "limit": "2.2 kB"
+    "limit": "2.22 kB"
   },
   {
-    "name": "single: bsBreadcrumb (NFR-17 composite row, clause 1.3 kB per ADR-0038; measured 1274 B incl. the ADR-0047 option-key contract, inside the clause)",
+    "name": "single: bsBreadcrumb (NFR-17 composite row, clause 1.3 kB per ADR-0038; measured 1295 B incl. the ADR-0047 option-key contract, inside the clause. Per-row composite clause amended from 1.3 kB to 1.4 kB by ADR-0082: 1295 B left **5 B** under the clause, and the row limit was already 10 B above it. Re-pinned at the row own +2.9% margin. It had reached 15 B of headroom while its text still advertised 1274 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsBreadcrumb }",
-    "limit": "1.31 kB"
+    "limit": "1.34 kB"
   },
   {
-    "name": "single: bsAlert (NFR-17 <= 2 kB composing row: the F49 engine in a costume; measured 1681 B incl. the ADR-0049 contract)",
+    "name": "single: bsAlert (NFR-17 <= 2 kB composing row: the F49 engine in a costume; measured 1685 B incl. the ADR-0049 contract)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsAlert }",
     "limit": "1.73 kB"
   },
   {
-    "name": "single: bsPagination (1.58 kB - NFR-17 composing row amended from 1.5 kB by ADR-0049: measured 1532 B, incl. the document override that closes 17.8)",
+    "name": "single: bsPagination (1.58 kB - NFR-17 composing row amended from 1.5 kB by ADR-0049: measured 1539 B, incl. the document override that closes 17.8)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsPagination }",
     "limit": "1.58 kB"
   },
   {
-    "name": "single: bsTable (14.2 kB - documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065, ADR-0067, ADR-0068 and ADR-0069: measured 13475 B: +765 B in 19.7 for the F100 column reorder, +119 B in 19.9 for the BUG-0005 filter-row spacer. Cheaper than the F99 resize it sits beside (1155 B) because it reuses that item's decisions rather than restating them - one handle for pointer and keyboard, pointer capture, the same click guard - and because moving nodes needs no markup of its own)",
+    "name": "single: bsTable (14.2 kB - documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065, ADR-0067, ADR-0068 and ADR-0069: measured 13430 B: +765 B in 19.7 for the F100 column reorder, +119 B in 19.9 for the BUG-0005 filter-row spacer. Cheaper than the F99 resize it sits beside (1155 B) because it reuses that item's decisions rather than restating them - one handle for pointer and keyboard, pointer capture, the same click guard - and because moving nodes needs no markup of its own)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsTable }",
     "limit": "14.2 kB"
   },
   {
-    "name": "single: bsToast (2.55 kB - NFR-17 composing row amended from 2.32 kB by ADR-0049: measured 2472 B, +152 B for on() + isShown() + element, the members the readiness review found missing)",
+    "name": "single: bsToast (2.55 kB - NFR-17 composing row amended from 2.32 kB by ADR-0049: measured 2461 B, +152 B for on() + isShown() + element, the members the readiness review found missing)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsToast }",
     "limit": "2.55 kB"
   },
   {
-    "name": "single: bsModal (1.31 kB - NFR-17 behaviour-wrapper clause amended from 1.25 kB by ADR-0049: measured 1267 B, the isShown() F70 omitted)",
+    "name": "single: bsModal (1.31 kB - NFR-17 behaviour-wrapper clause amended from 1.25 kB by ADR-0049: measured 1265 B, the isShown() F70 omitted)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsModal }",
     "limit": "1.31 kB"
   },
   {
-    "name": "single: bsLoadingOverlay (2.85 kB - NFR-17 composing row amended from 1.75 kB by ADR-0041, again in 20.5: measured 2758 B, of which loadingOverlay 1127 B + bsSpinner 778 B are composed parts. It moved because its composed part did: loadingOverlay 1063 -> 1127 B for the F109 saveFocus it now calls instead of keeping its own copy - the composed row moves because the part did, which is the accounting ADR-0041 asked for)",
+    "name": "single: bsLoadingOverlay (2.85 kB - NFR-17 composing row amended from 1.75 kB by ADR-0041, again in 20.5: measured 2751 B, of which loadingOverlay 1127 B + bsSpinner 778 B are composed parts. It moved because its composed part did: loadingOverlay 1063 -> 1127 B for the F109 saveFocus it now calls instead of keeping its own copy - the composed row moves because the part did, which is the accounting ADR-0041 asked for)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsLoadingOverlay }",
     "limit": "2.85 kB"
   },
   {
-    "name": "single: bsCollapse (1.48 kB - NFR-17 wiring row amended from 1.25 kB by ADR-0042; measured 1380 B, the toggler's aria sync and id minting being what a bare wrapper does not carry)",
+    "name": "single: bsCollapse (1.56 kB - NFR-17 wiring row amended from 1.25 kB by ADR-0042; measured 1446 B, the toggler's aria sync and id minting being what a bare wrapper does not carry. Row clause amended again from 1.48 kB by ADR-0082, at the row own +7.3% margin. It had reached 34 B of headroom while its text still advertised 1380 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsCollapse }",
-    "limit": "1.48 kB"
+    "limit": "1.56 kB"
   },
   {
-    "name": "single: bsAccordion (2.66 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2490 B, of which bsCollapse 1380 B is a composed part)",
+    "name": "single: bsAccordion (2.8 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2617 B, of which bsCollapse 1380 B is a composed part. Row clause amended again from 2.66 kB by ADR-0082, at the row own +6.8% margin. It had reached 43 B of headroom while its text still advertised 2490 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsAccordion }",
-    "limit": "2.66 kB"
+    "limit": "2.8 kB"
   },
   {
-    "name": "single: bsDropdown (NFR-17 <= 1.25 kB behaviour-wrapper row; measured 1160 B - the clause holds for a wrapper that only wraps)",
+    "name": "single: bsDropdown (NFR-17 <= 1.25 kB behaviour-wrapper row; measured 1239 B - the clause holds for a wrapper that only wraps. NFR-17 behaviour-wrapper clause amended from 1.25 kB to 1.35 kB by ADR-0082, and re-pinned at the row own original +7% margin. It had reached 1 B of headroom while its text still advertised 1160 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082). **1 B** is what a gate looks like the moment before it fails on a component nobody touched)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsDropdown }",
-    "limit": "1.24 kB"
+    "limit": "1.33 kB"
   },
   {
-    "name": "single: bsTabs (2.19 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2050 B, the tablist/panel ARIA wiring being the bulk)",
+    "name": "single: bsTabs (2.3 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2147 B, the tablist/panel ARIA wiring being the bulk. Row clause amended again from 2.19 kB by ADR-0082, at the row own +6.8% margin. It had reached 43 B of headroom while its text still advertised 2050 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsTabs }",
-    "limit": "2.19 kB"
+    "limit": "2.3 kB"
   },
   {
-    "name": "single: bsNavbar (2.96 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2770 B against 2540 B of composed parts (bsCollapse 1380 + bsDropdown 1160) - 230 B of its own)",
+    "name": "single: bsNavbar (3.11 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2907 B against 2540 B of composed parts (bsCollapse 1380 + bsDropdown 1160) - 230 B of its own. Row clause amended again from 2.96 kB by ADR-0082, at the row own +6.9% margin. It had reached 53 B of headroom while its text still advertised 2770 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsNavbar }",
-    "limit": "2.96 kB"
+    "limit": "3.11 kB"
   },
   {
-    "name": "single: bsOffcanvas (NFR-17 <= 1.25 kB behaviour-wrapper row; measured 1150 B - the third wrapper that only wraps to fit the clause, after bsModal and bsDropdown)",
+    "name": "single: bsOffcanvas (NFR-17 <= 1.25 kB behaviour-wrapper row; measured 1224 B - the third wrapper that only wraps to fit the clause, after bsModal and bsDropdown. Re-pinned under the same amended 1.35 kB wrapper clause (ADR-0082) at the row own +7.8% margin. It had reached 16 B of headroom while its text still advertised 1150 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsOffcanvas }",
-    "limit": "1.24 kB"
+    "limit": "1.32 kB"
   },
   {
-    "name": "single: bsCarousel (2.5 kB - NFR-17 building row amended from 1.5 kB by ADR-0043; measured 2310 B, slides + controls + labelled indicators on top of the shared F52 contract floor)",
+    "name": "single: bsCarousel (2.64 kB - NFR-17 building row amended from 1.5 kB by ADR-0043; measured 2432 B, slides + controls + labelled indicators on top of the shared F52 contract floor. Row clause amended again from 2.5 kB by ADR-0082, at the row own +8.2% margin. It had reached 68 B of headroom while its text still advertised 2310 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsCarousel }",
-    "limit": "2.5 kB"
+    "limit": "2.64 kB"
   },
   {
-    "name": "single: bsScrollspy (NFR-17 <= 1.25 kB row; measured 1040 B - the smallest of the peer-backed set, having no open state to model)",
+    "name": "single: bsScrollspy (NFR-17 <= 1.25 kB row; measured 1118 B - the smallest of the peer-backed set, having no open state to model. Re-pinned at the row own +7.7% margin, and **still inside** the original 1.25 kB wrapper clause - this member did not force the amendment the other two did. It had reached 2 B of headroom while its text still advertised 1040 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsScrollspy }",
-    "limit": "1.12 kB"
+    "limit": "1.21 kB"
   },
   {
     "name": "single: bsTooltip (2.15 kB - NFR-17 row amended from 1.25 kB by ADR-0044; measured 2101 B: the content-preparation pass, the slot mapping and the Popper diagnostic are what a bare wrapper does not carry. 21.3 cost this row **1 byte** without touching a line of bsTooltip - adding one frozen constant to the entry moved the shared-chunk split by that much - and the row failed on it. That is the gate working: a tight row is supposed to notice, and the fix is a deliberate re-pin with the cause written down rather than a shrug)",
@@ -393,10 +393,10 @@
     "limit": "2.15 kB"
   },
   {
-    "name": "single: bsPopover (2.1 kB - NFR-17 row amended from 1.25 kB by ADR-0044; measured 1950 B, ten bytes more than bsTooltip because both are the same internal factory with a different slot map)",
+    "name": "single: bsPopover (2.26 kB - NFR-17 row amended from 1.25 kB by ADR-0044; measured 2092 B, ten bytes more than bsTooltip because both are the same internal factory with a different slot map. Row clause amended again from 2.1 kB by ADR-0082, at the row own +7.7% margin. It had reached 8 B of headroom while its text still advertised 1950 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsPopover }",
-    "limit": "2.1 kB"
+    "limit": "2.26 kB"
   },
   {
     "name": "/logging - full import (NFR-08: measured 1475 B, clause 1.6 kB; +85 B for the ADR-0047 option-key contract)",
@@ -632,7 +632,7 @@
     "limit": "1.35 kB"
   },
   {
-    "name": "/ui - full import (spec 07 NFR-32: measured 9537 B - up 8 B in 21.1 as the chunks re-split around the new /forms entry, not because anything on this entry moved. Limit 10.2 kB unchanged, now measured + 7.0%. Two per-function rows: `themeSnippet` (imports nothing) and `createBreakpoints` (NFR-02 as a number))",
+    "name": "/ui - full import (spec 07 NFR-32: measured 9518 B - up 8 B in 21.1 as the chunks re-split around the new /forms entry, not because anything on this entry moved. Limit 10.2 kB unchanged, now measured + 7.0%. Two per-function rows: `themeSnippet` (imports nothing) and `createBreakpoints` (NFR-02 as a number))",
     "path": "dist/esm/ui.js",
     "limit": "10.2 kB"
   },
@@ -666,7 +666,7 @@
     "limit": "1.72 kB"
   },
   {
-    "name": "single: getValue (NFR-01 <= 1 kB / NFR-02: measured 280 B out of a 7882 B entry - 3.6% of it. The read half of F45 (spec 08 F113) lands on /dom rather than inside the form engine, and this row is the reason that is affordable: a page that wants to read one control pays 280 B, not the 1840 B of /forms)",
+    "name": "single: getValue (NFR-01 <= 1 kB / NFR-02: measured 277 B out of a 7882 B entry - 3.6% of it. The read half of F45 (spec 08 F113) lands on /dom rather than inside the form engine, and this row is the reason that is affordable: a page that wants to read one control pays 280 B, not the 1840 B of /forms)",
     "path": "dist/esm/dom.js",
     "import": "{ getValue }",
     "limit": "1 kB"
@@ -678,13 +678,13 @@
     "limit": "450 B"
   },
   {
-    "name": "single: createBreakpoints (spec 07 F108: measured 1237 B against a 9567 B entry - 13% of it, which is the NFR-02 shakeability claim as a number rather than an assertion. A page that wants only breakpoints pays for the observer, the shared media seam and the option check, and for none of the three managers)",
+    "name": "single: createBreakpoints (spec 07 F108: measured 1228 B against a 9567 B entry - 13% of it, which is the NFR-02 shakeability claim as a number rather than an assertion. A page that wants only breakpoints pays for the observer, the shared media seam and the option check, and for none of the three managers)",
     "path": "dist/esm/ui.js",
     "import": "{ createBreakpoints }",
     "limit": "1.32 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 50606 B, re-pinned for 21.5 (+843 B for the F124-F125 tracker). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1), 47174 (21.2), 48452 (21.3), 49763 (21.4), 50606 (21.5). NFR-22 is recomputed by the same sum-of-entry-figures method and reads 69980 B, which rounds to the SAME 70 kB clause 21.4 derived - with **20 B** left under it. The clause did not move and the derivation did, which is the distinction spec 08 NFR-43 asks for; the next item that adds a byte to any entry re-derives it to 71 kB. THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 19 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 50578 B, re-pinned for 21.5 (+843 B for the F124-F125 tracker). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1), 47174 (21.2), 48452 (21.3), 49763 (21.4), 50606 (21.5). NFR-22 is recomputed by the same sum-of-entry-figures method and reads 69980 B, which rounds to the SAME 70 kB clause 21.4 derived - with **20 B** left under it. The clause did not move and the derivation did, which is the distinction spec 08 NFR-43 asks for; the next item that adds a byte to any entry re-derives it to 71 kB. THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 19 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
     "path": "dist/global/egl-utils.global.js",
     "limit": "51.6 kB"
   }

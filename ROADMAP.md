@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-27 — two questions rather than one boolean (21.5)`](docs/journal/2026/08/2026-08-27-form-tracking.md).
+  [`2026-08-27 — a figure nobody checks, and three gates nobody ran (22.1)`](docs/journal/2026/08/2026-08-27-size-figures-audit.md).
 
 ## Model & effort routing
 
@@ -392,6 +392,35 @@ throw, queries answer) explicitly — a fresh subsystem full of words like `mess
 - [x] 21.3 Bootstrap costume for the findings (spec 08 **F120–F121**): `is-invalid`/`is-valid`, the feedback slots, `was-validated` and the `aria-invalid`/`aria-describedby` wiring — supplied to the engine's injected class map, never hardcoded inside it. Plus the half a red border cannot do: focus to the first `error` on a blocked submit and a summary announced through F110. **Measure before choosing where it lands** — `/bootstrap` has 473 B under ADR-0041's 25 kB clause, and if the costume does not fit, the recorded reason is the ceiling and not the layering (spec 08 NFR-38) _(route: standard/medium)_ — `bindFormFeedback(validator, …)` on `/forms`, design-system-neutral, plus **`BOOTSTRAP_FEEDBACK_CLASSES` as frozen data** on `/bootstrap`. NFR-38's measurement was taken rather than predicted, and it removed half of ADR-0038's shape: a `bsFormFeedback` **wrapper** puts `/bootstrap` at 25 987 B — **987 B over** ADR-0041's clause, because the import drags the whole renderer in — while the constant alone costs 137 B and leaves 368 B. So the composition happens at the call site, the way `bootstrapIconsSet` already composes into `bsIcon`. The feedback node goes immediately after the field's last control **because Bootstrap's sibling combinator requires it**, which the browser suite proves with `display: block` against the real stylesheet rather than by reading a class attribute; a warning renders as `form-text`, since `.invalid-feedback` would hide it. **No `{html, sanitize}` pair here on purpose** — 21.4 routes a server's error body through this path (NFR-42). Per [ADR-0079](docs/adr/0079-a-costume-that-is-only-a-constant-and-a-node-where-the-css-can-see-it.md)
 - [x] 21.4 Submit lifecycle (spec 08 **F122–F123**): one call that validates, refuses on `error`, marks the form busy, disables what the caller nominated and restores **exactly** that, and awaits the caller's handler; the double-submit guard structural — a second call gets the first call's promise, not a refusal. Then the untrusted half: an injected mapper from an `HttpError` body to field findings, a server field name that matches no control reported rather than dropped, and every message crossing into the DOM as text. Ships the `docs/security/threat-model.md` update in the same PR (spec 08 NFR-42) _(route: standard/high — security: this is the library's first untrusted-payload path onto the DOM)_ — `bindSubmit(validator, …)` on `/forms`, the fourth member of the ADR-0077 family, plus `applyFindings` on the validator so a finding the engine did not compute reaches the F121 renderer that is already subscribed. **The guard is the promise**: a second `submit()` returns the first call's promise object, which is why `submit()` is deliberately not an `async` method and why the test asserts identity rather than an invocation count. **A blocked submit resolves and a failed one rejects**, with the handler's own error unwrapped — ADR-0071's "a dismissal is an answer" applied one subsystem over, so an `HttpError` keeps its `status` and `body`. The untrusted half is matched rather than resolved: a server field name is tested with `Object.hasOwn` against the resolved field set and **never used as a selector**, one that matches nothing becomes a form-level finding carrying `field` rather than being dropped, and the default mapper builds its map through `Object.fromEntries` so `{errors: {__proto__: …}}` cannot reach `Object.prototype` (BUG-0004's lesson, this time on untrusted input). A server error is also pushed through `setCustomValidity`, so a field the server rejected cannot be `.is-invalid` and `:valid` at once — proved on real engines, since jsdom's constraint validation is a simulation. `requestSubmit` was anticipated by NFR-40 and is deliberately **not** called, with the reason recorded. Ships the `docs/security/threat-model.md` boundary and its STRIDE pass in this PR. Per [ADR-0080](docs/adr/0080-a-guard-that-is-the-promise-and-findings-from-outside-the-engine.md)
 - [x] 21.5 Dirty/touched tracking and an unsaved-changes guard (spec 08 **F124–F125**): *dirty* is "differs from the F115 baseline" and *touched* is "the user has interacted", per field and per form, because the two useful behaviours want different ones. The guard registers `beforeunload` only while dirty and detaches on teardown (an api-floor amendment, NFR-40, and a leak test as much as a behaviour test), plus an explicit check for the in-app route change `beforeunload` cannot see — where the F101 dialogs can ask a real question _(route: standard/medium)_ — `trackChanges(form, …)` on `/forms`, the fifth and last member of the ADR-0077 family, and the item that **closes spec 08**. **Dirty is derived on every read** rather than stored, because the baseline moves under it: a flag would be one `setBaseline()` away from telling a user they have unsaved changes after saving. Touched is the only state kept, since "the user has been here" cannot be derived from anything. A field the baseline does not mention is **never dirty**, mirroring exactly what `reset()` does with it. The `beforeunload` registration is **opt-in and attached only while dirty** — not tidiness: a live one costs the page its back/forward-cache eligibility in every current engine, so a handler that merely checks dirty when it fires is already too late — and it is detached by hand rather than through an internal controller (the BUG-0003 cross-realm trap, ADR-0045), asserted as a leak test on an injected window. `confirmLeave()` answers `true` for a clean form without asking anything, and `false` when the form is dirty and no question was injected, because nobody-was-asked is not consent. `refresh()` is the seam F115 created by firing no events on a programmatic write — the queries never need it, the guard and the `'change'` event do. `Window.beforeunload` joins the API-floor inventory, the entry NFR-40 named in advance. Per [ADR-0081](docs/adr/0081-two-questions-rather-than-one-boolean-and-a-guard-that-comes-and-goes.md)
+
+
+## Milestone 22 — Post-1.4 maintenance and distribution
+
+The first milestone with no spec behind it. M21 closed spec 08 and left the roadmap empty,
+which is the moment to pay down what the feature waves accumulated rather than start another
+one. Nothing here changes a public symbol.
+
+- [x] 22.1 The declared figures, and the gates nothing invoked: every `measured N B` in
+  `.size-limit.json` re-baselined against the build, the rows that had quietly lost their margin
+  re-pinned, and both defects gated so neither can come back _(route: standard/medium)_ — **45 of
+  the 66 rows carrying a figure were wrong**, a dozen by 5–8%, because a row is re-pinned only
+  when its **limit** fails: ADR-0056's descriptor checks added a shared cost to every Bootstrap
+  builder and wrapper and re-pinned the three rows that went red, while eleven others grew and
+  kept advertising figures from before; #115's esbuild 0.28 security override moved the same
+  family again. The consequence was not cosmetic — `single: bsDropdown` had **1 B** of headroom
+  while its text claimed 79 B, so the next dependency bump would have failed a component nobody
+  had touched. Each row is re-pinned at **its own original margin** rather than a blanket +7%, so
+  a row that was deliberately tight stays tight; where that no longer fitted a documented clause
+  the clause is amended once, with the cause, rather than silently exceeded (the NFR-17
+  behaviour-wrapper clause 1.25 → 1.35 kB, the composite clause 1.5 → 1.65 kB, and `bsCard`
+  **had already breached** the one it cites). Then the second finding, which is larger: `pnpm
+  check:global`, `check:packed` and `check:transfer` lived only in `check:package`, which **only
+  `publish.yml` runs** — and no publish has ever run, so F83's artifact assertion, F84's packed
+  file list and F87's served-byte budgets had never run on a pull request at all. All four now run
+  in the packaging job. The gate checks the other half of the same prose too — ten rows open by
+  restating their own limit in the house shorthand, and all ten disagreed with the `limit` beside
+  them after the re-pin; that half is checked **exactly**, since two fields of one object either
+  agree or they do not. Per [ADR-0082](docs/adr/0082-a-figure-nobody-checks-is-prose.md)
 
 
 ---

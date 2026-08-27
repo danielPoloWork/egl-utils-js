@@ -159,10 +159,28 @@ jobs:
         run: pnpm check:exports
       - name: Enforce bundle-size budgets (NFR-01)
         run: pnpm size
+      # The figure each size row ADVERTISES, not just the limit it enforces
+      # (roadmap 22.1, ADR-0082). Every budget conversation in this repository
+      # quotes those figures, and 45 of 66 were wrong at v1.4.0 because a row is
+      # re-pinned only when its LIMIT fails — which let `single: bsDropdown`
+      # reach 1 B of headroom while advertising 79 B.
+      - name: Check the declared size figures are the measured ones
+        run: pnpm check:size-figures
       - name: Assert tree-shakeability (NFR-02)
         run: pnpm check:shakeable
       - name: Assert zero runtime dependencies (NFR-06)
         run: pnpm check:deps
+      # These three were in `check:package` and therefore ran ONLY on a publish
+      # dispatch — which has never happened, so F83's global-artifact assertion,
+      # F84's packed-files assertion and F87's served-byte budgets had never run
+      # on a pull request at all (roadmap 22.1, ADR-0082). A gate nothing invokes
+      # is a gate that does not exist.
+      - name: Assert the global artifact's surface (F83)
+        run: pnpm check:global
+      - name: Assert the packaged file list (F84)
+        run: pnpm check:packed
+      - name: Enforce the served-bytes budgets (F87)
+        run: pnpm check:transfer
 
   # Reproducible performance gate — runs only when the project has a benchmark suite.
   benchmark:

@@ -2271,6 +2271,7 @@ inside their declared ranges — keeping those patched is yours. Full detail:
 | 19 | Table data & bsTable extras | ✅ done |
 | 20 | Application UX utilities | ✅ done |
 | 21 | Form engine | ✅ done |
+| 22 | Post-1.4 maintenance and distribution | 🚧 in progress |
 
 
 ## License
