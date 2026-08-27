@@ -12,6 +12,25 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **Dirty, touched, and an unsaved-changes guard** — `trackChanges` on `egl-utils-js/forms`
+  answers two questions rather than one boolean: *dirty* is "differs from the baseline you
+  loaded", *touched* is "the user has been in here", both per field and for the form. A field
+  edited and edited back is **touched and clean**, which is the whole reason they are separate —
+  a guard wants the first, "do not show me an error for a field I have not filled in yet" wants
+  the second. **Dirty is derived on every read**, never stored, because the baseline moves under
+  it (`setBaseline`, `reset`) and a cached flag would claim unsaved changes after a save; a field
+  the baseline does not mention is never dirty, mirroring exactly what `reset()` does with it.
+  `touch()`/`untouch()` take one field or all of them. The **`beforeunload` guard is opt-in and
+  attached only while the form is dirty** — a live registration costs the page its
+  back/forward-cache eligibility in every current engine — and is detached on `destroy()`.
+  `confirmLeave()` covers the in-app route change `beforeunload` cannot see: `true` for a clean
+  form without asking anything, the injected `confirm`'s answer when dirty, and `false` when
+  nothing was injected, because nobody-was-asked is not consent. `refresh()` is the one seam,
+  for after a programmatic `setValues`/`setBaseline`/`reset`, which fire no events by design
+  (spec 08 F124–F125, ROADMAP 21.5,
+  [ADR-0081](docs/adr/0081-two-questions-rather-than-one-boolean-and-a-guard-that-comes-and-goes.md)).
+  **This closes spec 08 and milestone 21.**
+
 - **The submit lifecycle, and a server's errors on the fields** — `bindSubmit` on
   `egl-utils-js/forms` validates, refuses on `error`, marks the form busy, disables what you
   nominated and restores **exactly** that (a control the page had already disabled stays

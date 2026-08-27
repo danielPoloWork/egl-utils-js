@@ -46,6 +46,7 @@
  */
 
 import { controllerFor, isAbortSignal, isElement } from './dom-helpers.js';
+import { fieldOf } from './forms-values.js';
 import { assertAlive } from './lifecycle.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 
@@ -787,26 +788,13 @@ export function createValidator(form, options = {}) {
     instance.destroy();
   }
 
-  /**
-   * The field a DOM event belongs to, or `null` when it belongs to none.
-   *
-   * @param {unknown} target
-   * @returns {string | null}
-   */
-  function fieldOf(target) {
-    for (const [name, controls] of Object.entries(fieldSet)) {
-      if (controls.some((control) => control === target)) return name;
-    }
-    return null;
-  }
-
   /** @type {AbortController | undefined} */
   let domController;
   if (validateOn.length > 0) {
     domController = controllerFor(form.element);
     /** @param {Event} event */
     const trigger = (event) => {
-      const name = fieldOf(event.target);
+      const name = fieldOf(fieldSet, event.target);
       if (name === null) return;
       const existing = debounces.get(name);
       if (existing !== undefined) clearTimeout(existing);

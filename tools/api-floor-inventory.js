@@ -429,6 +429,29 @@ export const MEMBERS = {
     guarded:
       'the listener is attached to the injected window and detached explicitly on teardown; no internal AbortController is created, which is how this binding avoids the BUG-0003 cross-realm signal trap rather than working around it (ADR-0045, ADR-0063)',
   },
+
+  // --- The unsaved-changes guard (spec 08 F125/NFR-40, roadmap 21.5) --------
+  //
+  // NFR-40 named this one in advance, which is the point of that clause: an
+  // event this old is not a *version* question — Safari 3, and every engine
+  // since — but it is very much a *context* one, and the context is unusually
+  // load-bearing for an API whose floor is trivial.
+  //
+  // Three reasons this entry exists rather than being waved through as ancient:
+  // it is the only WINDOW-level registration the form entry makes, so it is the
+  // only place a form-scoped instance can leak past its own root; every current
+  // engine treats a live `beforeunload` listener as a reason to refuse the
+  // back/forward cache, which is why F125 requires it attached only while the
+  // form is dirty rather than for the instance's lifetime; and the dialog it
+  // triggers is one no page can word or count on (several engines skip it
+  // entirely without prior user interaction), so what is inventoried here is a
+  // best-effort signal, documented as one.
+  'Window.beforeunload': {
+    guardReason: 'context',
+    bcd: 'api.Window.beforeunload_event',
+    guarded:
+      "registered only while `trackChanges` reports the form dirty and only when the caller opted into `guard: true`, on the window resolved from the form's own `ownerDocument.defaultView` (or an injected one) — so a server-side or detached document raises `EGL_DOM_CONTRACT` naming the option instead of failing on an undefined read (ADR-0028). Detached explicitly on teardown and when the form goes clean again, never through an internal AbortController, which is the same BUG-0003 cross-realm trap `Window.popstate` avoids above (ADR-0045); the detachment is asserted as a leak test on an injected window rather than inferred (NFR-15)",
+  },
 };
 
 /**
