@@ -38,3 +38,8 @@ export { createValidator } from './forms-validate.js';
 // design-system-neutral half: every class name is injected, and `bsFormFeedback`
 // on `egl-utils-js/bootstrap` is the same function wearing Bootstrap's.
 export { bindFormFeedback } from './forms-feedback.js';
+
+// The submit lifecycle, and the library's first untrusted-payload path onto the
+// DOM (spec 08 §2 items F122-F123, ADR-0080). The transport is injected — this
+// owns the sequence around a request and never the request.
+export { bindSubmit } from './forms-submit.js';

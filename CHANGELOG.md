@@ -12,6 +12,26 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **The submit lifecycle, and a server's errors on the fields** — `bindSubmit` on
+  `egl-utils-js/forms` validates, refuses on `error`, marks the form busy, disables what you
+  nominated and restores **exactly** that (a control the page had already disabled stays
+  disabled), awaits your handler, and reports the outcome. **The double-submit guard is
+  structural**: a second `submit()` while one is in flight returns *the same promise*, not a
+  refusal and not a second request. **A blocked submit resolves** with `{status: 'blocked'}` and
+  a failed one **rejects with your own error**, `HttpError` `status` and `body` intact. An
+  injected `mapError` turns a rejection into findings — the default understands
+  `{errors: {field: message}}` plus a top-level `message` — and this is the library's **first
+  untrusted-payload path onto the DOM**, so three rules hold: a server field name is *matched*
+  against the resolved field set and never used as a selector, a name matching no control becomes
+  a form-level finding carrying `field` rather than being dropped, and every message reaches the
+  DOM as text through a renderer with no `{html, sanitize}` opt-in. Server errors are also pushed
+  through `setCustomValidity`, so a field the server rejected cannot be `.is-invalid` and `:valid`
+  at once. `createValidator` gains **`applyFindings`** for findings the engine did not compute,
+  cleared when the field is validated again. `on('settle')` carries every outcome, which is how
+  the intercepted path learns about a failure no field can show
+  (spec 08 F122–F123, ROADMAP 21.4,
+  [ADR-0080](docs/adr/0080-a-guard-that-is-the-promise-and-findings-from-outside-the-engine.md)).
+
 - **Findings rendered into the form** — `bindFormFeedback` on `egl-utils-js/forms` subscribes to
   a validator and writes its findings into the page: classes from an **injected map**,
   `aria-invalid`, and an `aria-describedby` that adds its id without disturbing the tokens you

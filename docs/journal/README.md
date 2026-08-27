@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-27 — A guard that is the promise, and a payload that is untrusted (roadmap 21.4)](2026/08/2026-08-27-form-submit.md)
 - [2026-08-27 — A costume that is only a constant (roadmap 21.3)](2026/08/2026-08-27-form-feedback.md)
 - [2026-08-26 — Latest-wins per rule, and an order that is the contract (roadmap 21.2)](2026/08/2026-08-26-form-validation.md)
 - [2026-08-26 — A subject entry, and the primitive that stayed one (roadmap 21.1)](2026/08/2026-08-26-form-values.md)

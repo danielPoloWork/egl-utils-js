@@ -152,10 +152,10 @@ export const TRANSFER_ROUTES = {
   forms: {
     file: 'dist/esm/forms.js',
     requests: 6,
-    measured: 11207,
-    budget: 11900,
+    measured: 13110,
+    budget: 14000,
     why:
-      'The form engine (spec 08 NFR-43). +3064 B in 21.3 for the F120-F121 renderer, again on the SAME six requests - and this time the growth includes the F110 live region pulled in from /dom, which this route was already downloading whole. Before that, +2372 B in 21.2 for the F116-F119 validation engine, also on the same six requests: the rules, the races and the constraint seam all landed inside files this route already downloaded whole, which is the one direction this table ever moves cheaply. Twice its 3747 B size-limit row, and the ' +
+      'The form engine (spec 08 NFR-43). +1903 B in 21.4 for the F122-F123 submit lifecycle, on the SAME six requests for the fourth consecutive item — every sibling in this wave has landed inside files this route already downloaded whole, which is the one direction this table moves cheaply and the reason a subject entry was worth its own path. Note the gap: the size-limit row grew 1471 B and this one 1903 B for the same code, because a static page also pays for the parts of the shared chunks tree-shaking would have removed. Before that, +3064 B in 21.3 for the F120-F121 renderer, again on the SAME six requests - and this time the growth includes the F110 live region pulled in from /dom, which this route was already downloading whole. Before that, +2372 B in 21.2 for the F116-F119 validation engine, also on the same six requests: the rules, the races and the constraint seam all landed inside files this route already downloaded whole, which is the one direction this table ever moves cheaply. Twice its 3747 B size-limit row, and the ' +
       'ratio is the point rather than a surprise: a bundler consumer importing `createForm` ships the tree-shaken ' +
       '1.8 kB, while a static page downloads forms.js plus the five shared chunks it imports WHOLE — the error ' +
       'taxonomy, the DOM helpers, the native setters, the option-key check and the lifecycle guard. Composition is ' +
@@ -168,13 +168,13 @@ export const TRANSFER_ROUTES = {
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 48442,
-    budget: 49400,
+    measured: 49838,
+    budget: 50840,
     why:
-      'Re-pinned for 21.3 (+1281 B for the F120-F121 renderer and the F120 class map), holding the ADR-0059 rule. Before that, re-pinned for 21.2 (+1609 B for the validation engine). Before that, re-pinned for 21.1 (+1178 B for the F112-F115 form engine and the twelfth-entry chunk re-split). Before that, re-pinned for 20.6 (+160 B for the F111 reduced-motion helper), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
+      'Re-pinned for 21.4 (+1396 B for the F122-F123 submit lifecycle), holding the ADR-0059 rule. Before that, re-pinned for 21.3 (+1281 B for the F120-F121 renderer and the F120 class map), holding the same. Before that, re-pinned for 21.2 (+1609 B for the validation engine). Before that, re-pinned for 21.1 (+1178 B for the F112-F115 form engine and the twelfth-entry chunk re-split). Before that, re-pinned for 20.6 (+160 B for the F111 reduced-motion helper), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
       "20.5 is where two waves of pressure resolved. NFR-22's ceiling is RE-DERIVED to 52 kB rather than raised, by spec 05's own method — the sum of the measured entry figures, an upper bound on a deduplicated single file, which reads 52104 B today against 39.8 kB at M18. That recomputation, and not a bigger number, is the condition spec 07 NFR-33 attached (ADR-0070). " +
       'The budget here stays tight on purpose: 40400 B is measured + 1.8%, not the ADR-0015 + 7%. The clause is an authoring bound with 12 kB of slack in it — that gap IS the deduplication the derivation always assumed — and a clause with slack does no per-PR work, while this row does. Two instruments, different jobs: the split ADR-0041 already made for the /bootstrap entry. ' +
-      '20.3 recomputed it a fourth time (60914 B → 60 kB), 20.6 a FIFTH (61938 B → 62 kB), 21.1 recomputed it on a TWELFTH input (63862 B → 64 kB), 21.2 recomputed it again with no new entry at all — the twelfth one grew, and the rule is whenever any input moves rather than whenever an entry is added (65768 B → 66 kB) — and 21.3 does the same a third consecutive time: 67624 B → 68 kB, and this row moves to 49.5 kB (measured + 2.0%). The derivation is redone whenever ANY of its inputs moves, not only when an entry is added: a clause nobody recomputes is a number rather than a bound. ' +
+      '20.3 recomputed it a fourth time (60914 B → 60 kB), 20.6 a FIFTH (61938 B → 62 kB), 21.1 recomputed it on a TWELFTH input (63862 B → 64 kB), 21.2 recomputed it again with no new entry at all — the twelfth one grew, and the rule is whenever any input moves rather than whenever an entry is added (65768 B → 66 kB) — 21.3 did the same a third consecutive time (67624 B → 68 kB), and 21.4 a FOURTH: 69095 B → 70 kB, with the whole +1471 B coming from /forms and no other entry moving by a byte — this row moves to 50840 B (measured + 2.0%). The derivation is redone whenever ANY of its inputs moves, not only when an entry is added: a clause nobody recomputes is a number rather than a bound. ' +
       "The sibling constraint moved in the helpful direction for once: ADR-0041's 25 kB /bootstrap clause held at 473 B free through 20.6, and 21.1 leaves 505 B free — the twelfth entry re-split the shared chunks in that entry's favour, without a line of it changing.",
   },
 };
