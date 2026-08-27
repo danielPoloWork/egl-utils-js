@@ -97,3 +97,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0079](0079-a-costume-that-is-only-a-constant-and-a-node-where-the-css-can-see-it.md) | A costume that is only a constant, and a node where the CSS can see it | Accepted |
 | [0080](0080-a-guard-that-is-the-promise-and-findings-from-outside-the-engine.md) | A guard that is the promise, a rejection that keeps its name, and findings from outside the engine | Accepted |
 | [0081](0081-two-questions-rather-than-one-boolean-and-a-guard-that-comes-and-goes.md) | Two questions rather than one boolean, and a guard that comes and goes | Accepted |
+| [0082](0082-a-figure-nobody-checks-is-prose.md) | A figure nobody checks is prose, and a gate nothing invokes is not a gate | Accepted |
