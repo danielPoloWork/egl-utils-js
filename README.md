@@ -1083,6 +1083,88 @@ Without a class map you still get correct structure, text and ARIA, and no styli
 bindFormFeedback(validator); // works; looks like nothing until you style it
 ```
 
+### Submitting, and a server that answers with errors (`egl-utils-js/forms`)
+
+`bindSubmit` owns the sequence every application writes by hand: validate, refuse on `error`,
+mark busy, disable, await your handler, restore, report. The transport stays yours — this engine
+owns the lifecycle around a request and never the request
+([ADR-0080](docs/adr/0080-a-guard-that-is-the-promise-and-findings-from-outside-the-engine.md)).
+
+```js
+import { createForm, createValidator, bindFormFeedback, bindSubmit } from 'egl-utils-js/forms';
+
+const form = createForm(root);
+const validator = createValidator(form, { rules });
+const feedback = bindFormFeedback(validator, { classes: BOOTSTRAP_FEEDBACK_CLASSES });
+
+bindSubmit(validator, {
+  feedback,
+  disable: ['[type=submit]'],
+  busyClass: 'opacity-50',
+  handler: ({ form, signal }) => api.put(`/hosts/${id}`, form.toJSON(), { signal }),
+});
+
+// The form's own submit button now runs all of it. Nothing else to wire.
+```
+
+- **The double-submit guard is structural.** A second `submit()` while one is in flight returns
+  *the same promise* — not a refusal, not a second request. A boolean `busy` flag checked at the
+  top of an `async` function is the same bug with more code, because the check and the set are
+  separated by an `await`.
+- **A blocked submit is an answer; a failed one is a failure.** Validation finding an `error`
+  resolves with `{status: 'blocked'}`; the handler rejecting rejects `submit()` with **your own
+  error object**, `HttpError` `status` and `body` intact. Nothing is re-wrapped, and "the form
+  said no" never arrives as an exception.
+- **Disable-and-restore gives back exactly what it took.** A control the page had already
+  disabled itself stays disabled — the classic off-by-one of this pattern — and `aria-busy` is
+  restored to the value it had rather than removed.
+- **A server's errors land on the fields.** An injected `mapError` turns a rejection into
+  findings; the default understands `{errors: {field: message}}` (a string or an array of them)
+  plus a top-level `message` for the request as a whole.
+
+```js
+// 422 { errors: { email: 'Already registered' }, message: 'Nothing was saved' }
+//   -> `email` renders under the email control, and blocks the next submit
+//   -> the message renders at form level
+```
+
+**The server's body is untrusted, and this is the one place that matters in this library.** Three
+rules, none of them optional:
+
+- a field name is **matched** against the fields your form resolved, never used as a selector, so
+  a name like `input[name=email]` selects nothing;
+- a name that matches **no** control becomes a form-level finding carrying `field` — silently
+  discarding a server's complaint is how a user is told "something went wrong" with no idea what;
+- every message reaches the DOM as **text**, through the F121 renderer that deliberately has no
+  `{html, sanitize}` opt-in.
+
+The boundary and its STRIDE pass are written down in
+[`docs/security/threat-model.md`](docs/security/threat-model.md).
+
+Called yourself, the outcome is a value and the failure is a rejection:
+
+```js
+try {
+  const { status } = await submitter.submit();
+  if (status === 'blocked') return; // the findings are already on the page
+  toast('Saved');
+} catch (failure) {
+  if (failure.status >= 500) toast('The server is having a bad day');
+}
+```
+
+For the intercepted path — where nothing called `submit()` — subscribe instead. Every outcome
+arrives there, including the failure no field can display:
+
+```js
+submitter.on('settle', ({ status, failure }) => {
+  if (status === 'failed') report(failure);
+});
+```
+
+`intercept` defaults to `true` for a `<form>` root and `false` for any other container, because a
+`<div>` has no submit event to intercept.
+
 ### Promise-based dialogs (`egl-utils-js/ui`)
 
 A dialog is a question with one answer arriving later — which is what a promise is. So `await`

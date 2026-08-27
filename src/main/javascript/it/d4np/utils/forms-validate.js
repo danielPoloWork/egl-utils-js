@@ -35,6 +35,13 @@
  * this engine can never disagree about a field (F119). Whether the bubble is
  * *shown* is the caller's business; whether the two layers agree is not.
  *
+ * **And findings can arrive from outside.** `applyFindings` folds messages this
+ * engine did not compute into the same result, in their own slots, so a server's
+ * rejection lands under the right control and everything already subscribed
+ * renders it (F123, added in 21.4). They are cleared when the field they belong
+ * to is validated again, because a complaint about a value stops being true the
+ * moment the value changes.
+ *
  * @module egl-utils-js/forms
  */
 
@@ -81,11 +88,16 @@ function assertPlainObject(value, name) {
  * @typedef {object} Finding
  * @property {string} message - What to tell the user.
  * @property {Severity} severity - Only `error` blocks a submit (F117).
- * @property {'rule' | 'native'} source - Where it came from: one of this
- *   caller's rules, or the platform's own constraint validation.
+ * @property {'rule' | 'native' | 'external'} source - Where it came from: one of
+ *   this caller's rules, the platform's own constraint validation, or outside
+ *   the engine entirely through {@link ValidatorInstance.applyFindings} — which
+ *   in practice means a server (F123).
  * @property {string} [constraint] - For a native finding, the `ValidityState`
  *   flag that failed (`'valueMissing'`, `'typeMismatch'`, …), so a caller can
  *   substitute their own wording without parsing a message.
+ * @property {string} [field] - For an external finding that named a field this
+ *   form does not have: the name as its source gave it, carried as data so it is
+ *   reported rather than dropped (F123). Never used as a selector.
  * @property {unknown} [cause] - The error a rule threw, when one did.
  */
 
@@ -94,7 +106,8 @@ function assertPlainObject(value, name) {
  * @property {boolean} valid - No `error`-severity finding anywhere. `true` before
  *   anything has run, which is why `validated` exists beside it.
  * @property {Readonly<Record<string, readonly Finding[]>>} fields - Findings per
- *   field, in the order native-then-declared.
+ *   field, in the order the layers ran: native, then declared rules, then
+ *   whatever `applyFindings` supplied from outside.
  * @property {readonly Finding[]} form - Findings that belong to the form rather
  *   than to any one field.
  * @property {readonly string[]} validated - Field names that have actually been
@@ -185,6 +198,53 @@ function findingFrom(outcome, label) {
 }
 
 /**
+ * Turn one externally-supplied outcome list into findings (F123).
+ *
+ * Deliberately **not** `findingFrom`: a rule returning a malformed value is a
+ * programming error in the caller's own code, while these arrive from a mapper
+ * standing over an untrusted payload, and they carry one field a rule may not —
+ * `field`, the name a source used that this form does not have. Same strictness,
+ * different shape: a `TypeError` names the offender either way, because a mapper
+ * that produced nonsense is still a bug and not a message to show a user.
+ *
+ * @param {unknown} value - An outcome, or an array of them.
+ * @param {string} label - For the error message.
+ * @returns {Finding[]}
+ */
+function externalFindings(value, label) {
+  const many = Array.isArray(value) ? value : [value];
+  /** @type {Finding[]} */
+  const findings = [];
+  for (const entry of many) {
+    if (entry === undefined || entry === null || entry === '') continue;
+    if (typeof entry === 'string') {
+      findings.push({ message: entry, severity: 'error', source: 'external' });
+      continue;
+    }
+    assertPlainObject(entry, label);
+    const { message, severity = 'error', field, ...unknown } = entry;
+    assertNoUnknownOptions(unknown, 'createValidator', 'finding property');
+    if (typeof message !== 'string' || message === '') {
+      throw new TypeError(`createValidator: ${label} has a finding with no message`);
+    }
+    if (!SEVERITIES.has(severity)) {
+      throw new TypeError(
+        `createValidator: ${label} has severity '${severity}' — expected 'error', 'warning' or 'info'`,
+      );
+    }
+    if (field !== undefined && typeof field !== 'string') {
+      throw new TypeError(`createValidator: ${label} has a non-string field name`);
+    }
+    findings.push(
+      field === undefined
+        ? { message, severity, source: 'external' }
+        : { message, severity, source: 'external', field },
+    );
+  }
+  return findings;
+}
+
+/**
  * @typedef {object} NativeMessageInfo
  * @property {string} constraint - The `ValidityState` flag that failed.
  * @property {Element} control - The control that failed it.
@@ -212,11 +272,29 @@ function findingFrom(outcome, label) {
  */
 
 /**
+ * @typedef {undefined | null | string | { message: string, severity?: Severity, field?: string }} ExternalOutcome
+ */
+
+/**
+ * @typedef {object} ExternalFindings
+ * @property {Record<string, ExternalOutcome | readonly ExternalOutcome[]>} [fields]
+ *   Findings per field name. A name this form does not have is a `TypeError`
+ *   naming it (ADR-0047's rule, as for `setValues`) — deciding what to do with
+ *   an unmatched *server* name is F123's job, not this one's, and it happens
+ *   before the call.
+ * @property {ExternalOutcome | readonly ExternalOutcome[]} [form] - Findings that
+ *   belong to the form rather than to any one field.
+ */
+
+/**
  * @typedef {object} ValidatorInstance
  * @property {import('./forms-values.js').FormInstance} form - The form this reads.
  * @property {() => Promise<ValidationResult>} validate - Run everything.
  * @property {(name: string) => Promise<ValidationResult>} validateField - Run one
  *   field's rules plus the rules that declared it, and nothing else.
+ * @property {(findings: ExternalFindings) => ValidationResult} applyFindings -
+ *   Fold findings this engine did not produce into the result, so everything
+ *   subscribed to it renders them (F123).
  * @property {() => ValidationResult} result - The last computed result.
  * @property {() => void} clear - Forget every finding, as if nothing had run.
  * @property {(event: 'change', handler: (result: ValidationResult) => void) => () => void} on
@@ -328,6 +406,14 @@ export function createValidator(form, options = {}) {
   const ruleFindings = new Map();
   /** @type {Map<string, Finding | null>} */
   const nativeFindings = new Map();
+  /**
+   * Findings from outside the engine, in their own slots for the same reason the
+   * rules have theirs: a run must never write over an answer it did not compute.
+   * @type {Map<string, readonly Finding[]>}
+   */
+  const externalByField = new Map();
+  /** @type {readonly Finding[]} */
+  let externalAtForm = [];
   /** @type {Set<string>} */
   const validated = new Set();
   /** @type {Map<object, { token: object, controller: AbortController }>} */
@@ -362,6 +448,7 @@ export function createValidator(form, options = {}) {
         const finding = ruleFindings.get(rule.id);
         if (finding !== undefined && finding !== null) found.push(finding);
       }
+      found.push(...(externalByField.get(name) ?? []));
       if (found.some((finding) => finding.severity === 'error')) valid = false;
       entries.push([name, Object.freeze(found)]);
     }
@@ -373,6 +460,7 @@ export function createValidator(form, options = {}) {
       const finding = ruleFindings.get(rule.id);
       if (finding !== undefined && finding !== null) formFound.push(finding);
     }
+    formFound.push(...externalAtForm);
     if (formFound.some((finding) => finding.severity === 'error')) valid = false;
 
     return Object.freeze({
@@ -441,13 +529,16 @@ export function createValidator(form, options = {}) {
    * @returns {void}
    */
   function pushCustomValidity(name) {
-    // Only a rule's finding is pushed. Pushing a native message back would make
-    // `customError` true for a constraint the platform already reported, so the
-    // engine would be agreeing with itself in a second slot.
+    // Anything but a NATIVE finding is pushed — a rule's, and a server's
+    // (F123), because a field the server rejected is a field this engine calls
+    // invalid and `checkValidity()` must agree. Pushing a native message back
+    // would instead make `customError` true for a constraint the platform
+    // already reported, so the engine would be agreeing with itself in a second
+    // slot.
     // No `?? []`: `derive` emits an entry for every field, so the lookup cannot
     // miss — and this project deletes dead guards rather than mock-covering them.
     const blocking = current.fields[name].find(
-      (finding) => finding.severity === 'error' && finding.source === 'rule',
+      (finding) => finding.severity === 'error' && finding.source !== 'native',
     );
     for (const control of fieldSet[name]) {
       const element = /** @type {any} */ (control);
@@ -533,7 +624,14 @@ export function createValidator(form, options = {}) {
    * @returns {Promise<ValidationResult>}
    */
   async function execute(names, skip, run) {
-    for (const name of names) validated.add(name);
+    for (const name of names) {
+      validated.add(name);
+      // A re-validated field drops what was said about it from outside: a
+      // server's complaint about a value describes the value it was sent, and
+      // keeping it past the next look would leave the user staring at an error
+      // for input they have already corrected.
+      externalByField.delete(name);
+    }
     const skipped = new Set(skip);
     for (const rule of run) {
       if (skipped.has(rule.id)) ruleFindings.set(rule.id, null);
@@ -581,6 +679,10 @@ export function createValidator(form, options = {}) {
     async validate() {
       assertAlive(destroyed, api, 'validate');
       const names = Object.keys(fieldSet);
+      // The form-level external findings go with a FULL run and not with
+      // `validateField`: they belong to the submission as a whole, and one field
+      // being looked at again says nothing about them.
+      externalAtForm = [];
       for (const name of names) nativeFindings.set(name, readNative(name));
       return execute(names, blockedByNative(names, ruleList), ruleList);
     },
@@ -595,6 +697,42 @@ export function createValidator(form, options = {}) {
       return execute([name], blockedByNative([name], run), run);
     },
 
+    applyFindings(findings) {
+      assertAlive(destroyed, api, 'applyFindings');
+      assertPlainObject(findings, 'findings');
+      const { fields = {}, form: atForm, ...unknown } = findings;
+      assertNoUnknownOptions(unknown, api, 'applyFindings key');
+      assertPlainObject(fields, 'findings.fields');
+
+      // Everything is validated and normalised BEFORE anything is written: a
+      // malformed entry half-way through a map would otherwise leave the form
+      // wearing some of a server's answer and none of the rest.
+      /** @type {Array<[string, Finding[]]>} */
+      const incoming = [];
+      for (const [name, value] of Object.entries(fields)) {
+        if (!isField(name)) {
+          throw new TypeError(`${api}: applyFindings names no such field '${name}'`);
+        }
+        incoming.push([name, externalFindings(value, `findings.fields.${name}`)]);
+      }
+      const incomingAtForm =
+        atForm === undefined ? null : externalFindings(atForm, 'findings.form');
+
+      for (const [name, list] of incoming) {
+        if (list.length === 0) externalByField.delete(name);
+        else externalByField.set(name, Object.freeze(list));
+        // A field a server judged HAS been judged, so it counts as validated:
+        // otherwise "no findings" and "not asked yet" would collapse for exactly
+        // the field the user is being asked to fix.
+        validated.add(name);
+      }
+      if (incomingAtForm !== null) externalAtForm = Object.freeze(incomingAtForm);
+
+      publish();
+      for (const [name] of incoming) pushCustomValidity(name);
+      return current;
+    },
+
     result() {
       return current;
     },
@@ -605,6 +743,8 @@ export function createValidator(form, options = {}) {
       inFlight.clear();
       ruleFindings.clear();
       nativeFindings.clear();
+      externalByField.clear();
+      externalAtForm = [];
       validated.clear();
       for (const name of Object.keys(fieldSet)) {
         for (const control of fieldSet[name]) {
