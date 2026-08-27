@@ -28,11 +28,24 @@
  * Every options bag on this entry **rejects a key it does not know** with a
  * `TypeError` naming it: the destructuring is the schema (ADR-0047).
  *
+ * **A protocol allow-list lives here too** (spec 09 F126). `safeUrl` is the same
+ * job one grammar over: `sanitizeHtml` decides which *tags and attributes* an
+ * untrusted string may carry, and `safeUrl` decides which *schemes* an untrusted
+ * URL may carry. It shares none of the machinery — no peer, no `document`, no
+ * profile — which is why it costs a consumer who only wants it almost nothing,
+ * and why the Bootstrap builders reach it through the internal module rather
+ * than by importing this entry (ADR-0084).
+ *
  * @module egl-utils-js/sanitize
  */
 
 import { PeerMissingError } from './errors.js';
 import { assertNoUnknownOptions } from './option-keys.js';
+
+// The URL guard (spec 09 F126). Re-exported rather than defined here: the
+// Bootstrap builders need it without importing this entry, so it lives in an
+// internal module — the `option-keys.js` shape (ADR-0084).
+export { safeUrl } from './url-guard.js';
 
 /**
  * Curated default tag allowlist (ADR-0012): structural and formatting

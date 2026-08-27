@@ -29,6 +29,7 @@
 import { isAbortSignal, isElement, requireDocument } from './dom-helpers.js';
 import { assertAlive } from './lifecycle.js';
 import { assertNoUnknownOptions } from './option-keys.js';
+import { DEFAULT_PROTOCOLS, normalizeProtocol, protocolOf } from './url-guard.js';
 
 /**
  * @typedef {object} BuilderDocumentOption
@@ -51,6 +52,14 @@ import { assertNoUnknownOptions } from './option-keys.js';
  * @property {((html: string) => string) | false} [sanitize] - Required with
  *   `{ html: true }`: a sanitizer, or the literal `false` to declare the markup
  *   trusted. There is deliberately no default.
+ * @property {readonly string[]} [protocols] - Extra URL schemes this call trusts
+ *   in a data-driven `href` or `src` (spec 09 F127). The default set — `http:`,
+ *   `https:`, `mailto:`, `tel:` and relative references — needs no option; this
+ *   is for the desktop integration that renders `app:` links, and it is where
+ *   the two image builders declare `data:`/`blob:` because an image source is a
+ *   different context from a link. It sits beside `{html, sanitize}` for the
+ *   same reason those two do: it is a **policy about untrusted values**, and one
+ *   name threaded through the shared contract beats five bespoke options.
  */
 
 /**
@@ -1155,7 +1164,7 @@ export function assertPlainObject(value, name, api) {
  * @throws {TypeError} On any key left over.
  */
 export function commonOptions(rest, api) {
-  const { class: extraClass, document: doc, html, sanitize, ...unknown } = rest;
+  const { class: extraClass, document: doc, html, sanitize, protocols, ...unknown } = rest;
   assertNoUnknownOptions(unknown, api);
   // The values are each validated where they are used — `resolveDocument`,
   // `applyClasses` and `renderContent` all take the caller's word for nothing —
@@ -1165,7 +1174,67 @@ export function commonOptions(rest, api) {
     document: /** @type {Document | undefined} */ (doc),
     html: /** @type {boolean | undefined} */ (html),
     sanitize: /** @type {((html: string) => string) | false | undefined} */ (sanitize),
+    protocols: /** @type {readonly string[] | undefined} */ (protocols),
   };
+}
+
+/**
+ * The attribute a refused URL leaves behind, so the refusal is findable in a
+ * console instead of looking like a builder bug (spec 09 F127).
+ *
+ * A marker with no value on purpose: the refused string is attacker-controlled,
+ * and while an attribute value is inert there is no reason to put it back into
+ * the document to be copied out of later. Which record it was is a question for
+ * the data, not for the DOM.
+ */
+export const REFUSED_URL_ATTRIBUTE = 'data-egl-refused-url';
+
+/**
+ * Write a data-driven URL into an attribute, or refuse it (spec 09 F126-F127).
+ *
+ * The one place the eight builder call sites share, so the policy, the marker
+ * and the "leave it unset rather than empty" rule are decided once. An `href=""`
+ * is a link to the current page — a different lie from no link at all — which is
+ * why a refusal removes nothing and adds nothing except the marker: the element
+ * keeps its label, and a record with a hostile link renders as a record with a
+ * broken link rather than as a missing row.
+ *
+ * @param {Element} el - The element to write to.
+ * @param {'href' | 'src'} attribute - Which attribute.
+ * @param {unknown} value - The candidate URL, from caller or record data.
+ * @param {{ protocols?: readonly string[] }} [options] - The shared contract's
+ *   bag; only `protocols` is read.
+ * @param {readonly string[]} [extra] - Protocols this *call site* trusts because
+ *   of where the URL is going — `['data:', 'blob:']` for an image source, which
+ *   is inert there and a script in an `href`.
+ * @returns {boolean} Whether the URL was written.
+ */
+export function setSafeUrl(el, attribute, value, options, extra = []) {
+  // The guard's PARSE half, not `safeUrl` itself, and that is a measurement
+  // rather than a preference (ADR-0084): linking the option-validation half here
+  // costs this entry 101 B and ~150 B on each of five per-function rows, for a
+  // check the builders never need — their own `protocols` arrives through the
+  // shared contract, and a malformed one fails **closed** and leaves the marker
+  // below, which is observable rather than silent. `safeUrl` keeps the loud
+  // contract for the caller who calls it directly.
+  const protocol = protocolOf(value);
+  const declared = options?.protocols;
+  const allowed =
+    protocol !== null &&
+    (DEFAULT_PROTOCOLS.has(protocol) ||
+      // `normalizeProtocol` on both sides, so this path and `safeUrl` cannot
+      // disagree about whether `'DATA'` and `'data:'` are the same protocol.
+      extra.some((entry) => normalizeProtocol(entry) === protocol) ||
+      (Array.isArray(declared) &&
+        declared.some(
+          (entry) => typeof entry === 'string' && normalizeProtocol(entry) === protocol,
+        )));
+  if (!allowed) {
+    el.setAttribute(REFUSED_URL_ATTRIBUTE, '');
+    return false;
+  }
+  el.setAttribute(attribute, /** @type {string} */ (value));
+  return true;
 }
 
 /**

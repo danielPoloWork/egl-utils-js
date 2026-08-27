@@ -30,6 +30,7 @@ import {
   assertPlainObject,
   documentOf,
   renderContent,
+  setSafeUrl,
   uniqueId,
 } from './bootstrap-elements.js';
 import {
@@ -137,6 +138,9 @@ export function bsOffcanvas(target, options = {}) {
  * @property {BsCarouselLabels} [labels]
  * @property {boolean} [html=false]
  * @property {((html: string) => string) | false} [sanitize]
+ * @property {readonly string[]} [protocols] - Extra URL schemes a data-driven
+ *   `href`/`src` in this call may carry (spec 09 F127). The default set covers
+ *   `http:`, `https:`, `mailto:`, `tel:` and relative references.
  * @property {ClassOption} [class]
  * @property {Record<string, unknown>} [bootstrap]
  * @property {AbortSignal} [signal]
@@ -205,6 +209,7 @@ export function bsCarousel(container, options = {}) {
     labels = {},
     html,
     sanitize,
+    protocols,
     signal,
     bootstrap,
     class: extraClass,
@@ -229,7 +234,7 @@ export function bsCarousel(container, options = {}) {
   }
 
   const doc = documentOf(container, { document: explicitDocument }, api);
-  const contentOptions = { html, sanitize };
+  const contentOptions = { html, sanitize, protocols };
   /** @type {Element} */
   let root;
 
@@ -284,7 +289,8 @@ export function bsCarousel(container, options = {}) {
         }
         const img = doc.createElement('img');
         img.className = 'd-block w-100';
-        img.setAttribute('src', itemContent);
+        // The second image context, on the same terms as the card's (F127).
+        setSafeUrl(img, 'src', itemContent, contentOptions, ['data:', 'blob:']);
         img.setAttribute('alt', itemAlt);
         slide.append(img);
       }

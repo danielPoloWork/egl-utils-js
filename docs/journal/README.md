@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-27 — A URL is not text (roadmap 23.1)](2026/08/2026-08-27-url-guard.md)
 - [2026-08-27 — The deferred pile, re-dispositioned (spec 09, M23)](2026/08/2026-08-27-hardening-wave-planning.md)
 - [2026-08-27 — A figure nobody checks, and three gates nobody ran (roadmap 22.1)](2026/08/2026-08-27-size-figures-audit.md)
 - [2026-08-27 — Two questions rather than one boolean, and spec 08 closed (roadmap 21.5)](2026/08/2026-08-27-form-tracking.md)

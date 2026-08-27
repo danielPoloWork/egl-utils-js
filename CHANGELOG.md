@@ -12,7 +12,41 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **`safeUrl` on `egl-utils-js/sanitize`, and every builder URL routed through it** — escaping
+  protects a record's *content*; a record's **URL** is an instruction, and `javascript:…` in a data
+  field was a live link with the page's authority. The guard **parses, then decides**: `new URL()`
+  against a non-resolvable probe base, then a `Set` lookup on the protocol — so `JaVaScRiPt:`,
+  `java	script:`, a leading control character and a percent-encoded colon each get one answer, the
+  last of them correctly **allowed** because it is a path and the browser agrees. A refusal is
+  `null`, never a throw, so one hostile field cannot discard the other forty-nine records; the
+  default set is `http:`/`https:`/`mailto:`/`tel:` plus relative references, extended per call with
+  `protocols`. A property test asserts totality: a string or `null` for any input, never an
+  exception (spec 09 F126, ROADMAP 23.1,
+  [ADR-0084](docs/adr/0084-a-url-is-not-text.md)).
+
 ### Changed
+
+- **The Bootstrap builders no longer render a URL they have not checked** — seven call sites (card
+  image, list-group item, breadcrumb link, navbar brand, nav item, nav child, carousel image) route
+  their data-driven `href`/`src` through the guard. A refused URL leaves the attribute **unset**
+  rather than empty (an `href=""` is a link to the current page), keeps the element with its label
+  and `alt`, and carries `data-egl-refused-url` so the refusal is findable. The two image builders
+  allow `data:`/`blob:` themselves — inert in an `<img>`, a script in an `href` — and any builder's
+  set widens through the shared `protocols` option beside `{html, sanitize}`. **A behaviour change,
+  deliberately**: a `javascript:` link that rendered before now renders inert
+  (spec 09 F127, ROADMAP 23.1, [ADR-0084](docs/adr/0084-a-url-is-not-text.md)).
+- **ADR-0041's 25 kB `/bootstrap` entry clause is amended to 25.5 kB** — the honest single-function
+  routing measured 3 B *over* it, and the hot/cold split that saved 101 B on the entry (and ~150 B
+  on each of five per-function rows) landed 98 B under, which is not a margin to ship on. The clause
+  moves by the minimum that restores the 368 B the row had; what it was sized to prevent is the
+  catalogue sprawling, and a security control on components that already exist is not sprawl
+  (ROADMAP 23.1, [ADR-0084](docs/adr/0084-a-url-is-not-text.md)).
+- **NFR-22's derived artifact clause re-derives to 71 kB** (70 546 B) — exactly as 21.5 predicted
+  when it landed 20 B under 70 kB. F87's served-byte accounting priced the guard's new shared chunk
+  at **+724 B and a fourth request** on `/sanitize`, **+1 051 B and a thirteenth** on `/bootstrap`,
+  and **+913 B and an eleventh** on `/ui` — for a guard `/ui` never calls, because it composes
+  `/bootstrap` internals. The same code is 247 B on a bundler consumer's row
+  (ROADMAP 23.1, ADR-0061, [ADR-0084](docs/adr/0084-a-url-is-not-text.md)).
 
 - **Every size-budget row now declares the figure it actually measures, and a gate keeps it that
   way** — 45 of the 66 rows in `.size-limit.json` that quote a `measured N B` were wrong, a dozen

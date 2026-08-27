@@ -34,6 +34,7 @@ import {
   assertToken,
   documentOf,
   renderContent,
+  setSafeUrl,
   uniqueId,
 } from './bootstrap-elements.js';
 import {
@@ -714,6 +715,9 @@ export function bsTabs(container, options = {}) {
  * @property {boolean} [container='container-fluid'] - Inner container class.
  * @property {boolean} [html=false]
  * @property {((html: string) => string) | false} [sanitize]
+ * @property {readonly string[]} [protocols] - Extra URL schemes a data-driven
+ *   `href`/`src` in this call may carry (spec 09 F127). The default set covers
+ *   `http:`, `https:`, `mailto:`, `tel:` and relative references.
  * @property {ClassOption} [class]
  * @property {Record<string, unknown>} [bootstrap]
  * @property {AbortSignal} [signal]
@@ -772,6 +776,7 @@ export function bsNavbar(container, options = {}) {
     togglerLabel = 'Toggle navigation',
     html,
     sanitize,
+    protocols,
     signal,
     bootstrap,
     class: extraClass,
@@ -790,7 +795,7 @@ export function bsNavbar(container, options = {}) {
   }
 
   const doc = documentOf(container, { document: explicitDocument }, api);
-  const contentOptions = { html, sanitize };
+  const contentOptions = { html, sanitize, protocols };
 
   const nav = doc.createElement('nav');
   applyClasses(
@@ -811,7 +816,7 @@ export function bsNavbar(container, options = {}) {
   if (brand !== undefined) {
     const brandEl = doc.createElement('a');
     brandEl.className = 'navbar-brand';
-    brandEl.setAttribute('href', brandHref);
+    setSafeUrl(brandEl, 'href', brandHref, contentOptions);
     renderContent(brandEl, brand, contentOptions, api);
     inner.append(brandEl);
   }
@@ -870,7 +875,11 @@ export function bsNavbar(container, options = {}) {
       undefined,
       api,
     );
-    link.setAttribute('href', itemHref ?? '#');
+    // `'#'` is what an ITEM WITH NO HREF has always rendered, and it stays that:
+    // a refused href is a different fact, and F127 leaves the attribute unset so
+    // the link is inert rather than pointing at the top of the page.
+    if (itemHref === undefined) link.setAttribute('href', '#');
+    else setSafeUrl(link, 'href', itemHref, contentOptions);
     // Which page you are on is an ARIA state, not a colour.
     if (active) link.setAttribute('aria-current', 'page');
     if (disabled) link.setAttribute('aria-disabled', 'true');
@@ -905,7 +914,8 @@ export function bsNavbar(container, options = {}) {
       const childLi = doc.createElement('li');
       const childLink = doc.createElement('a');
       applyClasses(childLink, ['dropdown-item', childActive === true && 'active'], undefined, api);
-      childLink.setAttribute('href', childHref ?? '#');
+      if (childHref === undefined) childLink.setAttribute('href', '#');
+      else setSafeUrl(childLink, 'href', childHref, contentOptions);
       if (childActive === true) childLink.setAttribute('aria-current', 'page');
       renderContent(childLink, childLabel, contentOptions, api);
       childLi.append(childLink);
