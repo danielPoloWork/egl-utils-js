@@ -112,14 +112,14 @@ export const TRANSFER_ROUTES = {
   dom: {
     file: 'dist/esm/dom.js',
     requests: 12,
-    measured: 17154,
+    measured: 17151,
     budget: 18300,
     why: '+735 B and TWO more requests in 21.1 (a TWELFTH file), and this entry gained 108 B of source: the F113 `getValue` read primitive went here rather than into /forms, so a page that wants to read one control pays 280 B of bundled code — while a static page pays for two extra round trips it did not ask for, because a twelfth entry re-split the shared chunks. That gap between 108 B and 735 B is the whole reason F87 measures both. Before that: +924 B and a TENTH request in 20.6, for the F111 reduced-motion helper (291 B on its own) plus the chunk re-split around it. +524 B and a NINTH request in 20.1, for a wave that added nothing to this entry: the new /ui entry became an eleventh consumer of the shared chunks and esbuild re-split them, so a deep-ESM /dom page now fetches one more file. This is the cost F87 exists to keep visible - a bundler consumer sees 2 B of it (the size-limit row), a static page sees 524 B and a round trip. Before 20.1: +2683 B and an eighth request for bindTableHistory (spec 06 F93, roadmap 19.2, ADR-0063) and the F92 pair it composes.',
   },
   bootstrap: {
     file: 'dist/esm/bootstrap.js',
     requests: 12,
-    measured: 44991,
+    measured: 44997,
     budget: 47500,
     why:
       'The whole catalogue over 8 requests — still MORE than the single-file artifact over 1, so a page needing ' +
@@ -152,10 +152,10 @@ export const TRANSFER_ROUTES = {
   forms: {
     file: 'dist/esm/forms.js',
     requests: 6,
-    measured: 5774,
-    budget: 6100,
+    measured: 8143,
+    budget: 8700,
     why:
-      'The form engine (spec 08 NFR-43), new in 21.1 at F112-F115. Three times its 1840 B size-limit row, and the ' +
+      'The form engine (spec 08 NFR-43). +2372 B in 21.2 for the F116-F119 validation engine, on the SAME six requests: the rules, the races and the constraint seam all landed inside files this route already downloaded whole, which is the one direction this table ever moves cheaply. Twice its 3747 B size-limit row, and the ' +
       'ratio is the point rather than a surprise: a bundler consumer importing `createForm` ships the tree-shaken ' +
       '1.8 kB, while a static page downloads forms.js plus the five shared chunks it imports WHOLE — the error ' +
       'taxonomy, the DOM helpers, the native setters, the option-key check and the lifecycle guard. Composition is ' +
@@ -168,13 +168,13 @@ export const TRANSFER_ROUTES = {
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 45552,
-    budget: 46400,
+    measured: 47161,
+    budget: 48100,
     why:
-      'Re-pinned for 21.1 (+1178 B for the F112-F115 form engine and the twelfth-entry chunk re-split), holding the ADR-0059 rule. Before that, re-pinned for 20.6 (+160 B for the F111 reduced-motion helper), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
+      'Re-pinned for 21.2 (+1609 B for the F116-F119 validation engine), holding the ADR-0059 rule. Before that, re-pinned for 21.1 (+1178 B for the F112-F115 form engine and the twelfth-entry chunk re-split). Before that, re-pinned for 20.6 (+160 B for the F111 reduced-motion helper), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
       "20.5 is where two waves of pressure resolved. NFR-22's ceiling is RE-DERIVED to 52 kB rather than raised, by spec 05's own method — the sum of the measured entry figures, an upper bound on a deduplicated single file, which reads 52104 B today against 39.8 kB at M18. That recomputation, and not a bigger number, is the condition spec 07 NFR-33 attached (ADR-0070). " +
       'The budget here stays tight on purpose: 40400 B is measured + 1.8%, not the ADR-0015 + 7%. The clause is an authoring bound with 12 kB of slack in it — that gap IS the deduplication the derivation always assumed — and a clause with slack does no per-PR work, while this row does. Two instruments, different jobs: the split ADR-0041 already made for the /bootstrap entry. ' +
-      '20.3 recomputed it a fourth time (60914 B → 60 kB), 20.6 a FIFTH (61938 B → 62 kB), and 21.1 recomputes it again: the sum now has a TWELFTH input and reads 63862 B, so NFR-22 becomes 64 kB and this row moves to 46.4 kB (measured + 2.0%). The derivation is redone whenever ANY of its inputs moves, not only when an entry is added: a clause nobody recomputes is a number rather than a bound. ' +
+      '20.3 recomputed it a fourth time (60914 B → 60 kB), 20.6 a FIFTH (61938 B → 62 kB), 21.1 recomputed it on a TWELFTH input (63862 B → 64 kB), and 21.2 recomputes it again with no new entry at all — the twelfth one grew, and the rule is whenever any input moves rather than whenever an entry is added: 65768 B → 66 kB, and this row moves to 48.1 kB (measured + 2.0%). The derivation is redone whenever ANY of its inputs moves, not only when an entry is added: a clause nobody recomputes is a number rather than a bound. ' +
       "The sibling constraint moved in the helpful direction for once: ADR-0041's 25 kB /bootstrap clause held at 473 B free through 20.6, and 21.1 leaves 505 B free — the twelfth entry re-split the shared chunks in that entry's favour, without a line of it changing.",
   },
 };

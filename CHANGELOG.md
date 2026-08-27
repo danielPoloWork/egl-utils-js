@@ -12,6 +12,24 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **A validation engine on `egl-utils-js/forms`** — `createValidator` **takes** a form rather
+  than being one, so a caller who needs values and no validation links none of it. Rules are
+  plain functions, sync or async, returning nothing for "fine", a string for the common case,
+  or `{message, severity}` when the level matters; a cross-field rule declares `dependsOn` and
+  is re-run when that field is validated, and nothing else is. **Only `error` blocks** — and
+  because `valid` is `true` before anything has run, the result also carries `validated`, so
+  "passed" and "not asked yet" stay distinguishable. **Latest-wins is keyed per rule**: the
+  loser is aborted, staleness is checked by identity (an `AbortSignal` cannot un-resolve a
+  settled promise), and the result is derived from per-rule slots so a half-finished run cannot
+  publish a half-written field. A rule that **throws** fails closed with the error as `cause`;
+  a rule that **returns nonsense** throws. **The platform is read, not re-declared**: native
+  constraint failures arrive as findings carrying the `ValidityState` flag that failed, a
+  field's own error is pushed back through `setCustomValidity` so a real `checkValidity()` and
+  a real submit agree, and a native failure short-circuits that field's own rules. Triggers are
+  opt-in (`validateOn: ['change', 'blur']`, with `debounceMs`); `blur` is observed as
+  `focusout` (spec 08 F116–F119, ROADMAP 21.2,
+  [ADR-0078](docs/adr/0078-latest-wins-per-rule-a-level-that-is-not-a-block-and-an-order-that-is-the-contract.md)).
+
 - **Form value binding on a new `egl-utils-js/forms` entry** — `createForm` reads, writes,
   serializes and resets a form's fields, and `getValue` on `egl-utils-js/dom` is the
   single-control read half `setValue` never had. **The coercions are contract**: one checkbox is
@@ -29,6 +47,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- **NFR-22's artifact ceiling is re-derived to 66 kB** — and this time with **no new entry in
+  it**: the twelfth one grew, and the rule is that the derivation is redone whenever any input
+  moves, not only when an entry is added. The sum reads 65 768 B; the size-limit row stays the
+  gate and is re-pinned to 48.1 kB (measured 47 174 B + 2.0%) (ROADMAP 21.2, ADR-0078).
+- **Four constraint-validation members join the platform api-floor inventory** — `validity`,
+  `validationMessage`, `setCustomValidity` and `ValidityState`, each declared against the
+  Safari 16.4 / Node 22 matrix rather than reached and noticed later, bringing the inventory to
+  57 entries (spec 08 NFR-40, ROADMAP 21.2).
 - **NFR-22's artifact ceiling is re-derived to 64 kB** — the same sum-of-measured-entry-figures
   method now has a twelfth input and reads 63 862 B. The size-limit row stays the gate and is
   re-pinned to 46.4 kB (measured 45 514 B + 2.0%) (ROADMAP 21.1, ADR-0077).

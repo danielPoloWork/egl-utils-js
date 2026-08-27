@@ -968,9 +968,73 @@ getValue(elements.quantity); // 7, or null when the box is empty
 getValue(elements.subscribed); // true
 ```
 
-Validation, submission and dirty tracking are the rest of milestone 21, and each will be a
-factory that *takes* a form instance rather than more methods on this one — so a filter form
-that needs values only never links them.
+Submission and dirty tracking are the rest of milestone 21, and each is a factory that *takes*
+a form instance rather than more methods on this one — so a filter form that needs values only
+never links them. Validation is below.
+
+### Form validation (`egl-utils-js/forms`)
+
+`createValidator` **takes** a form rather than being one, so a filter form that needs values
+links none of this
+([ADR-0078](docs/adr/0078-latest-wins-per-rule-a-level-that-is-not-a-block-and-an-order-that-is-the-contract.md)).
+
+```js
+import { createForm, createValidator } from 'egl-utils-js/forms';
+
+const validator = createValidator(createForm(root), {
+  validateOn: ['blur'],
+  debounceMs: 200,
+  rules: {
+    name: (value) => (String(value).trim() === '' ? 'A name is required' : undefined),
+
+    // Async, abortable, latest-wins: typing produces overlapping asks.
+    handle: async (value, view, signal) => {
+      const { free } = await api.get(`/handles/${value}`, { signal });
+      return free ? undefined : 'That handle is taken';
+    },
+
+    // Cross-field: declare what you depend on and it is re-run when that is validated.
+    end: {
+      dependsOn: ['start'],
+      validate: (value, view) => (value < view.values.start ? 'End precedes start' : undefined),
+    },
+
+    // A level, not a block.
+    password: (value) =>
+      String(value).length < 12 ? { message: 'Consider a longer one', severity: 'warning' } : null,
+  },
+});
+
+const { valid, fields, validated } = await validator.validate();
+validator.on('change', (result) => render(result)); // or drive it yourself
+```
+
+- **Only `error` blocks.** A warning that blocks is a bug the user cannot escape. And since
+  `valid` is `true` before anything has run, the result carries `validated` too — the fields
+  that actually ran — so "passed" and "not asked yet" never collapse into one state.
+- **Latest-wins is per rule.** A `dependsOn` rule means validating one field writes *another*
+  field's findings, so two runs could collide. Each rule owns at most one in-flight execution,
+  the loser is aborted, and staleness is checked by **identity** — an `AbortSignal` stops a
+  `fetch`, it cannot un-resolve a promise that already settled.
+- **A rule that throws fails closed**, carrying the original error as `cause`: "could not
+  decide" is not "fine". A rule that *returns* nonsense throws instead — that is your bug, and
+  hiding it behind a message the user cannot act on would be worse.
+- **The platform is read, not re-declared.** Keep `required` and `type="email"` in the markup,
+  where a no-JavaScript submit still honours them. Their failures arrive as findings carrying
+  the `ValidityState` flag that failed:
+
+```js
+fields.mail[0];
+// { message: 'Enter an email address.', severity: 'error', source: 'native', constraint: 'typeMismatch' }
+```
+
+  A field's own error is pushed back through `setCustomValidity`, so `form.checkValidity()` and
+  a real submit agree with the engine. Pass `nativeMessage: ({ constraint }) => …` for your own
+  wording, or `native: false` to ignore the platform entirely.
+- **A native failure short-circuits that field's own rules** — asking a server about a value
+  the browser already calls empty is noise the user waits for.
+- **`blur` is observed as `focusout`**, the bubbling half of the same moment, so one listener on
+  the form root hears every field.
 
 ### Promise-based dialogs (`egl-utils-js/ui`)
 
