@@ -218,7 +218,7 @@
     "p-limit": "6.2.0",
     "p-retry": "6.2.1",
     "prettier": "^3.9.6",
-    "publint": "^0.3.22",
+    "publint": "^0.3.24",
     "size-limit": "^12.1.0",
     "tsup": "^8.5.1",
     "typedoc": "^0.28.20",
