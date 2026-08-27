@@ -209,7 +209,7 @@
     "agadoo": "^3.0.0",
     "bootstrap": "^5.3.8",
     "dompurify": "^3.4.13",
-    "eslint": "^9.39.5",
+    "eslint": "^10.9.0",
     "eslint-config-prettier": "^10.1.8",
     "fast-check": "^4.9.0",
     "globals": "^17.11.0",
