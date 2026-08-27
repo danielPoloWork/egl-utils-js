@@ -43,3 +43,8 @@ export { bindFormFeedback } from './forms-feedback.js';
 // DOM (spec 08 §2 items F122-F123, ADR-0080). The transport is injected — this
 // owns the sequence around a request and never the request.
 export { bindSubmit } from './forms-submit.js';
+
+// Dirty, touched, and the unsaved-changes guard (spec 08 §2 items F124-F125,
+// ADR-0081). Two questions, deliberately not one boolean — and a `beforeunload`
+// registration that exists only while there is something to guard.
+export { trackChanges } from './forms-track.js';

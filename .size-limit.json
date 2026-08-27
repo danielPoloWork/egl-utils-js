@@ -637,27 +637,33 @@
     "limit": "10.2 kB"
   },
   {
-    "name": "/forms - full import (spec 08 NFR-43: measured 6959 B - up 1471 B in 21.4 for the F122-F123 submit lifecycle, which is the whole of this item: the guard, the busy state, the disable/restore bookkeeping and the untrusted-payload mapper. Limit 7.45 kB, measured + 7.1%. The entry has doubled since 21.1 (3747 B) and every byte of that is a sibling a caller can decline - which is what the four per-function rows below are for)",
+    "name": "/forms - full import (spec 08 NFR-43: measured 7844 B - up 885 B in 21.5 for the F124-F125 tracker, which CLOSES spec 08. Limit 8.4 kB, measured + 7.1%. The entry is 2.1x its 21.1 size (3747 B) across five items, and the five per-function rows below are what makes that a menu rather than a bill: no consumer links all of it unless they use all of it)",
     "path": "dist/esm/forms.js",
-    "limit": "7.45 kB"
+    "limit": "8.4 kB"
   },
   {
-    "name": "single: createForm (NFR-02: measured 1886 B against a 6959 B entry - 27% of it, down from 34% at 21.3 and 49% at 21.2 as the entry grew around it. THIS is the ADR-0077 family split as a number, and the number gets better with every sibling: a filter form that needs values links the binder and neither the validation engine, nor the renderer, nor the submit lifecycle. The 7 B it LOST in 21.4 are not a saving anyone made - a fourth sibling moved the shared-chunk split, in a function this PR never touched)",
+    "name": "single: createForm (NFR-02: measured 1888 B against a 7844 B entry - 24% of it, down from 27% at 21.4, 34% at 21.3 and 49% at 21.2 as the entry grew around it. THIS is the ADR-0077 family split as a number, and the number gets better with every sibling: a filter form that needs values links the binder and neither the validation engine, nor the renderer, nor the submit lifecycle, nor the tracker. It has moved by 7 B DOWN and 2 B back up across the last two items without a line of it changing, which is what a shared-chunk split looks like from inside one row)",
     "path": "dist/esm/forms.js",
     "import": "{ createForm }",
     "limit": "1.95 kB"
   },
   {
-    "name": "single: bindFormFeedback (NFR-02: measured 2236 B - the renderer plus the F110 live region it composes, and NOT the validation engine, which it only subscribes to. A caller who renders findings from somewhere else pays this and not the 6959 B entry. Down 15 B in 21.4 for the same chunk re-split that moved createForm by 7)",
+    "name": "single: bindFormFeedback (NFR-02: measured 2237 B - the renderer plus the F110 live region it composes, and NOT the validation engine, which it only subscribes to. A caller who renders findings from somewhere else pays this and not the 7844 B entry. Down 15 B in 21.4 for the same chunk re-split that moved createForm by 7)",
     "path": "dist/esm/forms.js",
     "import": "{ bindFormFeedback }",
     "limit": "2.7 kB"
   },
   {
-    "name": "single: bindSubmit (spec 08 F122-F123: measured 1911 B - 27% of the entry, and it composes NEITHER the validator it gates on nor the renderer it reports through: both are injected (ADR-0025/ADR-0080), so this figure is the lifecycle and the mapper alone. What a page pays for a save button that cannot double-submit)",
+    "name": "single: bindSubmit (spec 08 F122-F123: measured 1912 B - 24% of the entry, and it composes NEITHER the validator it gates on nor the renderer it reports through: both are injected (ADR-0025/ADR-0080), so this figure is the lifecycle and the mapper alone. What a page pays for a save button that cannot double-submit)",
     "path": "dist/esm/forms.js",
     "import": "{ bindSubmit }",
     "limit": "2.05 kB"
+  },
+  {
+    "name": "single: trackChanges (spec 08 F124-F125: measured 1608 B - the smallest sibling in the family, and the only one that reaches a WINDOW. Dirty is derived rather than stored, so most of this figure is the comparison and the guard bookkeeping; a caller who wants the dirty question and no guard pays the same, because the branch is one boolean rather than a second module)",
+    "path": "dist/esm/forms.js",
+    "import": "{ trackChanges }",
+    "limit": "1.72 kB"
   },
   {
     "name": "single: getValue (NFR-01 <= 1 kB / NFR-02: measured 280 B out of a 7882 B entry - 3.6% of it. The read half of F45 (spec 08 F113) lands on /dom rather than inside the form engine, and this row is the reason that is affordable: a page that wants to read one control pays 280 B, not the 1840 B of /forms)",
@@ -678,8 +684,8 @@
     "limit": "1.32 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 49763 B, re-pinned for 21.4 (+1311 B for the F122-F123 lifecycle). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1), 47174 (21.2), 48452 (21.3), 49763 (21.4). NFR-22 is RE-DERIVED to 70 kB in this PR: the same sum-of-entry-figures method reads 69095 B, and the whole +1471 B of that is /forms - no other entry moved by a byte, which is the first time in this wave that has been true. That recomputation, and not a bigger number, is what spec 08 NFR-43 requires. THIS ROW IS STILL THE GATE: pinned at measured + 2.1%, because a clause with 20 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 50606 B, re-pinned for 21.5 (+843 B for the F124-F125 tracker). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1), 47174 (21.2), 48452 (21.3), 49763 (21.4), 50606 (21.5). NFR-22 is recomputed by the same sum-of-entry-figures method and reads 69980 B, which rounds to the SAME 70 kB clause 21.4 derived - with **20 B** left under it. The clause did not move and the derivation did, which is the distinction spec 08 NFR-43 asks for; the next item that adds a byte to any entry re-derives it to 71 kB. THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 19 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "50.8 kB"
+    "limit": "51.6 kB"
   }
 ]

@@ -1165,6 +1165,69 @@ submitter.on('settle', ({ status, failure }) => {
 `intercept` defaults to `true` for a `<form>` root and `false` for any other container, because a
 `<div>` has no submit event to intercept.
 
+### Dirty, touched, and unsaved changes (`egl-utils-js/forms`)
+
+`trackChanges` answers two questions that applications routinely collapse into one boolean, and
+guards the half worth guarding
+([ADR-0081](docs/adr/0081-two-questions-rather-than-one-boolean-and-a-guard-that-comes-and-goes.md)).
+
+```js
+import { createForm, trackChanges } from 'egl-utils-js/forms';
+
+const form = createForm(root);
+const changes = trackChanges(form, { guard: true });
+
+changes.on('change', ({ dirty }) => (saveButton.disabled = !dirty));
+```
+
+- **Dirty is not touched.** *Dirty* is "this differs from the baseline you loaded"; *touched* is
+  "the user has been in here". A field edited and then edited back is touched and clean — which is
+  precisely why an unsaved-changes guard wants the first and "do not show me an error for a field
+  I have not filled in yet" wants the second.
+- **Dirty is derived, never stored.** The baseline moves — `setBaseline()` after a save,
+  `reset()` back to it — so a cached flag would be one save away from claiming you have unsaved
+  changes. Every query recomputes; none of them can be stale.
+- **A field your baseline does not mention is never dirty**, for the same reason `reset()` leaves
+  it alone: there is nothing for it to differ from.
+- **`touch()` and `untouch()`** take one field or all of them: `touch()` on a blocked submit so
+  every error is allowed to show at once, `untouch()` after a save, beside the form's own
+  `setBaseline()`.
+
+**`setValues` fires no events on purpose** (a programmatic write is not a user edit), so nothing
+can hear it. The queries are unaffected — they recompute — but the `'change'` event and the guard
+need telling:
+
+```js
+await api.put(url, form.toJSON());
+form.setBaseline();
+changes.untouch();
+changes.refresh(); // the one seam, in the one place you know you did something silent
+```
+
+**The guard is opt-in, and attached only while there is something to guard.** `beforeunload` is a
+*window*-level registration, and a live one costs the page its back/forward-cache eligibility in
+every current engine — so it goes on when the form becomes dirty, comes off when it stops being
+dirty, and is gone after `destroy()`.
+
+**The browser's dialog is not ours to word.** Every engine shows its own sentence and ignores any
+string a page supplies; several skip it entirely unless the user has interacted with the page. The
+guard is best-effort by the platform's design, which is exactly why the in-app half exists — a
+route change inside your application is invisible to `beforeunload`, and it is where a real
+question can be asked in your own words:
+
+```js
+const changes = trackChanges(form, {
+  guard: true,
+  confirm: ({ dirtyFields }) =>
+    dialogs.confirm(`Discard ${dirtyFields.length} unsaved change(s)?`),
+});
+
+router.beforeEach(async () => await changes.confirmLeave());
+```
+
+A clean form answers `true` and asks nothing. A dirty form with no `confirm` injected answers
+`false` — nobody was asked, and that is not consent.
+
 ### Promise-based dialogs (`egl-utils-js/ui`)
 
 A dialog is a question with one answer arriving later — which is what a promise is. So `await`
@@ -2207,7 +2270,7 @@ inside their declared ranges — keeping those patched is yours. Full detail:
 | 18 | Browser distribution | ✅ done |
 | 19 | Table data & bsTable extras | ✅ done |
 | 20 | Application UX utilities | ✅ done |
-| 21 | Form engine | 🚧 in progress |
+| 21 | Form engine | ✅ done |
 
 
 ## License

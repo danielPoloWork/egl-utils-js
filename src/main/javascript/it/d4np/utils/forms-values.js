@@ -255,6 +255,25 @@ function resolveDiscovered(root) {
 }
 
 /**
+ * The field a DOM event belongs to, or `null` when it belongs to none.
+ *
+ * Internal to the entry and deliberately not on the barrel: it lives beside the
+ * field set it queries, and both `createValidator` (F118's triggers) and
+ * `trackChanges` (F124's) need exactly this loop. Two copies of it existed for
+ * one release, which is one more than the F109 lesson allows.
+ *
+ * @param {Readonly<Record<string, readonly Element[]>>} fields
+ * @param {unknown} target
+ * @returns {string | null}
+ */
+export function fieldOf(fields, target) {
+  for (const [name, controls] of Object.entries(fields)) {
+    if (controls.some((control) => control === target)) return name;
+  }
+  return null;
+}
+
+/**
  * @typedef {object} CreateFormOptions
  * @property {Record<string, string>} [fields] - Field names to CSS selectors,
  *   resolved within `root` with `querySelectorAll` so one name can be a group.
