@@ -303,6 +303,40 @@ export const MEMBERS = {
       'reached only from focusTrap and saveFocus, both of which resolve their document first — the root node own ownerDocument for the trap, options.document or requireDocument() for the save — so a host with no DOM fails by contract (DomContractError) rather than on an undefined read (ADR-0028). The value is nullable by specification and every read handles null: nothing focused is a legal state, not an error',
   },
 
+  // --- Constraint validation (spec 08 F119/NFR-40, roadmap 21.2) ---
+  //
+  // F119's whole claim is that the platform's constraints are READ rather than
+  // re-declared, so `required` and `type="email"` keep working with JavaScript
+  // off. That makes these three reads load-bearing rather than incidental, and
+  // each is declared here rather than noticed later. Every one is Safari 5,
+  // which is not the interesting number — the interesting number is that none of
+  // them exists in Node, and the guard is the same one the whole /forms entry
+  // rests on: it takes an Element, so a host with no DOM never reaches this code.
+  'HTMLInputElement.validity': {
+    guardReason: 'context',
+    bcd: 'api.HTMLInputElement.validity',
+    guarded:
+      'read only through the field set `createForm` resolved from a caller-supplied Element, and every read is shape-checked (`validity === undefined || validity === null` skips the control) so a non-control matched by a declared selector — a `div` a caller pointed a field at — is passed over rather than crashing on an undefined read',
+  },
+  'HTMLInputElement.validationMessage': {
+    guardReason: 'context',
+    bcd: 'api.HTMLInputElement.validationMessage',
+    guarded:
+      "read only after `validity.valid === false`, and coerced through `String(… ?? '')` so a host that reports an invalid state without a message yields an empty finding message rather than the string 'undefined'. A caller who wants their own wording passes `nativeMessage` and never sees this value (NFR-21's injected-wording policy)",
+  },
+  'HTMLInputElement.setCustomValidity': {
+    guardReason: 'context',
+    bcd: 'api.HTMLInputElement.setCustomValidity',
+    guarded:
+      'called behind a `typeof === "function"` check on every control, for the same reason the `validity` read is shape-checked. It is called twice per field per run, and the ORDER is the contract: cleared before reading `validity`, then set from the field own blocking finding — without the clear, the engine would read its own push-back back as a native failure (ADR-0078)',
+  },
+  ValidityState: {
+    guardReason: 'context',
+    bcd: 'api.ValidityState',
+    guarded:
+      'the flags object reached through the guarded `validity` read above; the nine constraint flags are probed by name from a frozen list, and an invalid state whose flag is not in that list is reported as no finding rather than as a finding with an undefined constraint — the deliberate forward-compatibility branch ADR-0078 records',
+  },
+
   // --- Pointer Events and pointer capture (spec 06 F99/NFR-28, roadmap 19.6) ---
   //
   // The column-resize grip. Every one of these is reached on a node **this

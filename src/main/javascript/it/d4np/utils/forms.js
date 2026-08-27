@@ -28,3 +28,8 @@
 
 // Value binding and serialization (spec 08 §2 items F112-F115, ADR-0077).
 export { createForm } from './forms-values.js';
+
+// The validation engine (spec 08 §2 items F116-F119, ADR-0078). It TAKES a form
+// rather than being one, so a caller who needs values and no validation links
+// none of this (NFR-02).
+export { createValidator } from './forms-validate.js';
