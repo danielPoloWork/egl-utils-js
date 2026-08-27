@@ -33,3 +33,8 @@ export { createForm } from './forms-values.js';
 // rather than being one, so a caller who needs values and no validation links
 // none of this (NFR-02).
 export { createValidator } from './forms-validate.js';
+
+// Rendering findings into the form (spec 08 §2 items F120-F121, ADR-0079). The
+// design-system-neutral half: every class name is injected, and `bsFormFeedback`
+// on `egl-utils-js/bootstrap` is the same function wearing Bootstrap's.
+export { bindFormFeedback } from './forms-feedback.js';

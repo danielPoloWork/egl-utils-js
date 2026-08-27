@@ -226,7 +226,7 @@
     "limit": "510 B"
   },
   {
-    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header, the F99 column resize and the F100 reorder - measured 24495 B. Limit 24.9 kB, and NOT measured+7%: ADR-0041's 25 kB entry clause binds first, and a row above its own clause is a gate that cannot fail. **505 B remain under that clause** - 21.1 GAVE this entry 32 B back without touching a line of it, because a twelfth entry made esbuild re-split the shared chunks in its favour this time. The figure is re-read from the build on every wave for exactly that reason: it moves for causes that are nowhere in this entry (it was 24527 B at 20.6, 24518 B at 20.5, 24406 B before 20.1))",
+    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header, the F99 column resize, the F100 reorder and the F120 feedback class map - measured 24632 B. Limit 24.9 kB, and NOT measured+7%: ADR-0041's 25 kB entry clause binds first, and a row above its own clause is a gate that cannot fail. **368 B remain under that clause**, down from 505 B: 21.3 spent 137 B on BOOTSTRAP_FEEDBACK_CLASSES, frozen data rather than a wrapper. The wrapper was MEASURED first and would have cost 1492 B, putting this entry 987 B OVER the clause (spec 08 NFR-38, ADR-0079) - which is why the composition happens at the call site)",
     "path": "dist/esm/bootstrap.js",
     "limit": "24.9 kB"
   },
@@ -387,10 +387,10 @@
     "limit": "1.12 kB"
   },
   {
-    "name": "single: bsTooltip (2.1 kB - NFR-17 row amended from 1.25 kB by ADR-0044; measured 1940 B: the content-preparation pass, the slot mapping and the Popper diagnostic are what a bare wrapper does not carry)",
+    "name": "single: bsTooltip (2.15 kB - NFR-17 row amended from 1.25 kB by ADR-0044; measured 2101 B: the content-preparation pass, the slot mapping and the Popper diagnostic are what a bare wrapper does not carry. 21.3 cost this row **1 byte** without touching a line of bsTooltip - adding one frozen constant to the entry moved the shared-chunk split by that much - and the row failed on it. That is the gate working: a tight row is supposed to notice, and the fix is a deliberate re-pin with the cause written down rather than a shrug)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsTooltip }",
-    "limit": "2.1 kB"
+    "limit": "2.15 kB"
   },
   {
     "name": "single: bsPopover (2.1 kB - NFR-17 row amended from 1.25 kB by ADR-0044; measured 1950 B, ten bytes more than bsTooltip because both are the same internal factory with a different slot map)",
@@ -637,15 +637,21 @@
     "limit": "10.2 kB"
   },
   {
-    "name": "/forms - full import (spec 08 NFR-43: measured 3747 B - up 1907 B in 21.2 for the F116-F119 validation engine, which is more than the binder it joins and should be: it carries the rule normaliser, the per-rule latest-wins machinery and the constraint-validation seam. Limit 4 kB, measured + 6.8%)",
+    "name": "/forms - full import (spec 08 NFR-43: measured 5488 B - up 1741 B in 21.3 for the F120-F121 renderer, which composes the F110 live region from /dom. Limit 5.9 kB, measured + 7.5%)",
     "path": "dist/esm/forms.js",
-    "limit": "4 kB"
+    "limit": "5.9 kB"
   },
   {
-    "name": "single: createForm (NFR-02: measured 1840 B against a 3747 B entry - 49% of it. The row 21.1 deliberately did not add, because the entry had one export and it would have measured the same file. It has two now, and this is the number that proves the ADR-0077 family split: a filter form that needs values links the binder and NOT the validation engine)",
+    "name": "single: createForm (NFR-02: measured 1893 B against a 5488 B entry - 34% of it, down from 49% at 21.2 as the entry grew around it. THIS is the ADR-0077 family split as a number, and the number gets better with every sibling: a filter form that needs values links the binder and neither the validation engine nor the renderer)",
     "path": "dist/esm/forms.js",
     "import": "{ createForm }",
     "limit": "1.95 kB"
+  },
+  {
+    "name": "single: bindFormFeedback (NFR-02: measured 2464 B - the renderer plus the F110 live region it composes, and NOT the validation engine, which it only subscribes to. A caller who renders findings from somewhere else pays this and not the 5488 B entry)",
+    "path": "dist/esm/forms.js",
+    "import": "{ bindFormFeedback }",
+    "limit": "2.7 kB"
   },
   {
     "name": "single: getValue (NFR-01 <= 1 kB / NFR-02: measured 280 B out of a 7882 B entry - 3.6% of it. The read half of F45 (spec 08 F113) lands on /dom rather than inside the form engine, and this row is the reason that is affordable: a page that wants to read one control pays 280 B, not the 1840 B of /forms)",
@@ -666,8 +672,8 @@
     "limit": "1.32 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 47174 B, re-pinned for 21.2 (+1660 B for the F116-F119 validation engine). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1), 47174 (21.2). NFR-22 is RE-DERIVED to 66 kB in this PR: the same sum-of-entry-figures method reads 65768 B - the twelfth entry growing, not a thirteenth appearing, which is exactly the case the rule covers. That recomputation, and not a bigger number, is what spec 08 NFR-43 requires - and the derivation is redone whenever any input moves, not only when an entry is added. THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 19 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 48452 B, re-pinned for 21.3 (+1278 B for the F120-F121 renderer and the F120 class map). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1), 47174 (21.2), 48452 (21.3). NFR-22 is RE-DERIVED to 68 kB in this PR: the same sum-of-entry-figures method reads 67624 B - again the existing entries growing rather than a new one appearing. That recomputation, and not a bigger number, is what spec 08 NFR-43 requires - and the derivation is redone whenever any input moves, not only when an entry is added. THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 19 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "48.1 kB"
+    "limit": "49.5 kB"
   }
 ]

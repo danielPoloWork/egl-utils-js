@@ -94,3 +94,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0076](0076-a-worker-count-decided-and-a-server-that-was-not-the-cause.md) | A worker count decided, one budget instead of six, and the server that was not the cause | Accepted |
 | [0077](0077-a-subject-entry-a-primitive-that-stayed-one-and-a-family-not-a-god-object.md) | A subject entry, a primitive that stayed one, and a family rather than a god object | Accepted |
 | [0078](0078-latest-wins-per-rule-a-level-that-is-not-a-block-and-an-order-that-is-the-contract.md) | Latest-wins per rule, a level that is not a block, and an order that is the contract | Accepted |
+| [0079](0079-a-costume-that-is-only-a-constant-and-a-node-where-the-css-can-see-it.md) | A costume that is only a constant, and a node where the CSS can see it | Accepted |

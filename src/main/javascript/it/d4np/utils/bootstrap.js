@@ -86,3 +86,11 @@ export { bsCarousel, bsOffcanvas, bsScrollspy } from './bootstrap-overlays.js';
 // pair that hands content to a third-party renderer, so the escape contract
 // gains its one extra rule there: one sanitizer, the caller's.
 export { bsPopover, bsTooltip } from './bootstrap-popper.js';
+
+// Bootstrap's names for the F120 feedback slots (spec 08 §2 item F120, ADR-0079).
+// Frozen data rather than a wrapper, and that is a measurement rather than a
+// preference: a `bsFormFeedback` function here would drag the whole renderer into
+// this entry and put it 987 B OVER ADR-0041's clause. Compose it at the call site
+// with `bindFormFeedback` from `egl-utils-js/forms`, the way `bootstrapIconsSet`
+// composes into `bsIcon`.
+export { BOOTSTRAP_FEEDBACK_CLASSES } from './bootstrap-forms.js';

@@ -87,6 +87,8 @@
     "DialogsInstance",
     "ErrorRecord",
     "FocusTrapOptions",
+    "FormFeedbackInstance",
+    "FormFeedbackOptions",
     "FormInstance",
     "HttpClient",
     "IconSet",

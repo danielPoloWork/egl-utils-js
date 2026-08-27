@@ -1036,6 +1036,53 @@ fields.mail[0];
 - **`blur` is observed as `focusout`**, the bubbling half of the same moment, so one listener on
   the form root hears every field.
 
+### Showing the findings (`egl-utils-js/forms`, `egl-utils-js/bootstrap`)
+
+`bindFormFeedback` subscribes to a validator and writes its findings into the page. Every class
+name is injected, so it is design-system-neutral by construction
+([ADR-0079](docs/adr/0079-a-costume-that-is-only-a-constant-and-a-node-where-the-css-can-see-it.md)).
+
+```js
+import { createForm, createValidator, bindFormFeedback } from 'egl-utils-js/forms';
+import { BOOTSTRAP_FEEDBACK_CLASSES } from 'egl-utils-js/bootstrap';
+
+const validator = createValidator(createForm(root), { rules, validateOn: ['blur'] });
+const feedback = bindFormFeedback(validator, { classes: BOOTSTRAP_FEEDBACK_CLASSES });
+
+// On a blocked submit: take the user to the problem, and say how much is wrong.
+if (!(await validator.validate()).valid) feedback.report();
+```
+
+- **The Bootstrap costume is frozen data, not a wrapper.** Composition happens at the call site,
+  one spread wide — the way `bootstrapIconsSet` composes into `bsIcon`. That is a measurement,
+  not a style: a `bsFormFeedback` function on `/bootstrap` drags the whole renderer in behind
+  its import and puts that entry **987 B over** its 25 kB clause.
+- **The node goes immediately after the field's last control**, because Bootstrap shows
+  `.invalid-feedback` through a *sibling* combinator — anywhere else is styled correctly and
+  displayed never. Bring your own with `feedback: { email: '#email-help' }` and nothing is
+  created.
+- **A warning renders as `form-text`.** Bootstrap has no class for a non-blocking finding, and
+  `.invalid-feedback` is hidden unless a sibling is `:invalid`, so a warning put there would
+  never be seen.
+- **`report()` is for a blocked submit**: focus to the first field with an `error` (skipping
+  disabled controls), and a summary announced through the F110 live region — created lazily, so
+  a form that never fails adds no node to your document. It counts rather than recites; pass
+  `summary` for your own wording.
+- **ARIA is wired and unwired**: `aria-invalid` while there is an error, and an
+  `aria-describedby` that adds its id beside the tokens you already had, then removes only its
+  own.
+- **Messages reach the DOM as text, and there is no `{html, sanitize}` opt-in here.** That is
+  deliberate: 21.4 routes a server's error body into these same findings, so this is the path an
+  untrusted string travels. Need rich content? Own the node and render into it yourself.
+- **`destroy()` leaves the markup as it found it** — classes removed, ARIA removed, created
+  nodes deleted, your own nodes emptied but kept.
+
+Without a class map you still get correct structure, text and ARIA, and no styling:
+
+```js
+bindFormFeedback(validator); // works; looks like nothing until you style it
+```
+
 ### Promise-based dialogs (`egl-utils-js/ui`)
 
 A dialog is a question with one answer arriving later — which is what a promise is. So `await`

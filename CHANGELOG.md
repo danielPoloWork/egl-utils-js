@@ -12,6 +12,23 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **Findings rendered into the form** — `bindFormFeedback` on `egl-utils-js/forms` subscribes to
+  a validator and writes its findings into the page: classes from an **injected map**,
+  `aria-invalid`, and an `aria-describedby` that adds its id without disturbing the tokens you
+  already had. With no map you still get structure, text and ARIA — and no styling, the honest
+  default for a library that ships no CSS. The **Bootstrap costume is frozen data**
+  (`BOOTSTRAP_FEEDBACK_CLASSES` on `egl-utils-js/bootstrap`) rather than a wrapper, and that is
+  a measurement: a wrapper function would drag the whole renderer into that entry and put it
+  987 B **over** ADR-0041's clause. The feedback node lands immediately after the field's last
+  control **because Bootstrap's sibling combinator requires it** — asserted with `display:
+  block` against the real stylesheet on three engines, not by reading a class. A warning renders
+  as `form-text`, since `.invalid-feedback` would hide it. **`report()`** moves focus to the
+  first field with an error and announces a count through the F110 live region, created lazily.
+  There is deliberately **no `{html, sanitize}` opt-in**: 21.4 routes a server's error body
+  through this path, so messages reach the DOM as text and the safest opt-in is the one that
+  does not exist. `destroy()` leaves the markup as it found it (spec 08 F120–F121, ROADMAP 21.3,
+  [ADR-0079](docs/adr/0079-a-costume-that-is-only-a-constant-and-a-node-where-the-css-can-see-it.md)).
+
 - **A validation engine on `egl-utils-js/forms`** — `createValidator` **takes** a form rather
   than being one, so a caller who needs values and no validation links none of it. Rules are
   plain functions, sync or async, returning nothing for "fine", a string for the common case,
@@ -47,6 +64,14 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Changed
 
+- **NFR-22's artifact ceiling is re-derived to 68 kB** — the third consecutive recomputation
+  with no new entry in it, which is the rule working as written: the derivation is redone
+  whenever any input moves. The sum reads 67 624 B; the size-limit row is re-pinned to 49.5 kB
+  (measured 48 452 B + 2.0%) (ROADMAP 21.3, ADR-0079).
+- **The `single: bsTooltip` budget row is re-pinned from 2.1 kB to 2.15 kB** — 21.3 cost it
+  **one byte** without touching a line of `bsTooltip`, because adding one frozen constant to
+  `/bootstrap` moved the shared-chunk split by that much, and the row failed on it. A tight row
+  is supposed to notice; the re-pin records the cause (ROADMAP 21.3, ADR-0079).
 - **NFR-22's artifact ceiling is re-derived to 66 kB** — and this time with **no new entry in
   it**: the twelfth one grew, and the rule is that the derivation is redone whenever any input
   moves, not only when an entry is added. The sum reads 65 768 B; the size-limit row stays the
