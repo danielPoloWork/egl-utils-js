@@ -46,6 +46,9 @@ describe('NFR-20 — the entry imports safely with no DOM', () => {
 
   it('exposes the whole surface built so far', () => {
     expect(Object.keys(bootstrap).sort()).toEqual([
+      // Frozen data, and the only thing 21.3 added to this entry: a wrapper
+      // function would have put it over ADR-0041's clause (ADR-0079).
+      'BOOTSTRAP_FEEDBACK_CLASSES',
       'bootstrapIconsSet',
       'bsAccordion',
       'bsAlert',
