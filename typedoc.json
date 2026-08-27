@@ -80,6 +80,7 @@
     "Content",
     "CopyToClipboardOptions",
     "CreateFormOptions",
+    "CreateValidatorOptions",
     "Debounced",
     "DelegateOptions",
     "DialogOptions",
@@ -119,6 +120,7 @@
     "ThemeInstance",
     "ThemeOptions",
     "ToastsInstance",
-    "ToastsOptions"
+    "ToastsOptions",
+    "ValidatorInstance"
   ]
 }

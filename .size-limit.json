@@ -637,8 +637,14 @@
     "limit": "10.2 kB"
   },
   {
-    "name": "/forms - full import (spec 08 NFR-43: measured 1840 B for F112-F115, the whole entry at 21.1. Limit 1.95 kB, measured + 6.0%. No per-function row below it, deliberately: the entry has exactly one export, so a `single: createForm` row would measure the same file and a gate that duplicates another gate does no work. It gets one when 21.2 puts a second export here, which is when NFR-02 has something to prove)",
+    "name": "/forms - full import (spec 08 NFR-43: measured 3747 B - up 1907 B in 21.2 for the F116-F119 validation engine, which is more than the binder it joins and should be: it carries the rule normaliser, the per-rule latest-wins machinery and the constraint-validation seam. Limit 4 kB, measured + 6.8%)",
     "path": "dist/esm/forms.js",
+    "limit": "4 kB"
+  },
+  {
+    "name": "single: createForm (NFR-02: measured 1840 B against a 3747 B entry - 49% of it. The row 21.1 deliberately did not add, because the entry had one export and it would have measured the same file. It has two now, and this is the number that proves the ADR-0077 family split: a filter form that needs values links the binder and NOT the validation engine)",
+    "path": "dist/esm/forms.js",
+    "import": "{ createForm }",
     "limit": "1.95 kB"
   },
   {
@@ -660,8 +666,8 @@
     "limit": "1.32 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 45514 B, re-pinned for 21.1 (+1124 B for the F112-F115 form engine and the chunk re-split around a twelfth entry). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1). NFR-22 is RE-DERIVED to 64 kB in this PR: the same sum-of-entry-figures method now has a TWELFTH input and reads 63862 B. That recomputation, and not a bigger number, is what spec 08 NFR-43 requires - and the derivation is redone whenever any input moves, not only when an entry is added. THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 18 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 47174 B, re-pinned for 21.2 (+1660 B for the F116-F119 validation engine). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1), 47174 (21.2). NFR-22 is RE-DERIVED to 66 kB in this PR: the same sum-of-entry-figures method reads 65768 B - the twelfth entry growing, not a thirteenth appearing, which is exactly the case the rule covers. That recomputation, and not a bigger number, is what spec 08 NFR-43 requires - and the derivation is redone whenever any input moves, not only when an entry is added. THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 19 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "46.4 kB"
+    "limit": "48.1 kB"
   }
 ]

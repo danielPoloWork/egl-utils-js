@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-26 — Latest-wins per rule, and an order that is the contract (roadmap 21.2)](2026/08/2026-08-26-form-validation.md)
 - [2026-08-26 — A subject entry, and the primitive that stayed one (roadmap 21.1)](2026/08/2026-08-26-form-values.md)
 - [2026-08-26 — Planning the form engine (spec 08, M21)](2026/08/2026-08-26-form-engine-planning.md)
 - [2026-08-26 — A worker count decided, and a diagnosis disproved (roadmap 20.7)](2026/08/2026-08-26-deterministic-browser-suite.md)
