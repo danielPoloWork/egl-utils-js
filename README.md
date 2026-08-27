@@ -2272,6 +2272,7 @@ inside their declared ranges — keeping those patched is yours. Full detail:
 | 20 | Application UX utilities | ✅ done |
 | 21 | Form engine | ✅ done |
 | 22 | Post-1.4 maintenance and distribution | 🚧 in progress |
+| 23 | Hardening: untrusted URLs, column visibility & grid keyboard navigation | ⏳ planned |
 
 
 ## License

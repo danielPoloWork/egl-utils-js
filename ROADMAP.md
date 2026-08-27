@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-27 — a figure nobody checks, and three gates nobody ran (22.1)`](docs/journal/2026/08/2026-08-27-size-figures-audit.md).
+  [`2026-08-27 — the deferred pile, re-dispositioned (spec 09, M23)`](docs/journal/2026/08/2026-08-27-hardening-wave-planning.md).
 
 ## Model & effort routing
 
@@ -423,6 +423,55 @@ one. Nothing here changes a public symbol.
   agree or they do not. Per [ADR-0082](docs/adr/0082-a-figure-nobody-checks-is-prose.md)
 
 
+## Milestone 23 — Hardening: untrusted URLs, column visibility & grid keyboard navigation
+
+The disposition of what [ADR-0046](docs/adr/0046-one-proposal-triaged-and-the-no-bundler-wave-adopted.md)
+deferred, re-decided now that M18–M21 have delivered everything that triage adopted — and the
+answer is mostly *no*: the widget catalogue is closed as **Rejected** rather than deferred a second
+time, per [ADR-0083](docs/adr/0083-the-deferred-pile-re-dispositioned.md). Three candidates
+survived, and none is a widget: each is a place where a contract this library **already publishes**
+does not reach as far as it claims. Spec:
+[`docs/specs/09_spec_hardening.md`](docs/specs/09_spec_hardening.md), which owns **F126–F131** and
+**NFR-45–NFR-49**. No new entry, no new subject, no new instance shape.
+
+- [ ] 23.1 A URL is not text (spec 09 **F126–F127**): one guard that decides whether a value may go
+  in an `href` or a `src` — an allow-list applied **after** `new URL()` parsing rather than by
+  string inspection, so `JaVaScRiPt:`, `java	script:` and a percent-encoded colon are one answer —
+  and the **eight** builder call sites that write a data-driven URL today routed through it
+  (`bootstrap-composites.js` 212/412/588, `bootstrap-nav.js` 814/873/908,
+  `bootstrap-overlays.js` 287). A refusal returns `null` rather than throwing, because a builder
+  rendering fifty records cannot let one hostile field discard the other forty-nine; the attribute
+  is left **unset** rather than empty, the element keeps its label, and the refusal is observable.
+  Escape-by-default (ADR-0037) is what makes a record's *content* safe and does nothing for its
+  *URL*, which is the gap. Where the public export lands is a **measured** decision, not a
+  preference: the root has 147 B free under its clause and `/text` has 26 B, so the two obvious
+  homes are the two that cannot absorb it — and the builders reach it through an internal module so
+  no entry imports another (NFR-46). Ships the `docs/security/threat-model.md` update in the same
+  PR (NFR-48) _(route: standard/high — security: this changes what an existing trust boundary
+  controls)_
+- [ ] 23.2 A table can hide a column and cannot say so (spec 09 **F128–F129**): `visible` and
+  `hideable` on the column descriptor, beside the `resizable` and `movable` that are already there,
+  plus a keyboard-operable chooser writing through the same commands a caller could call. Hiding a
+  column keeps everything else — sort, filter, search, resize width, reorder position — and hiding
+  the column a table is **sorted by does not clear the sort**, which is true by construction
+  because the derivation never learns about visibility: a hidden column is a rendering fact, and
+  F42's pipeline sorts rows regardless of who can see them. Visibility joins the state F92/F93
+  serialize, so it survives a reload and a shared link, and the chooser refuses the **last**
+  hideable column rather than letting a user reach a table with nothing in it _(route:
+  standard/medium)_
+- [ ] 23.3 The one component whose keyboard story is ours (spec 09 **F130–F131**): arrow-key
+  navigation across `bsTable`'s rows and cells — one tab stop for the grid, a roving `tabindex`
+  rather than a rendered highlight, `Home`/`End`, `Ctrl+Home`/`Ctrl+End` and `PageUp`/`PageDown`,
+  and `Enter`/`Escape` to enter and leave a cell's own control so the F95 checkbox, the row actions
+  and the F99/F100 grips stay reachable rather than competing. Bootstrap owns the keyboard behaviour
+  of tabs, dropdowns and navbars, which is why this library ships none — a data grid has no vendor
+  behind it. This is also where §50's "roving tabindex" is adopted: **reshaped, because an audit
+  found arrow-key handling in exactly one file of `src/main`** (the two grips), so a free-standing
+  primitive would have had nothing to call it. Proved in the browser suite, since "where did focus
+  go" and "was the cell scrolled into view" are questions about an engine _(route: standard/high —
+  a11y, and the movement matrix is the hard part)_
+
+
 ---
 
 ## Spec Coverage Map
@@ -500,6 +549,17 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 | §4 (08) | Logical architecture | 21.1, 21.3, 21.4, 21.5 | ✅ |
 | §5 (08) | Public interface | 21.1, 21.3, 21.4, 21.5 | ✅ |
 | §6 (08) | Verification & test strategy | 21.1, 21.2, 21.3, 21.4, 21.5 | ✅ |
+
+### Spec 09 — hardening: untrusted URLs, column visibility & grid keyboard navigation (F126–F131)
+
+| Spec § | Requirement | Roadmap items | Status |
+|--------|-------------|---------------|--------|
+| §1 (09) | Objective & business context | 23.1, 23.2, 23.3 | ⏳ |
+| §2 (09) | Functional requirements F126–F131 | 23.1, 23.2, 23.3 | ⏳ |
+| §3 (09) | Non-functional requirements | 23.1, 23.2, 23.3 | ⏳ |
+| §4 (09) | Logical architecture | 23.1, 23.2, 23.3 | ⏳ |
+| §5 (09) | Public interface | 23.1, 23.2, 23.3 | ⏳ |
+| §6 (09) | Verification & test strategy | 23.1, 23.2, 23.3 | ⏳ |
 
 ### Spec 05 — browser distribution (F82–F87)
 

@@ -98,3 +98,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0080](0080-a-guard-that-is-the-promise-and-findings-from-outside-the-engine.md) | A guard that is the promise, a rejection that keeps its name, and findings from outside the engine | Accepted |
 | [0081](0081-two-questions-rather-than-one-boolean-and-a-guard-that-comes-and-goes.md) | Two questions rather than one boolean, and a guard that comes and goes | Accepted |
 | [0082](0082-a-figure-nobody-checks-is-prose.md) | A figure nobody checks is prose, and a gate nothing invokes is not a gate | Accepted |
+| [0083](0083-the-deferred-pile-re-dispositioned.md) | The deferred pile, re-dispositioned — three gaps kept, the widget catalogue closed | Accepted |
