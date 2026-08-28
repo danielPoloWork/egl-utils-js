@@ -43,6 +43,19 @@ test.beforeEach(async ({ page }) => {
       data: [{ a: 'a1', b: 'b1' }],
       controls: { columns: true },
     });
+
+    // A focusable sentinel AFTER the table, and it is load-bearing rather than
+    // scenery. Without it there is nothing to receive focus once Tab has left the
+    // chooser, so focus leaves the document — and what `document.activeElement`
+    // reads then is the engine's business, not this library's: Chromium and
+    // WebKit reset it to `<body>`, Firefox keeps reporting the last element the
+    // page had, and a subsequent `Space` therefore lands somewhere different on
+    // each. Giving Tab a real destination inside the page is what makes the
+    // assertions below about the chooser instead of about browser chrome.
+    const sentinel = document.createElement('button');
+    sentinel.id = 'after';
+    sentinel.textContent = 'after the table';
+    document.body.append(sentinel);
   });
 });
 
@@ -69,16 +82,15 @@ test("the last visible column is unreachable and inert, because `disabled` is th
   const last = page.locator('input[data-egl-column="b"]');
   await expect(last).toBeDisabled();
 
-  // Focus the box before it, then Tab: a disabled control is skipped by the
-  // engine's own focus order, so the focus leaves the group entirely.
+  // Focus the box before it, then Tab: a disabled control is skipped by every
+  // engine's focus order, so Tab goes straight past it to the sentinel.
   await page.locator('input[data-egl-column="a"]').focus();
   await page.keyboard.press('Tab');
-  expect(await page.evaluate(() => document.activeElement?.getAttribute('data-egl-column'))).toBe(
-    null,
-  );
+  await expect(page.locator('#after')).toBeFocused();
 
+  // And the key that would have toggled it does nothing to the table, because
+  // the box it would have toggled was never reached.
   await page.keyboard.press('Space');
-  // Still one column, and the table still has something in it.
   expect(await page.evaluate(() => window.eglTable.getHiddenColumns())).toEqual(['a']);
   await expect(page.locator('thead tr:first-child th')).toHaveCount(1);
 });
