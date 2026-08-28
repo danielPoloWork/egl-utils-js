@@ -8,8 +8,10 @@
 - **[ADR-0086](../../adr/0086-one-tab-stop-and-a-clause-that-stopped-working.md)**, and
   **ADR-0041's `/bootstrap` clause amended a third time** — with ROADMAP 22.2 filed to stop the
   fourth.
-- 32 example tests for the movement matrix in jsdom, 4 on three engines for the questions only an
-  engine can answer; 3 489 unit tests green.
+- 33 example tests for the movement matrix in jsdom, 4 on three engines for the questions only an
+  engine can answer; 3 490 unit tests green.
+- **One real defect found by the browser suite**, and it is the kind only a third engine finds: see
+  below.
 - **Spec 09 is closed**: F126–F131 and NFR-45–NFR-49 delivered across 23.1–23.3.
 
 ## The gap was not "no arrow keys"
@@ -52,6 +54,26 @@ control of its own activates the row in its place.
   painted highlight — and the browser suite asserts the scroll really happens, because "the engine
   does it" is a claim about an engine.
 
+## The three-engine suite earned its keep in one line
+
+Chromium and WebKit passed all four browser assertions. Firefox failed all four, and the first
+failure said only "expected true, received false" — the least useful thing a focus assertion can
+say. So the first fix was to the *message*, and the answer came back on the next run:
+
+```
+focus landed on DIV# "AlphaBetaa0b0a1b1a2b", and the grid's stop is a TH
+```
+
+That DIV is the F71 `.table-responsive` wrapper. **Firefox gives a scrollable container its own
+place in the tab order**, so `Tab` reached the wrapper first and the table was two tab stops there
+while being one everywhere else — F130's single promise, false on a third of the engines, and
+invisible to jsdom and to two browsers.
+
+Firefox is not wrong: a scrollable region a keyboard user cannot otherwise reach needs to be
+reachable. That reason stops applying the moment this navigation exists, because moving the cell
+focus is what scrolls the container now. One line declines it under `keyboard`, and the jsdom suite
+now pins it so nobody removes it as decoration.
+
 ## The clause stopped working, and saying so is the point
 
 Measured 26 767 B against the 26.75 kB clause set **one item ago**: 17 B over.
@@ -78,14 +100,18 @@ Two smaller figures worth keeping: NFR-22's derivation moved (72 679 B) and its 
 still 73 kB, the second time that has happened. And for the second item running there is **no new
 chunk and no new request** on any of the thirteen F87 routes.
 
-## The Firefox lesson, applied before it cost anything
+## The 23.2 lesson, applied before it cost anything
 
 23.2 shipped a browser assertion that pinned `document.activeElement` after focus had left the
-document, and Firefox disagreed with Chromium and WebKit about what that reads. This suite's
-fixture puts a focusable sentinel on **both** sides of the table from the start, so "one Tab in, one
-Tab out" is a question about the page rather than about browser chrome. Firefox still cannot launch
-on this workstation; the difference is that the assertions no longer depend on which engine runs
-them.
+document, and Firefox disagreed with the other two about what that reads. This suite's fixture puts
+a focusable sentinel on **both** sides of the table from the start, so "one Tab in, one Tab out" is
+a question about the page rather than about browser chrome.
+
+That is why the failure above was worth reading rather than worth loosening. The same assertion, in
+23.2's shape, would have been ambiguous — engine bookkeeping or a real difference? Here there was
+nowhere else for the focus to be, so the answer had to be about this library's markup, and it was.
+Firefox still cannot launch on this workstation; the round trip through CI was two runs, and one of
+them was spent turning "expected true, received false" into a sentence.
 
 ## What is left
 

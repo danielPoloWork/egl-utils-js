@@ -2135,6 +2135,15 @@ export function bsTable(container, options) {
     // per node would be one attribute per cell — O(rows x columns) of writes and
     // of bytes — to say what the mapping says for free.
     table.setAttribute('role', 'grid');
+    // The F71 wrapper, when this instance owns one, and this line exists because
+    // a three-engine suite said so: **Firefox gives a scrollable container its own
+    // place in the tab order**, so `Tab` reached the wrapper and the grid was two
+    // tab stops there while Chromium and WebKit made it one. Firefox does that so
+    // a keyboard user can scroll a region they could not otherwise reach — a
+    // reason that stops applying the moment this navigation exists, because
+    // moving the cell focus is what scrolls this container now. An explicit
+    // `-1` is how that is declined.
+    scrollContainer?.setAttribute('tabindex', '-1');
     // The head's own focusables, once: the grips, the handles, and the F67 filter
     // inputs. The body's are demoted per row as it is built.
     for (const tr of thead.children) demoteTabStops(tr);

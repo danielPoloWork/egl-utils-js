@@ -709,6 +709,10 @@ Worth knowing:
   it lands on. This library calls neither — asserted on Chromium, Firefox and WebKit.
 - **`PageUp`/`PageDown` measure** the scroll container once per press. Where there is no layout to
   read it falls back to 10 rows; `keyboard: { pageRows: 20 }` fixes it outright.
+- **The `responsive` wrapper stops being a tab stop too.** Firefox gives a scrollable container one
+  of its own so a keyboard user can reach it — which stops being necessary once moving the cell
+  focus is what scrolls it, and without declining it the grid would be two tab stops on Firefox and
+  one everywhere else.
 
 ### Column visibility (`egl-utils-js/bootstrap`)
 

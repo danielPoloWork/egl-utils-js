@@ -154,6 +154,16 @@ describe('one tab stop, and it is a cell', () => {
     expect(stops()).toHaveLength(1);
   });
 
+  it('declines the tab stop Firefox gives a scrollable container', () => {
+    // Found by the three-engine suite rather than reasoned about: Firefox puts a
+    // scrollable region in the tab order so a keyboard user can reach it, which
+    // made the grid two tab stops there and one everywhere else. Moving the cell
+    // focus is what scrolls this container now, so the reason no longer applies.
+    const instance = table({ responsive: true, sticky: { maxHeight: '120px' } });
+    expect(instance.element.getAttribute('tabindex')).toBe('-1');
+    void instance;
+  });
+
   it('does not make a row a tab stop when onRowClick is set', () => {
     table({ onRowClick: () => {} });
     expect(host.querySelector('tbody tr')?.getAttribute('tabindex')).toBe(null);

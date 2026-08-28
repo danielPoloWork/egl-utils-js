@@ -91,6 +91,15 @@ announcement, and F130's "a roving `tabindex` rather than a rendered highlight" 
 painted highlight would have been a second, competing source of truth for both. The browser suite
 asserts the scroll actually happens, because "this is the engine's job" is a claim about an engine.
 
+**9b. Firefox gives a scrollable container its own tab stop, and this declines it.** Found by the
+browser suite rather than reasoned about, which is the reason that suite exists: `Tab` reached the
+F71 `.table-responsive` wrapper before the grid on Firefox, so the table was **two** tab stops there
+and one on Chromium and WebKit. Firefox does that so a keyboard user can scroll a region they could
+not otherwise reach — a reason that stops applying the moment this navigation exists, because moving
+the cell focus is what scrolls this container now. An explicit `tabindex="-1"` on the wrapper, under
+`keyboard` only, is how that is declined. Three engines, one assertion, one line of source: this is
+the case NFR-49 had in mind when it put the grid's tab-stop count in a real engine.
+
 **10. ADR-0041's `/bootstrap` clause is amended a third time — and 22.2 is filed to stop the
 fourth.** Measured 26 767 B against the 26.75 kB clause ADR-0085 set one item ago: **17 B over**.
 Each of the three amendments was correct under its own rule, and three in a row means the
@@ -141,8 +150,8 @@ how a budget stops meaning anything.
   with one optional field (`pageRows`). No instance method: the grid is a behaviour, and a caller
   who wants to place focus has the DOM.
 - **A behaviour change under `keyboard`, and only there**: the F99 grip, the F100 handle, the F95
-  checkbox, the F67 filter inputs and the caller's own cell controls stop being tab stops, and an
-  `onRowClick` row stops being one too. Every one of them stays operable through its cell. A table
+  checkbox, the F67 filter inputs, the caller's own cell controls and — on Firefox — the F71
+  scroll wrapper stop being tab stops, and an `onRowClick` row stops being one too. Every one of them stays operable through its cell. A table
   that does not pass `keyboard` is byte-for-byte the table it was.
 - **Spec 09 is closed.** F126–F131 and NFR-45–NFR-49 are all delivered across 23.1–23.3, and the
   coverage map reads ✅.
