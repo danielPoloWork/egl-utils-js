@@ -1228,6 +1228,58 @@ router.beforeEach(async () => await changes.confirmLeave());
 A clean form answers `true` and asks nothing. A dirty form with no `confirm` injected answers
 `false` — nobody was asked, and that is not consent.
 
+### A URL is not text (`egl-utils-js/sanitize`)
+
+Escaping protects a record's *content*. A record's **URL** is an instruction, and no escape touches
+it: `javascript:…` in a data field is a live link with your page's authority. `safeUrl` decides
+whether a value may become an `href` or a `src`
+([ADR-0084](docs/adr/0084-a-url-is-not-text.md)).
+
+```js
+import { safeUrl } from 'egl-utils-js/sanitize';
+
+safeUrl(record.homepage) ?? '#'; // the string, or null — you decide the fallback
+```
+
+**Parse, then decide.** The value is resolved with `new URL()` and its *protocol* is looked up in an
+allow-list — never matched as a string, because the URL grammar removes tabs and newlines inside a
+scheme, strips leading control characters, lower-cases the scheme, and treats a percent-encoded
+colon as an ordinary path character:
+
+| Input | `startsWith('javascript:')` | `safeUrl` |
+|---|---|---|
+| `JaVaScRiPt:alert(1)` | passes | **null** |
+| `java	script:alert(1)` | passes | **null** |
+| `%6a%61%76%61script:x` | refused | **allowed** — it is a *path*, and the browser agrees |
+
+That last row is why a blocklist cannot do this job: over-refusing a legitimate path is a bug too.
+
+- **It answers, it does not throw.** A refusal is `null`, so one hostile field in fifty records
+  cannot discard the other forty-nine. The default set is `http:`, `https:`, `mailto:`, `tel:` and
+  relative references; extend it with `protocols: ['app:']`.
+- **It is total.** Any input at all — a number, `null`, 4 000 characters of control codes — returns
+  a string or `null` and never throws, which a property test asserts.
+- **An empty string is refused**, because an empty `href` is a link to the current page.
+
+**Your Bootstrap builders already use it.** Every place a builder writes a URL from your data — a
+card image, a list-group or breadcrumb link, a navbar brand, item or child, a carousel image — now
+routes through the guard:
+
+```js
+bsListGroup([{ content: 'Ada', href: 'javascript:alert(1)' }]);
+// → the item renders with its label, WITHOUT an href, and carries
+//   data-egl-refused-url so you can find it
+```
+
+A refused URL leaves the attribute **unset** rather than empty, keeps the element and its label, and
+marks it. The two image builders allow `data:` and `blob:` themselves, because those are inert in an
+`<img>` and a script in an `href` — and you can widen any builder's set through the same shared
+option:
+
+```js
+bsNavbar(host, { items, protocols: ['app:'] });
+```
+
 ### Promise-based dialogs (`egl-utils-js/ui`)
 
 A dialog is a question with one answer arriving later — which is what a promise is. So `await`
@@ -2272,7 +2324,7 @@ inside their declared ranges — keeping those patched is yours. Full detail:
 | 20 | Application UX utilities | ✅ done |
 | 21 | Form engine | ✅ done |
 | 22 | Post-1.4 maintenance and distribution | 🚧 in progress |
-| 23 | Hardening: untrusted URLs, column visibility & grid keyboard navigation | ⏳ planned |
+| 23 | Hardening: untrusted URLs, column visibility & grid keyboard navigation | 🚧 in progress |
 
 
 ## License

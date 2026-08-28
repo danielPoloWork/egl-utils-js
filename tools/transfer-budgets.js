@@ -87,10 +87,10 @@ export const TRANSFER_ROUTES = {
   },
   sanitize: {
     file: 'dist/esm/sanitize.js',
-    requests: 3,
-    measured: 3012,
-    budget: 3110,
-    why: 'DOMPurify is looked up, never imported (ADR-0055), so the peer costs this route nothing until the page loads it itself.',
+    requests: 4,
+    measured: 3736,
+    budget: 4000,
+    why: '+724 B and a FOURTH request in 23.1 for the F126 URL guard, which is 247 B of bundled code on the size-limit row: `url-guard.js` became its own shared chunk, so a static page fetches one more file and pays for all of it. That gap between 247 B and 724 B is the whole reason F87 counts served bytes rather than imported ones (ADR-0061). DOMPurify is looked up, never imported (ADR-0055), so the peer costs this route nothing until the page loads it itself.',
   },
   errors: {
     file: 'dist/esm/errors.js',
@@ -118,10 +118,11 @@ export const TRANSFER_ROUTES = {
   },
   bootstrap: {
     file: 'dist/esm/bootstrap.js',
-    requests: 12,
-    measured: 45467,
-    budget: 47500,
+    requests: 13,
+    measured: 46518,
+    budget: 48600,
     why:
+      '+1051 B and a THIRTEENTH request in 23.1 for the F127 URL routing, 371 B of it on the bundled row: the guard own chunk is one more file this route fetches whole. ' +
       'The whole catalogue over 8 requests — still MORE than the single-file artifact over 1, so a page needing ' +
       '/bootstrap should take the artifact. 19.3 is the first M19 item to grow it for a feature it actually ' +
       'gained: bsTable renders the F95 selection column. 19.1 and 19.2 grew it for features it did not, because ' +
@@ -138,10 +139,11 @@ export const TRANSFER_ROUTES = {
 
   ui: {
     file: 'dist/esm/ui.js',
-    requests: 10,
-    measured: 24286,
-    budget: 25900,
+    requests: 11,
+    measured: 25199,
+    budget: 26870,
     why:
+      '+913 B and an ELEVENTH request in 23.1 for a guard this entry never calls: /ui composes /bootstrap internals, so the new chunk is in its closure. One change, two consumers, and only this table can see the second one. ' +
       'The application-UX entry (spec 07 NFR-32). +182 B and a TENTH request in 21.1, entirely from the chunk re-split around the new /forms entry — nothing on this entry moved, and the budget is unchanged because it had the room. Before that: +261 B and a NINTH request in 20.6, for the F111 reduced-motion helper - most of the movement is the shared chunks re-splitting, not the helper itself, which lives on /dom and is imported by nothing here. Before that: +4 612 B and TWO more requests in 20.3, and the cause is worth reading: the F106 theme manager persists through the F21 storage wrapper, which a bundler consumer pays 1 464 B for and a static page pays 4 612 B and two round trips for, because this route downloads whole files. Reusing the wrapper is a spec requirement and the right call - it is also the clearest example on this table of the same decision costing two consumers very different amounts. Before that, +2 178 B in 20.2 for the toast manager, on a route that then cost six requests — the queue and the promise helper landed inside files this route already downloaded whole. Two and a half times its 7 332 B size-limit row, and the gap is the point ' +
       'of this file: a bundler consumer importing `createDialogs` ships the tree-shaken 5 kB, while a static page ' +
       'downloads ui.js plus the five chunks it imports whole — the F70 modal wrapper, the F55/F56 buttons, the F109 ' +
@@ -168,10 +170,10 @@ export const TRANSFER_ROUTES = {
   artifact: {
     file: 'dist/global/egl-utils.global.js',
     requests: 1,
-    measured: 50656,
-    budget: 51680,
+    measured: 51070,
+    budget: 52100,
     why:
-      'Re-baselined at the v1.4.0 release: -9 B, which is the VERSION string this route carries going from 1.3.0 to 1.4.0 and brotli reacting to it — the movement this table predicts at every version bump, re-pinned rather than left as a drift note people learn to scroll past. Re-pinned for 21.5 (+827 B for the F124-F125 tracker) — and re-pinned rather than left alone, because it still PASSED at 175 B under the old budget, which is not a margin to ship on. Before that, re-pinned for 21.4 (+1396 B for the F122-F123 submit lifecycle), holding the ADR-0059 rule. Before that, re-pinned for 21.3 (+1281 B for the F120-F121 renderer and the F120 class map), holding the same. Before that, re-pinned for 21.2 (+1609 B for the validation engine). Before that, re-pinned for 21.1 (+1178 B for the F112-F115 form engine and the twelfth-entry chunk re-split). Before that, re-pinned for 20.6 (+160 B for the F111 reduced-motion helper), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
+      'Re-baselined for 23.1 (+414 B for the F126-F127 URL guard and its routing). Before that, re-baselined at the v1.4.0 release: -9 B, which is the VERSION string this route carries going from 1.3.0 to 1.4.0 and brotli reacting to it — the movement this table predicts at every version bump, re-pinned rather than left as a drift note people learn to scroll past. Re-pinned for 21.5 (+827 B for the F124-F125 tracker) — and re-pinned rather than left alone, because it still PASSED at 175 B under the old budget, which is not a margin to ship on. Before that, re-pinned for 21.4 (+1396 B for the F122-F123 submit lifecycle), holding the ADR-0059 rule. Before that, re-pinned for 21.3 (+1281 B for the F120-F121 renderer and the F120 class map), holding the same. Before that, re-pinned for 21.2 (+1609 B for the validation engine). Before that, re-pinned for 21.1 (+1178 B for the F112-F115 form engine and the twelfth-entry chunk re-split). Before that, re-pinned for 20.6 (+160 B for the F111 reduced-motion helper), holding the ADR-0059 rule: this is the file served as-is, which is what a CDN sends, while the size-limit row for the same path reports a smaller number because it re-bundles through esbuild first. Two honest measurements of two different things, kept separate on purpose (ADR-0061). ' +
       "20.5 is where two waves of pressure resolved. NFR-22's ceiling is RE-DERIVED to 52 kB rather than raised, by spec 05's own method — the sum of the measured entry figures, an upper bound on a deduplicated single file, which reads 52104 B today against 39.8 kB at M18. That recomputation, and not a bigger number, is the condition spec 07 NFR-33 attached (ADR-0070). " +
       'The budget here stays tight on purpose: 40400 B is measured + 1.8%, not the ADR-0015 + 7%. The clause is an authoring bound with 12 kB of slack in it — that gap IS the deduplication the derivation always assumed — and a clause with slack does no per-PR work, while this row does. Two instruments, different jobs: the split ADR-0041 already made for the /bootstrap entry. ' +
       '20.3 recomputed it a fourth time (60914 B → 60 kB), 20.6 a FIFTH (61938 B → 62 kB), 21.1 recomputed it on a TWELFTH input (63862 B → 64 kB), 21.2 recomputed it again with no new entry at all — the twelfth one grew, and the rule is whenever any input moves rather than whenever an entry is added (65768 B → 66 kB) — 21.3 did the same a third consecutive time (67624 B → 68 kB) and 21.4 a FOURTH (69095 B → 70 kB, the whole +1471 B from /forms and no other entry moving by a byte). 21.5 recomputes it a FIFTH time and the clause does not move: 69980 B rounds to the same 70 kB, with 20 B left under it — the derivation moved and the bound did not, which is exactly the distinction the rule is about. This row moves to 51680 B (measured + 2.0%). The derivation is redone whenever ANY of its inputs moves, not only when an entry is added: a clause nobody recomputes is a number rather than a bound. ' +

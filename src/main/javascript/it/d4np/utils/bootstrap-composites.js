@@ -35,6 +35,7 @@ import {
   isNode,
   renderContent,
   resolveDocument,
+  setSafeUrl,
 } from './bootstrap-elements.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 
@@ -130,7 +131,7 @@ export function bsCard(options = {}) {
   applyClasses(el, ['card'], common.class, api);
 
   const fragment = doc.createDocumentFragment();
-  const imageEl = image === undefined ? undefined : buildCardImage(image, doc, api);
+  const imageEl = image === undefined ? undefined : buildCardImage(image, doc, common, api);
   if (imageEl !== undefined && image?.position !== 'bottom') fragment.append(imageEl);
 
   if (header !== undefined) {
@@ -191,11 +192,13 @@ function slot(doc, tag, classes, content, options, api) {
 /**
  * @param {BsCardImage} image
  * @param {Document} doc
+ * @param {ContentOptions} common - The shared contract's bag; `protocols` is the
+ *   part this reads (spec 09 F127).
  * @param {string} api
  * @returns {Element}
  * @throws {TypeError} If `src` is not a non-empty string or `alt` is missing.
  */
-function buildCardImage(image, doc, api) {
+function buildCardImage(image, doc, common, api) {
   assertPlainObject(image, 'options.image', api);
   const { src, alt, position, class: imageClass, ...unknown } = image;
   assertNoUnknownOptions(unknown, api, 'options.image property');
@@ -209,7 +212,10 @@ function buildCardImage(image, doc, api) {
     );
   }
   const el = doc.createElement('img');
-  el.setAttribute('src', src);
+  // An image source is a different context from a link: `data:` and `blob:` are
+  // inert in an `<img>` and routinely legitimate there, so this call site
+  // declares them (spec 09 F127, ADR-0084).
+  setSafeUrl(el, 'src', src, common, ['data:', 'blob:']);
   el.setAttribute('alt', alt);
   applyClasses(el, [position === 'bottom' ? 'card-img-bottom' : 'card-img-top'], imageClass, api);
   return el;
@@ -384,7 +390,9 @@ export function bsListGroup(items, options = {}) {
  *
  * @param {BsListGroupItem} item
  * @param {number} index
- * @param {{ doc: Document, numbered: boolean, interactive: boolean, options: BsListGroupOptions, api: string }} context
+ * @param {{ doc: Document, numbered: boolean, interactive: boolean, options: ContentOptions, api: string }} context
+ *   `options` is the SHARED contract's bag (what `commonOptions` returned), not the
+ *   caller's own — which is what lets this read `protocols` (spec 09 F127).
  * @returns {Element}
  */
 function buildListItem(item, index, context) {
@@ -409,7 +417,7 @@ function buildListItem(item, index, context) {
     api,
   );
   if (tag === 'button') el.setAttribute('type', 'button');
-  if (item.href !== undefined) el.setAttribute('href', item.href);
+  if (item.href !== undefined) setSafeUrl(el, 'href', item.href, options);
   if (item.active === true) el.setAttribute('aria-current', 'true');
   if (item.disabled === true) {
     // A link has no native disabled state, so it needs the ARIA flag *and*
@@ -585,7 +593,7 @@ export function bsBreadcrumb(items, options = {}) {
       appendContent(li, content, common, api);
     } else if (typeof href === 'string') {
       const link = doc.createElement('a');
-      link.setAttribute('href', href);
+      setSafeUrl(link, 'href', href, common);
       appendContent(link, content, common, api);
       li.append(link);
     } else {

@@ -43,7 +43,7 @@ contract falls short of what it says:
 
 **A URL is not text, and this library only protects text.** Escape-by-default (F52, ADR-0037)
 guarantees that a record's *content* cannot become markup. It says nothing about a record's
-*URL*: eight call sites across the Bootstrap builders write an `href` or a `src` taken from
+*URL*: **seven** call sites across the Bootstrap builders write an `href` or a `src` taken from
 caller or record data — a card image, a list-group item, a breadcrumb link, a navbar brand, a
 nav item, a child item, a carousel image — and none of them looks at the protocol. A record
 field containing `javascript:…` becomes a live link that executes with the page's authority.
@@ -242,7 +242,7 @@ capabilities and their error model.
   asserted for verdict. A **property test** over randomised strings asserting the guard is total —
   it returns a string or `null` and never throws, for any input — because a security check that
   throws on a hostile input has moved the failure rather than removed it.
-- **F127 (the builders)** — every one of the eight call sites asserted: a hostile URL leaves the
+- **F127 (the builders)** — every one of the seven call sites asserted: a hostile URL leaves the
   attribute absent, the element present and its label intact, and the refusal observable. The
   injected allow-list asserted to extend rather than replace the default set, and asserted **not**
   to be reachable through an options bag that does not declare it (ADR-0047).

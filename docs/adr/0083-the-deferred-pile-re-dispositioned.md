@@ -43,8 +43,10 @@ Only the last group is this library's shape. And each of those three was checked
 source before being kept, because "the proposal asks for it" is not evidence that anything is
 missing.
 
-**The URL gap is real and countable.** Eight call sites write an `href` or a `src` from caller or
-record data with no protocol check:
+**The URL gap is real and countable.** Seven call sites write an `href` or a `src` from caller or
+record data with no protocol check — this record counted *eight* when it was written, and the
+eighth turned out to be a line inside a JSDoc example;
+[ADR-0084](0084-a-url-is-not-text.md) carries the correction:
 
 | File | Line | Attribute |
 |---|---:|---|
@@ -82,7 +84,7 @@ of them a widget and none of them a new entry:
 
 | Item | What | Why now |
 |---|---|---|
-| 23.1 | A URL guard, and the eight builder call sites routed through it (F126–F127) | The boundary's stated control does not cover URLs |
+| 23.1 | A URL guard, and the seven builder call sites routed through it (F126–F127) | The boundary's stated control does not cover URLs |
 | 23.2 | Column visibility on the descriptor, and a chooser (F128–F129) | The descriptor has no `visible`; state already persists through F92/F93 |
 | 23.3 | Grid keyboard navigation for `bsTable` (F130–F131) | The one component whose keyboard story has no vendor, and where the library already writes keyboard code |
 
@@ -168,7 +170,7 @@ that would reopen it) · **Rejected** (with the governing reason).
 | §41–§43 typography / image / figure behaviours | **Rejected** | Class juggling over Bootstrap's own vocabulary (§47's rejection, applied one tier down). |
 | §50 roving tabindex | **Adopted → 23.3, reshaped** | Adopted as the table's grid navigation, where it has a consumer; refused as a free-standing primitive, because exactly one file in `src/main` contains arrow-key handling. |
 | §50 keyboard-navigation manager | **Rejected** | The same reason, without the grid: a manager for keyboard behaviour the peer already owns. |
-| §51 URL protocol allow-list | **Adopted → 23.1** | Eight builder call sites write a data-driven `href`/`src` with no protocol check. |
+| §51 URL protocol allow-list | **Adopted → 23.1** | Seven builder call sites write a data-driven `href`/`src` with no protocol check. |
 | §56.1 combobox / autocomplete | **Rejected, reopenable** | The one widget with a real case (Bootstrap lacks it; the form engine makes it reachable), and too large for a hardening wave: listbox semantics, typeahead, async options, mobile behaviour. A milestone of its own if the owner wants it, via a superseding ADR. |
 | §56.2–56.4 date, date-range and time pickers | **Rejected** | The platform ships `<input type="date">`/`type="time">`, and a picker that improves on them is a localisation and a11y project, not a utility. |
 | §56.5 tree view, §56.6 stepper, §56.7 command palette, §56.8 context menu, §56.12 split pane | **Rejected** | Widgets; a different charter (§1 of spec 09). |

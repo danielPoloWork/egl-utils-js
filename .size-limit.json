@@ -22,9 +22,15 @@
     "limit": "1.02 kB"
   },
   {
-    "name": "/sanitize (measured 1491 B; +27 B for the ADR-0055 peer lookup, and DOMPurify is now absent from the module graph entirely rather than external to it)",
+    "name": "/sanitize (measured 1738 B — +247 B in 23.1 for the F126 URL guard, which is the whole of `safeUrl` including the option validation the Bootstrap builders share rather than duplicate. The guard takes no peer, no document and no profile, so a consumer who wants only it pays the 651 B row below rather than this entry. Re-pinned at 1.81 kB, the row own +4.0% margin. ADR-0082 keeps this figure honest: it is what the build measures, not what the last item hoped)",
     "path": "dist/esm/sanitize.js",
-    "limit": "1.55 kB"
+    "limit": "1.81 kB"
+  },
+  {
+    "name": "single: safeUrl (spec 09 F126: measured 651 B — the parse, the allow-list, the option contract and this entry shared floor. What a page pays to check a data-driven URL without sanitizing any HTML, which is the reason the guard is re-exported here rather than defined here: the builders reach the same internal module and no entry imports another (ADR-0084))",
+    "path": "dist/esm/sanitize.js",
+    "import": "{ safeUrl }",
+    "limit": "0.7 kB"
   },
   {
     "name": "/errors (measured 377 B; +26 B for ClipboardError, spec 06 F97 / ADR-0066, on top of F68's PeerMissingError. Eleven classes and eleven codes, still inside the 0.4 kB clause of spec 02 NFR-08)",
@@ -226,9 +232,9 @@
     "limit": "510 B"
   },
   {
-    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header, the F99 column resize, the F100 reorder and the F120 feedback class map - measured 24632 B. Limit 24.9 kB, and NOT measured+7%: ADR-0041's 25 kB entry clause binds first, and a row above its own clause is a gate that cannot fail. **368 B remain under that clause**, down from 505 B: 21.3 spent 137 B on BOOTSTRAP_FEEDBACK_CLASSES, frozen data rather than a wrapper. The wrapper was MEASURED first and would have cost 1492 B, putting this entry 987 B OVER the clause (spec 08 NFR-38, ADR-0079) - which is why the composition happens at the call site)",
+    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header, the F99 column resize, the F100 reorder, the F120 feedback class map and the F127 URL routing - measured 24902 B. **ADR-0041 25 kB entry clause is AMENDED to 25.5 kB by ADR-0084**, and the arithmetic is the reason it had to be. The honest routing - one guard, validated everywhere - measured 25003 B, **3 B over** the old clause: there was no version of it that fitted. Splitting the guard hot half from its option-validation half brought this entry to 24902 B, 98 B under the old clause, which is not a margin to ship on - so the clause moves by the minimum that restores the 368 B this row had at 24632 B, and the split is kept because it also saves ~150 B on each of five per-function rows. Pinned at 25.4 kB rather than measured+7%: the clause still binds first, and a row above its own clause is a gate that cannot fail)",
     "path": "dist/esm/bootstrap.js",
-    "limit": "24.9 kB"
+    "limit": "25.4 kB"
   },
   {
     "name": "single: bsIcon (NFR-17 <= 1.2 kB per ADR-0037; measured 950 B incl. the ADR-0047 option-key contract. Re-pinned at the row own +2.9% margin, comfortably inside ADR-0037 1.2 kB clause. It had reached 10 B of headroom while its text still advertised 933 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
@@ -243,7 +249,7 @@
     "limit": "0.1 kB"
   },
   {
-    "name": "single: bsBadge (NFR-17 <= 1.2 kB per ADR-0037; measured 1125 B incl. the ADR-0047 option-key contract)",
+    "name": "single: bsBadge (NFR-17 <= 1.2 kB per ADR-0037; measured 1133 B incl. the ADR-0047 option-key contract)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsBadge }",
     "limit": "1.15 kB"
@@ -255,7 +261,7 @@
     "limit": "2.02 kB"
   },
   {
-    "name": "single: bsButtonGroup (NFR-17 <= 1.2 kB per ADR-0037; measured 916 B incl. the ADR-0047 option-key contract)",
+    "name": "single: bsButtonGroup (NFR-17 <= 1.2 kB per ADR-0037; measured 917 B incl. the ADR-0047 option-key contract)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsButtonGroup }",
     "limit": "0.94 kB"
@@ -273,34 +279,34 @@
     "limit": "0.87 kB"
   },
   {
-    "name": "single: bsProgress (NFR-17 <= 1.2 kB per ADR-0037; measured 1164 B - the destroyed guard ADR-0049 required, right at the clause)",
+    "name": "single: bsProgress (NFR-17 <= 1.2 kB per ADR-0037; measured 1159 B - the destroyed guard ADR-0049 required, right at the clause)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsProgress }",
     "limit": "1.2 kB"
   },
   {
-    "name": "single: bsPlaceholder (NFR-17 <= 1.2 kB per ADR-0037; measured 1023 B incl. the ADR-0047 option-key contract)",
+    "name": "single: bsPlaceholder (NFR-17 <= 1.2 kB per ADR-0037; measured 1028 B incl. the ADR-0047 option-key contract)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsPlaceholder }",
     "limit": "1.05 kB"
   },
   {
-    "name": "single: bsCard (NFR-17 composite row, clause 1.5 kB per ADR-0038; measured 1507 B. NFR-17 composite clause amended from 1.5 kB to 1.65 kB by ADR-0082 - **this row breached it**: 1507 B against a 1500 B clause, which no gate could report because the row own limit had already been set 20 B above the clause it cites. Re-pinned at the row own +7.2% margin. It had reached 13 B of headroom while its text still advertised 1418 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
+    "name": "single: bsCard (NFR-17 composite row, clause 1.5 kB per ADR-0038; measured 1734 B. NFR-17 composite clause amended from 1.5 kB to 1.65 kB by ADR-0082 - **this row breached it**: 1507 B against a 1500 B clause, which no gate could report because the row own limit had already been set 20 B above the clause it cites. Re-pinned at the row own +7.2% margin. It had reached 13 B of headroom while its text still advertised 1418 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082). +227 B in 23.1 for the F127 URL routing, which every builder that renders a data-driven URL now carries: the guard hot half (parse and allow-list lookup) rather than all of it, because the split was measured and saves ~150 B on each of these five rows (ADR-0084). The clause moves with the figure at this row own margin)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsCard }",
-    "limit": "1.62 kB"
+    "limit": "1.87 kB"
   },
   {
-    "name": "single: bsListGroup (2.22 kB - documented NFR-17 composing row, ADR-0038, amended by ADR-0056: composes bsBadge + delegation; measured 2167 B, +147 B for the per-item and badge descriptor checks. Re-pinned at the row own +2.2% margin, inside the 2.2 kB clause ADR-0056 set... which it now exceeds by 14 B, so ADR-0082 amends that clause to 2.25 kB too. It had reached 33 B of headroom while its text still advertised 2153 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
+    "name": "single: bsListGroup (2.44 kB - documented NFR-17 composing row, ADR-0038, amended by ADR-0056: composes bsBadge + delegation; measured 2379 B, +147 B for the per-item and badge descriptor checks. Re-pinned at the row own +2.2% margin, inside the 2.2 kB clause ADR-0056 set... which it now exceeds by 14 B, so ADR-0082 amends that clause to 2.25 kB too. It had reached 33 B of headroom while its text still advertised 2153 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082). +212 B in 23.1 for the F127 URL routing, which every builder that renders a data-driven URL now carries: the guard hot half (parse and allow-list lookup) rather than all of it, because the split was measured and saves ~150 B on each of these five rows (ADR-0084). The clause moves with the figure at this row own margin)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsListGroup }",
-    "limit": "2.22 kB"
+    "limit": "2.44 kB"
   },
   {
-    "name": "single: bsBreadcrumb (NFR-17 composite row, clause 1.3 kB per ADR-0038; measured 1295 B incl. the ADR-0047 option-key contract, inside the clause. Per-row composite clause amended from 1.3 kB to 1.4 kB by ADR-0082: 1295 B left **5 B** under the clause, and the row limit was already 10 B above it. Re-pinned at the row own +2.9% margin. It had reached 15 B of headroom while its text still advertised 1274 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
+    "name": "single: bsBreadcrumb (NFR-17 composite row, clause 1.3 kB per ADR-0038; measured 1515 B incl. the ADR-0047 option-key contract, inside the clause. Per-row composite clause amended from 1.3 kB to 1.4 kB by ADR-0082: 1295 B left **5 B** under the clause, and the row limit was already 10 B above it. Re-pinned at the row own +2.9% margin. It had reached 15 B of headroom while its text still advertised 1274 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082). +220 B in 23.1 for the F127 URL routing, which every builder that renders a data-driven URL now carries: the guard hot half (parse and allow-list lookup) rather than all of it, because the split was measured and saves ~150 B on each of these five rows (ADR-0084). The clause moves with the figure at this row own margin)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsBreadcrumb }",
-    "limit": "1.34 kB"
+    "limit": "1.57 kB"
   },
   {
     "name": "single: bsAlert (NFR-17 <= 2 kB composing row: the F49 engine in a costume; measured 1685 B incl. the ADR-0049 contract)",
@@ -309,19 +315,19 @@
     "limit": "1.73 kB"
   },
   {
-    "name": "single: bsPagination (1.58 kB - NFR-17 composing row amended from 1.5 kB by ADR-0049: measured 1539 B, incl. the document override that closes 17.8)",
+    "name": "single: bsPagination (1.58 kB - NFR-17 composing row amended from 1.5 kB by ADR-0049: measured 1542 B, incl. the document override that closes 17.8)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsPagination }",
     "limit": "1.58 kB"
   },
   {
-    "name": "single: bsTable (14.2 kB - documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065, ADR-0067, ADR-0068 and ADR-0069: measured 13430 B: +765 B in 19.7 for the F100 column reorder, +119 B in 19.9 for the BUG-0005 filter-row spacer. Cheaper than the F99 resize it sits beside (1155 B) because it reuses that item's decisions rather than restating them - one handle for pointer and keyboard, pointer capture, the same click guard - and because moving nodes needs no markup of its own)",
+    "name": "single: bsTable (14.2 kB - documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065, ADR-0067, ADR-0068 and ADR-0069: measured 13412 B: +765 B in 19.7 for the F100 column reorder, +119 B in 19.9 for the BUG-0005 filter-row spacer. Cheaper than the F99 resize it sits beside (1155 B) because it reuses that item's decisions rather than restating them - one handle for pointer and keyboard, pointer capture, the same click guard - and because moving nodes needs no markup of its own)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsTable }",
     "limit": "14.2 kB"
   },
   {
-    "name": "single: bsToast (2.55 kB - NFR-17 composing row amended from 2.32 kB by ADR-0049: measured 2461 B, +152 B for on() + isShown() + element, the members the readiness review found missing)",
+    "name": "single: bsToast (2.55 kB - NFR-17 composing row amended from 2.32 kB by ADR-0049: measured 2462 B, +152 B for on() + isShown() + element, the members the readiness review found missing)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsToast }",
     "limit": "2.55 kB"
@@ -333,7 +339,7 @@
     "limit": "1.31 kB"
   },
   {
-    "name": "single: bsLoadingOverlay (2.85 kB - NFR-17 composing row amended from 1.75 kB by ADR-0041, again in 20.5: measured 2751 B, of which loadingOverlay 1127 B + bsSpinner 778 B are composed parts. It moved because its composed part did: loadingOverlay 1063 -> 1127 B for the F109 saveFocus it now calls instead of keeping its own copy - the composed row moves because the part did, which is the accounting ADR-0041 asked for)",
+    "name": "single: bsLoadingOverlay (2.85 kB - NFR-17 composing row amended from 1.75 kB by ADR-0041, again in 20.5: measured 2750 B, of which loadingOverlay 1127 B + bsSpinner 778 B are composed parts. It moved because its composed part did: loadingOverlay 1063 -> 1127 B for the F109 saveFocus it now calls instead of keeping its own copy - the composed row moves because the part did, which is the accounting ADR-0041 asked for)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsLoadingOverlay }",
     "limit": "2.85 kB"
@@ -345,7 +351,7 @@
     "limit": "1.56 kB"
   },
   {
-    "name": "single: bsAccordion (2.8 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2617 B, of which bsCollapse 1380 B is a composed part. Row clause amended again from 2.66 kB by ADR-0082, at the row own +6.8% margin. It had reached 43 B of headroom while its text still advertised 2490 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
+    "name": "single: bsAccordion (2.8 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2613 B, of which bsCollapse 1380 B is a composed part. Row clause amended again from 2.66 kB by ADR-0082, at the row own +6.8% margin. It had reached 43 B of headroom while its text still advertised 2490 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsAccordion }",
     "limit": "2.8 kB"
@@ -357,16 +363,16 @@
     "limit": "1.33 kB"
   },
   {
-    "name": "single: bsTabs (2.3 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2147 B, the tablist/panel ARIA wiring being the bulk. Row clause amended again from 2.19 kB by ADR-0082, at the row own +6.8% margin. It had reached 43 B of headroom while its text still advertised 2050 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
+    "name": "single: bsTabs (2.3 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2146 B, the tablist/panel ARIA wiring being the bulk. Row clause amended again from 2.19 kB by ADR-0082, at the row own +6.8% margin. It had reached 43 B of headroom while its text still advertised 2050 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsTabs }",
     "limit": "2.3 kB"
   },
   {
-    "name": "single: bsNavbar (3.11 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 2907 B against 2540 B of composed parts (bsCollapse 1380 + bsDropdown 1160) - 230 B of its own. Row clause amended again from 2.96 kB by ADR-0082, at the row own +6.9% margin. It had reached 53 B of headroom while its text still advertised 2770 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
+    "name": "single: bsNavbar (3.38 kB - NFR-17 composing row amended from 1.5 kB by ADR-0042; measured 3159 B against 2540 B of composed parts (bsCollapse 1380 + bsDropdown 1160) - 230 B of its own. Row clause amended again from 2.96 kB by ADR-0082, at the row own +6.9% margin. It had reached 53 B of headroom while its text still advertised 2770 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082). +252 B in 23.1 for the F127 URL routing, which every builder that renders a data-driven URL now carries: the guard hot half (parse and allow-list lookup) rather than all of it, because the split was measured and saves ~150 B on each of these five rows (ADR-0084). The clause moves with the figure at this row own margin)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsNavbar }",
-    "limit": "3.11 kB"
+    "limit": "3.38 kB"
   },
   {
     "name": "single: bsOffcanvas (NFR-17 <= 1.25 kB behaviour-wrapper row; measured 1224 B - the third wrapper that only wraps to fit the clause, after bsModal and bsDropdown. Re-pinned under the same amended 1.35 kB wrapper clause (ADR-0082) at the row own +7.8% margin. It had reached 16 B of headroom while its text still advertised 1150 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
@@ -375,10 +381,10 @@
     "limit": "1.32 kB"
   },
   {
-    "name": "single: bsCarousel (2.64 kB - NFR-17 building row amended from 1.5 kB by ADR-0043; measured 2432 B, slides + controls + labelled indicators on top of the shared F52 contract floor. Row clause amended again from 2.5 kB by ADR-0082, at the row own +8.2% margin. It had reached 68 B of headroom while its text still advertised 2310 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
+    "name": "single: bsCarousel (2.89 kB - NFR-17 building row amended from 1.5 kB by ADR-0043; measured 2662 B, slides + controls + labelled indicators on top of the shared F52 contract floor. Row clause amended again from 2.5 kB by ADR-0082, at the row own +8.2% margin. It had reached 68 B of headroom while its text still advertised 2310 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082). +230 B in 23.1 for the F127 URL routing, which every builder that renders a data-driven URL now carries: the guard hot half (parse and allow-list lookup) rather than all of it, because the split was measured and saves ~150 B on each of these five rows (ADR-0084). The clause moves with the figure at this row own margin)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsCarousel }",
-    "limit": "2.64 kB"
+    "limit": "2.89 kB"
   },
   {
     "name": "single: bsScrollspy (NFR-17 <= 1.25 kB row; measured 1118 B - the smallest of the peer-backed set, having no open state to model. Re-pinned at the row own +7.7% margin, and **still inside** the original 1.25 kB wrapper clause - this member did not force the amendment the other two did. It had reached 2 B of headroom while its text still advertised 1040 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
@@ -387,13 +393,13 @@
     "limit": "1.21 kB"
   },
   {
-    "name": "single: bsTooltip (2.15 kB - NFR-17 row amended from 1.25 kB by ADR-0044; measured 2101 B: the content-preparation pass, the slot mapping and the Popper diagnostic are what a bare wrapper does not carry. 21.3 cost this row **1 byte** without touching a line of bsTooltip - adding one frozen constant to the entry moved the shared-chunk split by that much - and the row failed on it. That is the gate working: a tight row is supposed to notice, and the fix is a deliberate re-pin with the cause written down rather than a shrug)",
+    "name": "single: bsTooltip (2.15 kB - NFR-17 row amended from 1.25 kB by ADR-0044; measured 2086 B: the content-preparation pass, the slot mapping and the Popper diagnostic are what a bare wrapper does not carry. 21.3 cost this row **1 byte** without touching a line of bsTooltip - adding one frozen constant to the entry moved the shared-chunk split by that much - and the row failed on it. That is the gate working: a tight row is supposed to notice, and the fix is a deliberate re-pin with the cause written down rather than a shrug)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsTooltip }",
     "limit": "2.15 kB"
   },
   {
-    "name": "single: bsPopover (2.26 kB - NFR-17 row amended from 1.25 kB by ADR-0044; measured 2092 B, ten bytes more than bsTooltip because both are the same internal factory with a different slot map. Row clause amended again from 2.1 kB by ADR-0082, at the row own +7.7% margin. It had reached 8 B of headroom while its text still advertised 1950 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
+    "name": "single: bsPopover (2.26 kB - NFR-17 row amended from 1.25 kB by ADR-0044; measured 2102 B, ten bytes more than bsTooltip because both are the same internal factory with a different slot map. Row clause amended again from 2.1 kB by ADR-0082, at the row own +7.7% margin. It had reached 8 B of headroom while its text still advertised 1950 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsPopover }",
     "limit": "2.26 kB"
@@ -632,7 +638,7 @@
     "limit": "1.35 kB"
   },
   {
-    "name": "/ui - full import (spec 07 NFR-32: measured 9518 B - up 8 B in 21.1 as the chunks re-split around the new /forms entry, not because anything on this entry moved. Limit 10.2 kB unchanged, now measured + 7.0%. Two per-function rows: `themeSnippet` (imports nothing) and `createBreakpoints` (NFR-02 as a number))",
+    "name": "/ui - full import (spec 07 NFR-32: measured 9567 B - up 49 B in 23.1 because /ui composes /bootstrap internals and the F127 routing landed in a chunk they share, and up 8 B in 21.1 as the chunks re-split around the new /forms entry - neither time because anything on this entry moved. Limit 10.2 kB unchanged, now measured + 7.0%. Two per-function rows: `themeSnippet` (imports nothing) and `createBreakpoints` (NFR-02 as a number))",
     "path": "dist/esm/ui.js",
     "limit": "10.2 kB"
   },
@@ -684,8 +690,8 @@
     "limit": "1.32 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 50578 B, re-pinned for 21.5 (+843 B for the F124-F125 tracker). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1), 47174 (21.2), 48452 (21.3), 49763 (21.4), 50606 (21.5). NFR-22 is recomputed by the same sum-of-entry-figures method and reads 69980 B, which rounds to the SAME 70 kB clause 21.4 derived - with **20 B** left under it. The clause did not move and the derivation did, which is the distinction spec 08 NFR-43 asks for; the next item that adds a byte to any entry re-derives it to 71 kB. THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 19 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 50932 B, re-pinned for 23.1 (+384 B for the F126-F127 URL guard and its routing), and for 21.5 before it (+843 B for the F124-F125 tracker). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1), 47174 (21.2), 48452 (21.3), 49763 (21.4), 50606 (21.5), 50932 (23.1). NFR-22 is recomputed by the same sum-of-entry-figures method and reads 70546 B, which re-derives the clause to **71 kB** - exactly as 21.5 predicted when it landed 20 B under 70 kB and said the next byte would move it. THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 19 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "51.6 kB"
+    "limit": "52 kB"
   }
 ]

@@ -108,6 +108,7 @@
     "Resource",
     "ResourceOptions",
     "RetryAttempt",
+    "SafeUrlOptions",
     "SaveFocusOptions",
     "SetVisibleOptions",
     "SubmitInstance",

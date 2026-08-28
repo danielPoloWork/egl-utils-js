@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-27 — the deferred pile, re-dispositioned (spec 09, M23)`](docs/journal/2026/08/2026-08-27-hardening-wave-planning.md).
+  [`2026-08-27 — a URL is not text (23.1)`](docs/journal/2026/08/2026-08-27-url-guard.md).
 
 ## Model & effort routing
 
@@ -434,10 +434,10 @@ does not reach as far as it claims. Spec:
 [`docs/specs/09_spec_hardening.md`](docs/specs/09_spec_hardening.md), which owns **F126–F131** and
 **NFR-45–NFR-49**. No new entry, no new subject, no new instance shape.
 
-- [ ] 23.1 A URL is not text (spec 09 **F126–F127**): one guard that decides whether a value may go
+- [x] 23.1 A URL is not text (spec 09 **F126–F127**): one guard that decides whether a value may go
   in an `href` or a `src` — an allow-list applied **after** `new URL()` parsing rather than by
   string inspection, so `JaVaScRiPt:`, `java	script:` and a percent-encoded colon are one answer —
-  and the **eight** builder call sites that write a data-driven URL today routed through it
+  and the **seven** builder call sites that write a data-driven URL today routed through it
   (`bootstrap-composites.js` 212/412/588, `bootstrap-nav.js` 814/873/908,
   `bootstrap-overlays.js` 287). A refusal returns `null` rather than throwing, because a builder
   rendering fifty records cannot let one hostile field discard the other forty-nine; the attribute
@@ -448,7 +448,7 @@ does not reach as far as it claims. Spec:
   homes are the two that cannot absorb it — and the builders reach it through an internal module so
   no entry imports another (NFR-46). Ships the `docs/security/threat-model.md` update in the same
   PR (NFR-48) _(route: standard/high — security: this changes what an existing trust boundary
-  controls)_
+  controls)_ — `safeUrl` on `egl-utils-js/sanitize`, an internal module the builders reach directly so no entry imports another, and `setSafeUrl` routing all seven call sites. **Parse, then decide**: `new URL()` against a non-resolvable probe base, then a `Set` lookup on the protocol — which is what makes `JaVaScRiPt:`, `java	script:`, a leading NUL and a percent-encoded colon *one* answer each, the last of them correctly **allowed** because it is a path and the browser agrees. A refusal is `null`, never a throw, so one hostile field cannot discard the other forty-nine records; the attribute is left unset (an `href=""` is a link to this page), the element keeps its label, and `data-egl-refused-url` makes it findable. The allow-list is **context-dependent**: `data:`/`blob:` are absent from the default and declared by the two image call sites, because they are inert in an `<img>` and a script in an `href`. Where the export landed was measured, not preferred — the root had 147 B and `/text` 26 B of clause headroom against a 247 B guard, so `/sanitize` (no clause figure, and the same allow-list job one grammar over). The guard is **split** and both halves were measured: one function everywhere put `/bootstrap` **3 B over** ADR-0041's 25 kB clause and cost ~380 B on each of five per-function rows, the split saves ~150 B on each — so **ADR-0041's clause is amended to 25.5 kB**, by the minimum that restores the 368 B margin the row had, and the trade is recorded: a builder's malformed `protocols` fails **closed** and shows through the marker while `safeUrl` throws. F87 priced the new chunk at +724 B/+1051 B/+913 B and one extra request each on `/sanitize`, `/bootstrap` and `/ui` — the last for a guard it never calls. NFR-22 re-derived to 71 kB. Ships the threat-model boundary, its STRIDE pass and the corrected call-site count. Per [ADR-0084](docs/adr/0084-a-url-is-not-text.md)
 - [ ] 23.2 A table can hide a column and cannot say so (spec 09 **F128–F129**): `visible` and
   `hideable` on the column descriptor, beside the `resizable` and `movable` that are already there,
   plus a keyboard-operable chooser writing through the same commands a caller could call. Hiding a
@@ -554,12 +554,12 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 (09) | Objective & business context | 23.1, 23.2, 23.3 | ⏳ |
-| §2 (09) | Functional requirements F126–F131 | 23.1, 23.2, 23.3 | ⏳ |
-| §3 (09) | Non-functional requirements | 23.1, 23.2, 23.3 | ⏳ |
-| §4 (09) | Logical architecture | 23.1, 23.2, 23.3 | ⏳ |
-| §5 (09) | Public interface | 23.1, 23.2, 23.3 | ⏳ |
-| §6 (09) | Verification & test strategy | 23.1, 23.2, 23.3 | ⏳ |
+| §1 (09) | Objective & business context | 23.1, 23.2, 23.3 | 🚧 |
+| §2 (09) | Functional requirements F126–F131 | 23.1, 23.2, 23.3 | 🚧 |
+| §3 (09) | Non-functional requirements | 23.1, 23.2, 23.3 | 🚧 |
+| §4 (09) | Logical architecture | 23.1, 23.2, 23.3 | 🚧 |
+| §5 (09) | Public interface | 23.1, 23.2, 23.3 | 🚧 |
+| §6 (09) | Verification & test strategy | 23.1, 23.2, 23.3 | 🚧 |
 
 ### Spec 05 — browser distribution (F82–F87)
 
