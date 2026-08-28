@@ -70,12 +70,20 @@ test("the last visible column is unreachable and inert, because `disabled` is th
   await expect(last).toBeDisabled();
 
   // Focus the box before it, then Tab: a disabled control is skipped by the
-  // engine's own focus order, so the focus leaves the group entirely.
+  // engine's own focus order, so the focus does not land on it.
+  //
+  // Asserted as "not `b`" rather than as an exact destination on purpose. There
+  // is nothing focusable after the chooser on this fixture, so focus leaves the
+  // document — and what `document.activeElement` reads once that happens is the
+  // engine's business, not this library's: Chromium and WebKit reset it to
+  // `<body>`, Firefox keeps reporting the last element the page had. Pinning a
+  // destination would have been a test of browser chrome. What F129 promises is
+  // only that the disabled box is not reachable.
   await page.locator('input[data-egl-column="a"]').focus();
   await page.keyboard.press('Tab');
-  expect(await page.evaluate(() => document.activeElement?.getAttribute('data-egl-column'))).toBe(
-    null,
-  );
+  expect(
+    await page.evaluate(() => document.activeElement?.getAttribute('data-egl-column')),
+  ).not.toBe('b');
 
   await page.keyboard.press('Space');
   // Still one column, and the table still has something in it.
