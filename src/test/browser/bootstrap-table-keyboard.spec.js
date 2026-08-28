@@ -75,9 +75,18 @@ test('the grid is one tab stop: one Tab reaches it, one more leaves it', async (
   // landed on the one cell that carries the stop.
   const landed = await page.evaluate(() => ({
     tag: document.activeElement?.tagName,
+    id: document.activeElement?.id ?? '',
+    text: document.activeElement?.textContent?.trim().slice(0, 20) ?? '',
+    stopTag: document.querySelector('table [tabindex="0"]')?.tagName ?? 'none',
     isTheStop: document.activeElement === document.querySelector('table [tabindex="0"]'),
   }));
-  expect(landed.isTheStop).toBe(true);
+  // The state is in the message rather than left to a trace: "expected true,
+  // received false" about focus is the least useful failure a browser suite can
+  // produce, and this one has to answer for three engines.
+  expect(
+    landed.isTheStop,
+    `focus landed on ${landed.tag}#${landed.id} "${landed.text}", and the grid's stop is a ${landed.stopTag}`,
+  ).toBe(true);
   expect(landed.tag).toBe('TH');
 
   await page.keyboard.press('Tab');
