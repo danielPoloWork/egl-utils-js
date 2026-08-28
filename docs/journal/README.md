@@ -19,6 +19,7 @@ _(newest first)_
 
 #### August
 
+- [2026-08-28 — One tab stop, and a clause that stopped working (roadmap 23.3)](2026/08/2026-08-28-grid-keyboard.md)
 - [2026-08-28 — A column that can hide, and say so (roadmap 23.2)](2026/08/2026-08-28-column-visibility.md)
 - [2026-08-27 — A URL is not text (roadmap 23.1)](2026/08/2026-08-27-url-guard.md)
 - [2026-08-27 — The deferred pile, re-dispositioned (spec 09, M23)](2026/08/2026-08-27-hardening-wave-planning.md)

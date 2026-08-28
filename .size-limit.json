@@ -232,9 +232,9 @@
     "limit": "510 B"
   },
   {
-    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header, the F99 column resize, the F100 reorder, the F120 feedback class map, the F127 URL routing and the F128/F129 column visibility - measured 26120 B. **ADR-0041 entry clause is AMENDED again, from the 25.5 kB ADR-0084 set to 26.75 kB, by ADR-0085**: +1218 B, of which 285 B is the F110 live region NFR-49 asks for. Two amendments in two items is worth naming rather than burying - and both were the same kind of change, a capability added to components that already exist rather than new components, which is the sprawl the clause was sized to prevent. Pinned at 26.62 kB, the minimum that restores the 498 B margin this row had at 24902 B - the same rule ADR-0084 used, so the clause still binds first and a row above its own clause is a gate that cannot fail)",
+    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header, the F99 column resize, the F100 reorder, the F120 feedback class map, the F127 URL routing, the F128/F129 column visibility and the F130/F131 grid navigation - measured 26767 B, +647 B in 23.3. **ADR-0041 entry clause is AMENDED a THIRD time in three items, from 26.75 kB to 27.5 kB, by ADR-0086** - which measured 17 B over the clause 23.2 had just set. Three amendments running is the finding rather than the footnote: a clause that is raised every time it binds is enforcing nothing, and ROADMAP 24.1 is filed to replace the instrument rather than keep bumping it. What the clause cannot see today is that 58% of this row is ONE component: `single: bsTable` is 15419 B of 26767 B, so a data-grid capability and a new builder move this number identically while only one of them is the sprawl the clause was written against. Pinned at 27.27 kB, the minimum that restores the 498 B margin this row had at 24902 B - ADR-0084 rule, third application)",
     "path": "dist/esm/bootstrap.js",
-    "limit": "26.62 kB"
+    "limit": "27.27 kB"
   },
   {
     "name": "single: bsIcon (NFR-17 <= 1.2 kB per ADR-0037; measured 950 B incl. the ADR-0047 option-key contract. Re-pinned at the row own +2.9% margin, comfortably inside ADR-0037 1.2 kB clause. It had reached 10 B of headroom while its text still advertised 933 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
@@ -321,10 +321,10 @@
     "limit": "1.58 kB"
   },
   {
-    "name": "single: bsTable (documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065, ADR-0067, ADR-0068, ADR-0069 and ADR-0085: measured 14775 B: +1363 B in 23.2 for F128 column visibility and the F129 chooser, of which 280 B is the F110 live region it composes rather than re-implements (measured both ways - an inline `role=\"status\"` would have saved it and duplicated a primitive this library already ships); +765 B in 19.7 for the F100 column reorder, +119 B in 19.9 for the BUG-0005 filter-row spacer. Re-pinned at 15.6 kB, the 788 B margin the row had)",
+    "name": "single: bsTable (documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065, ADR-0067, ADR-0068, ADR-0069, ADR-0085 and ADR-0086: measured 15419 B: +644 B in 23.3 for F130/F131 grid keyboard navigation - the movement model, the roving tabindex and the tab-stop demotion, and NO new dependency: it is `tabindex` and `focus()`, because the scroll into view and the announcement are the browser own (ADR-0086). +1363 B in 23.2 for F128/F129 column visibility and the chooser, +765 B in 19.7 for the F100 column reorder, +119 B in 19.9 for the BUG-0005 filter-row spacer. This row is now 58% of the whole /bootstrap entry, which is the number ROADMAP 24.1 exists to act on. Re-pinned at 16.21 kB, the 788 B margin the row had)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsTable }",
-    "limit": "15.6 kB"
+    "limit": "16.21 kB"
   },
   {
     "name": "single: bsToast (2.55 kB - NFR-17 composing row amended from 2.32 kB by ADR-0049: measured 2462 B, +152 B for on() + isShown() + element, the members the readiness review found missing)",
@@ -690,8 +690,8 @@
     "limit": "1.32 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 52152 B, re-pinned for 23.2 (+1220 B for F128/F129 column visibility, the chooser and its live region), for 23.1 before it (+384 B for the F126-F127 URL guard and its routing), and for 21.5 (+843 B for the F124-F125 tracker). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1), 47174 (21.2), 48452 (21.3), 49763 (21.4), 50606 (21.5), 50932 (23.1), 52152 (23.2). NFR-22 is recomputed by the same sum-of-entry-figures method and reads 72032 B, which re-derives the clause to **73 kB** - up from the 71 kB of 23.1, and the second re-derivation in two items. THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 20 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 52727 B, re-pinned for 23.3 (+575 B for F130/F131 grid navigation), for 23.2 before it (+1220 B for column visibility, the chooser and its live region), for 23.1 (+384 B for the F126-F127 URL guard) and for 21.5 (+843 B for the F124-F125 tracker). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1), 47174 (21.2), 48452 (21.3), 49763 (21.4), 50606 (21.5), 50932 (23.1), 52152 (23.2), 52727 (23.3). NFR-22 is recomputed by the same sum-of-entry-figures method and reads 72679 B, which rounds to the SAME **73 kB** the 23.2 derivation set: the derivation moved and the bound did not, which is the distinction the rule is about (21.5 precedent). THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 20 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "53.2 kB"
+    "limit": "53.8 kB"
   }
 ]

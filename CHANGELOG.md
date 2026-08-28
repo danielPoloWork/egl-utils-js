@@ -12,6 +12,20 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **Grid keyboard navigation on `bsTable`** — `keyboard: true` gives the table **one** position in
+  the page's tab order and moves a cell focus inside it with the arrows, `Home`/`End`,
+  `Ctrl+Home`/`Ctrl+End` and `PageUp`/`PageDown` (measured against the viewport, or a fixed
+  `keyboard: { pageRows }`). `Enter` enters a cell's control and `Escape` returns, which is how the
+  F95 checkbox, the F99 resize grip, the F100 reorder handle and your own row actions stay reachable
+  — every control the table renders is demoted to `tabindex="-1"` and reached through its cell,
+  **including the ones you put there**, because one row-action button left in the tab order breaks
+  the single promise the option makes. A row with `onRowClick` stops being a tab stop too; `Enter`
+  on a cell with no control of its own activates it. Movement clamps at every edge, so the
+  navigation never turns the page. The moving focus is a roving `tabindex` rather than a painted
+  highlight, so the browser scrolls the cell into view and the screen reader reads it — asserted on
+  three engines. Opt-in: a table without `keyboard` is unchanged (spec 09 F130–F131, ROADMAP 23.3,
+  [ADR-0086](docs/adr/0086-one-tab-stop-and-a-clause-that-stopped-working.md)).
+
 - **Column visibility on `bsTable`, and a chooser the user drives** — `visible` and `hideable` join
   `resizable` and `movable` on the column descriptor; `hideColumn`, `showColumn`, `toggleColumn`,
   `getHiddenColumns()` and `onColumnVisibility()` join the instance; `controls: { columns: true }`
