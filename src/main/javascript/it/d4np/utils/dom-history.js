@@ -52,7 +52,7 @@ const REQUIRED = /** @type {const} */ ([
 
 /**
  * @typedef {object} TableHistoryIgnored
- * @property {'filter' | 'sort'} kind - Which part of the URL was refused.
+ * @property {'filter' | 'sort' | 'hidden'} kind - Which part of the URL was refused.
  * @property {string} key - The column key the pipeline would not accept.
  * @property {unknown} reason - The error it threw, usually a `TypeError` naming
  *   the unknown or non-filterable column.
@@ -74,6 +74,18 @@ const REQUIRED = /** @type {const} */ ([
  *   Absent, the skip is silent *and visible*: the following write removes the
  *   parameter from the URL, which is a better report than a console line nobody
  *   reads. Pass this when a page wants to say so out loud.
+ * @property {{ getHiddenColumns: () => string[], showColumn: (key: string) => void, hideColumn: (key: string) => void, onColumnVisibility: (listener: () => void) => (() => void) }} [visibility] - The
+ *   renderer whose column visibility joins the URL (F128/F129). A `bsTable`
+ *   instance satisfies this shape, so the usual call is
+ *   `bindTableHistory(table.pipeline, { visibility: table })`.
+ *
+ *   It is a **second object** rather than a field of the pipeline because
+ *   visibility is not the pipeline's: a hidden column is a rendering fact, the
+ *   derivation never learns about it, and a toggle therefore emits no `'change'`
+ *   for this binding to ride. That is what the subscription is for. A URL naming
+ *   a column this table does not have, or asking for every column at once, is
+ *   refused one key at a time and reported through `onIgnored` — the same
+ *   treatment a stale `filter.` parameter gets, for the same reason.
  * @property {{ history: History, location: Location, addEventListener: Function, removeEventListener: Function }} [window=globalThis] - The
  *   window to read the URL from, write history to, and listen for `popstate` on.
  *   Injectable for the same reason every DOM option on this entry is: a
@@ -105,6 +117,11 @@ const REQUIRED = /** @type {const} */ ([
  * // Two tables, one page, no collisions — and no history trail:
  * bindTableHistory(orders, { prefix: 'orders', mode: 'replace' });
  * bindTableHistory(invoices, { prefix: 'invoices', mode: 'replace' });
+ *
+ * @example
+ * // Column visibility in the URL too (F128), so a shared link shows the columns
+ * // the sender was looking at — a `bsTable` instance already has the shape:
+ * bindTableHistory(table.pipeline, { visibility: table });
  *
  * @example
  * // Say it out loud when a stale link names a column that no longer exists:
@@ -144,6 +161,7 @@ export function bindTableHistory(pipeline, options = {}) {
     prefix = '',
     mode = 'push',
     onIgnored,
+    visibility,
     window: injected,
     signal,
     ...unknown
@@ -155,6 +173,15 @@ export function bindTableHistory(pipeline, options = {}) {
   }
   if (onIgnored !== undefined && typeof onIgnored !== 'function') {
     throw new TypeError(`${api}: options.onIgnored must be a function`);
+  }
+  if (visibility !== undefined) {
+    // Named one by one, as the pipeline's own commands are above: "not a table"
+    // is a worse report than "this object has no hideColumn()".
+    for (const command of ['getHiddenColumns', 'showColumn', 'hideColumn', 'onColumnVisibility']) {
+      if (typeof (/** @type {any} */ (visibility)[command]) !== 'function') {
+        throw new TypeError(`${api}: options.visibility.${command}() is required`);
+      }
+    }
   }
   if (signal !== undefined && !isAbortSignal(signal)) {
     throw new TypeError(`${api}: options.signal must be an AbortSignal`);
@@ -191,7 +218,11 @@ export function bindTableHistory(pipeline, options = {}) {
    * @returns {string}
    */
   function serialize() {
-    return tableStateToParams(pipeline.view(), { prefix, base: location.search });
+    const state = pipeline.view();
+    return tableStateToParams(
+      visibility === undefined ? state : { ...state, hidden: visibility.getHiddenColumns() },
+      { prefix, base: location.search },
+    );
   }
 
   /**
@@ -226,6 +257,25 @@ export function bindTableHistory(pipeline, options = {}) {
 
     restoring = true;
     try {
+      // Outside the batch, and before it: visibility is not a pipeline command —
+      // the derivation never learns about it — so there is nothing here for
+      // `batch` to coalesce. Applied first so a refused filter below cannot leave
+      // the table showing columns the URL did not describe.
+      if (visibility !== undefined) {
+        const want = new Set(target.hidden);
+        for (const key of visibility.getHiddenColumns()) {
+          // Unguarded, like the filter clearing below and for the same reason:
+          // this key came out of the table's own answer a line ago.
+          if (!want.has(key)) visibility.showColumn(key);
+        }
+        for (const key of want) {
+          try {
+            visibility.hideColumn(key);
+          } catch (reason) {
+            ignored.push({ kind: 'hidden', key, reason });
+          }
+        }
+      }
       pipeline.batch(() => {
         // Clearing first, so a filter the URL no longer carries actually goes:
         // a restore describes the whole state, not a patch on the current one.
@@ -297,12 +347,19 @@ export function bindTableHistory(pipeline, options = {}) {
   const unsubscribe = pipeline.on('change', () => {
     if (!restoring && !released) write(mode);
   });
+  // Its own subscription, because a visibility change is not a pipeline change:
+  // without this a hidden column would only reach the URL on the next filter or
+  // page the user happened to touch.
+  const unsubscribeVisibility = visibility?.onColumnVisibility(() => {
+    if (!restoring && !released) write(mode);
+  });
 
   /** @returns {void} */
   function release() {
     if (released) return;
     released = true;
     unsubscribe();
+    unsubscribeVisibility?.();
     view.removeEventListener('popstate', onPopState);
     if (signal !== undefined) signal.removeEventListener('abort', release);
   }

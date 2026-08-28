@@ -38,6 +38,14 @@ const SORT = 'sort';
 const PAGE = 'page';
 const SIZE = 'size';
 const FILTER = 'filter.';
+/**
+ * The columns a viewer has hidden (F128), repeated once per column as `sort` is.
+ *
+ * The **hidden** set rather than the visible one, and that is the whole of the
+ * design: a table showing everything is the default, so it serializes to nothing
+ * at all and a URL only grows once someone has actually hidden something.
+ */
+const HIDDEN = 'hidden';
 
 /**
  * The state these functions carry, as a plain JSON-safe value.
@@ -60,6 +68,12 @@ const FILTER = 'filter.';
  *   keys, most significant first.
  * @property {number} [page] - 1-based.
  * @property {number | null} [pageSize] - `null` means unpaginated.
+ * @property {readonly string[]} [hidden] - Column keys hidden from the rendered
+ *   table (F128). Not part of `TableView`, and deliberately so: visibility is a
+ *   **rendering** fact that the F42 derivation never learns, so it reaches here
+ *   from the renderer — `bsTable`'s `getHiddenColumns()` — rather than from the
+ *   pipeline. `tableStateToParams(pipeline.view())` therefore carries no
+ *   visibility, which is correct: a pipeline has none.
  */
 
 /**
@@ -103,7 +117,12 @@ function owned(name, prefix) {
   const rest = unprefixed(name, prefix);
   return (
     rest !== null &&
-    (rest === SEARCH || rest === SORT || rest === PAGE || rest === SIZE || rest.startsWith(FILTER))
+    (rest === SEARCH ||
+      rest === SORT ||
+      rest === PAGE ||
+      rest === SIZE ||
+      rest === HIDDEN ||
+      rest.startsWith(FILTER))
   );
 }
 
@@ -191,6 +210,11 @@ function readPositiveInteger(value) {
  * // Two tables, one URL:
  * tableStateToParams(orders.view(), { prefix: 'orders', base: location.search });
  *
+ * @example
+ * // Column visibility travels too (F128) — from the renderer, not the pipeline:
+ * tableStateToParams({ ...table.pipeline.view(), hidden: table.getHiddenColumns() });
+ * // 'hidden=notes&hidden=updated'
+ *
  * @param {TableUrlState} state - The state to serialize. Extra properties are
  *   **ignored, not rejected**: the primary call site passes a `view()`, which
  *   carries `rows`, `total` and `pageCount` too, and a strict bag here would
@@ -215,7 +239,7 @@ export function tableStateToParams(state, options = {}) {
   if (typeof prefix !== 'string') throw new TypeError(`${api}: options.prefix must be a string`);
   if (typeof base !== 'string') throw new TypeError(`${api}: options.base must be a string`);
 
-  const { filters = {}, search = '', sort = [], page = 1, pageSize = null } = state;
+  const { filters = {}, search = '', sort = [], page = 1, pageSize = null, hidden = [] } = state;
   if (filters === null || typeof filters !== 'object' || Array.isArray(filters)) {
     throw new TypeError(`${api}: state.filters must be an object`);
   }
@@ -227,6 +251,7 @@ export function tableStateToParams(state, options = {}) {
   if (pageSize !== null && (!Number.isInteger(pageSize) || pageSize < 1)) {
     throw new TypeError(`${api}: state.pageSize must be an integer >= 1, or null`);
   }
+  if (!Array.isArray(hidden)) throw new TypeError(`${api}: state.hidden must be an array`);
 
   const params = new URLSearchParams(withoutLeadingMark(base));
   // Collected first: deleting while iterating the live view would skip names.
@@ -263,6 +288,15 @@ export function tableStateToParams(state, options = {}) {
   }
   if (page !== 1) params.append(prefixed(prefix, PAGE), String(page));
   if (pageSize !== null) params.append(prefixed(prefix, SIZE), String(pageSize));
+  // Sorted and de-duplicated, for the same reason the filter keys are: this is a
+  // set, and a set has no order to preserve — while an unstable encoding would
+  // make the history binding push an entry for a change that changed nothing.
+  for (const key of [...new Set(hidden)].sort()) {
+    if (typeof key !== 'string' || key === '') {
+      throw new TypeError(`${api}: state.hidden must hold non-empty column keys`);
+    }
+    params.append(prefixed(prefix, HIDDEN), key);
+  }
 
   return params.toString();
 }
@@ -289,14 +323,14 @@ export function tableStateToParams(state, options = {}) {
  *
  * @example
  * tableStateFromParams('q=ann&sort=score%3Adesc&page=3');
- * // { filters: {}, search: 'ann', sort: [{ key: 'score', direction: 'desc' }], page: 3, pageSize: null }
+ * // { filters: {}, search: 'ann', sort: [{ key: 'score', direction: 'desc' }], page: 3, pageSize: null, hidden: [] }
  *
  * @example
  * tableStateFromParams('?page=abc&size=-1'); // → page 1, pageSize null. No throw.
  *
  * @param {string} input - A query string, with or without its leading `?`.
  * @param {TableStateFromParamsOptions} [options]
- * @returns {{ filters: Record<string, string>, search: string, sort: { key: string, direction: 'asc' | 'desc' }[], page: number, pageSize: number | null }} A
+ * @returns {{ filters: Record<string, string>, search: string, sort: { key: string, direction: 'asc' | 'desc' }[], page: number, pageSize: number | null, hidden: string[] }} A
  *   complete state: every field present, defaulted where the input said nothing
  *   usable.
  * @throws {TypeError} If `input` is not a string, or an option is malformed.
@@ -319,6 +353,13 @@ export function tableStateFromParams(input, options = {}) {
   const filterEntries = [];
   /** @type {{ key: string, direction: 'asc' | 'desc' }[]} */
   const sort = [];
+  /**
+   * A `Set`, because `?hidden=a&hidden=a` is one hidden column and not two — and
+   * because the renderer this feeds asks a membership question, not an order one.
+   *
+   * @type {Set<string>}
+   */
+  const hidden = new Set();
   let search = '';
   let page = 1;
   /** @type {number | null} */
@@ -336,11 +377,22 @@ export function tableStateFromParams(input, options = {}) {
     } else if (key === SORT) {
       const entry = readSortEntry(value);
       if (entry !== null) sort.push(entry);
+    } else if (key === HIDDEN) {
+      // An empty name is dropped rather than hidden: `?hidden=` names no column,
+      // and a table is not asked to hide one it cannot find.
+      if (value !== '') hidden.add(value);
     } else if (key.startsWith(FILTER)) {
       const column = key.slice(FILTER.length);
       if (column !== '' && value !== '') filterEntries.push([column, value]);
     }
   }
 
-  return { filters: Object.fromEntries(filterEntries), search, sort, page, pageSize };
+  return {
+    filters: Object.fromEntries(filterEntries),
+    search,
+    sort,
+    page,
+    pageSize,
+    hidden: [...hidden],
+  };
 }

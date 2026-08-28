@@ -35,6 +35,7 @@
  */
 
 import { controllerFor, isAbortSignal, isElement } from './dom-helpers.js';
+import { liveRegion } from './dom-a11y.js';
 import { assertNoUnknownOptions } from './option-keys.js';
 import { tableSelection } from './table-selection.js';
 import { bindTableControls } from './dom-table.js';
@@ -103,6 +104,14 @@ import {
  *   handle, so a user cannot pick it up. `setColumnOrder` still places it, for the
  *   same reason `resizable: false` still takes a width — the exemption is from the
  *   user, not from the caller.
+ * @property {boolean} [visible] - `false` starts this column hidden (F128). It is
+ *   **rendering, not model**: the column keeps its filter, its sort, its width and
+ *   its position while hidden, and `showColumn` brings all four back with it,
+ *   because the F42 derivation is never told which columns a viewer can see.
+ * @property {boolean} [hideable] - `false` withholds this column from the F129
+ *   chooser, so a user cannot hide it. `hideColumn` still can, for the same reason
+ *   `movable: false` still takes a position — the exemption is from the user, not
+ *   from the caller.
  */
 
 /**
@@ -199,6 +208,14 @@ import {
  * @property {boolean | {status?: boolean, statusClass?: ClassOption, siblingCount?: number, boundaryCount?: number, size?: string, labels?: object, class?: ClassOption}} [pagination] -
  *   An F65 pagination bar, plus a status element unless `status: false`.
  *   Remaining options pass through to {@link bsPagination}.
+ * @property {boolean | BsTableColumnChooserOptions<Row>} [columns] - The F129
+ *   column chooser: one checkbox per **hideable** column, in the header band,
+ *   writing through the very commands a caller could call — `showColumn`,
+ *   `hideColumn` — so there is one way for a column to become hidden and not
+ *   two. Native checkboxes, so the keyboard path is the platform's rather than
+ *   ours; the change is announced through an F110 live region (NFR-49). The
+ *   checkbox of the **last visible** column is `disabled`, which is how the
+ *   chooser refuses an empty table without making the user discover a refusal.
  * @property {Node} [toolbar] - A caller-rendered node placed in the header band.
  * @property {(view: import('./table.js').TableView<Row>) => string} [formatStatus] -
  *   The status text. Defaults to F51's language-neutral `'1 / 4'`.
@@ -219,6 +236,23 @@ import {
  * @property {Element} [pageSize]
  * @property {Element} [pagination] - The F65 bar's `<nav>`.
  * @property {Element} [status]
+ * @property {Element} [columns] - The F129 chooser's group element.
+ */
+
+/**
+ * @template Row
+ * @typedef {object} BsTableColumnChooserOptions
+ * @property {string} [label='Columns'] - Accessible name of the group. English,
+ *   and injectable for the same reason every other name on this entry is
+ *   (NFR-21).
+ * @property {(column: BsTableColumn<Row>) => string} [itemLabel] - The visible
+ *   text beside each checkbox. Defaults to the column's own label, which is
+ *   already a word a user reads.
+ * @property {(column: BsTableColumn<Row>, visible: boolean) => string} [announce] -
+ *   What the live region says after a toggle. The default is
+ *   `<label> shown` / `<label> hidden` — English, so supply this for a UI that
+ *   is not.
+ * @property {ClassOption} [class] - Extra classes for the group element.
  */
 
 /**
@@ -346,6 +380,23 @@ import {
  *   columns in this order. A **full permutation** of the column keys: a partial
  *   list is a `TypeError` naming what is missing, because "the rest, in some
  *   order" is two answers to one question and a saved layout deserves neither.
+ * @property {() => string[]} getHiddenColumns - The keys currently hidden, in
+ *   **declaration** order (F128). The query half of the visibility pair, and the
+ *   value the F92 URL state carries: the hidden set is the deviation from the
+ *   default, so a table showing everything serializes to nothing at all.
+ * @property {(key: string) => void} showColumn - Reveal a column, with the
+ *   filter, sort, width and position it had before it was hidden.
+ * @property {(key: string) => void} hideColumn - Hide a column. A `TypeError`
+ *   for a key this table does not have, and a `TypeError` for the **last visible
+ *   column** — a table with nothing in it is a state no caller means to reach and
+ *   the F129 chooser never offers.
+ * @property {(key: string) => void} toggleColumn - Hide it if shown, show it if
+ *   hidden. The same two refusals as {@link BsTableInstance.hideColumn}.
+ * @property {(listener: (key: string, visible: boolean) => void) => (() => void)} onColumnVisibility -
+ *   Subscribe to visibility changes — the chooser's, and the caller's own
+ *   commands alike. Returns its own unsubscribe. This is what lets
+ *   `bindTableHistory` put visibility in the URL (F93): a toggle emits no
+ *   pipeline `'change'`, because the derivation never learns about it.
  * @property {() => void} destroy
  */
 
@@ -481,6 +532,8 @@ export function bsTable(container, options) {
       minWidth,
       resizable,
       movable,
+      visible,
+      hideable,
       ...unknownColumn
     } = column;
     assertNoUnknownOptions(unknownColumn, api, `options.columns[${index}] property`);
@@ -507,11 +560,14 @@ export function bsTable(container, options) {
         );
       }
     }
-    // `resizable` and `movable` are read by the destructuring above and nowhere
-    // else: like `sortable` and `searchable` beside them, a boolean flag has no
-    // malformed value worth a message that `Boolean(x)` would not already explain.
+    // `resizable`, `movable`, `visible` and `hideable` are read by the
+    // destructuring above and nowhere else: like `sortable` and `searchable`
+    // beside them, a boolean flag has no malformed value worth a message that
+    // `Boolean(x)` would not already explain.
     void resizable;
     void movable;
+    void visible;
+    void hideable;
   }
   if (onRowClick !== undefined && typeof onRowClick !== 'function') {
     throw new TypeError(`${api}: options.onRowClick must be a function`);
@@ -786,6 +842,82 @@ export function bsTable(container, options) {
     scrollContainer = element;
   }
 
+  // --- display model: order (F100) and visibility (F128) ---------------------
+  //
+  // Two facts about *rendering*, and neither of them reaches `/table`. Which
+  // column a filter or a sort addresses has nothing to do with where that column
+  // is drawn, and nothing to do with whether a viewer can see it — so the F42
+  // derivation is never told either one. That split is not tidiness: it is what
+  // makes "hiding the column a table is sorted by does not clear the sort" true
+  // by construction rather than by care, and what lets a hidden column keep its
+  // filter, its width and its position while it is away.
+
+  /** Column keys in display order. Identity until something moves it. */
+  let order = columns.map((column) => column.key);
+  /** Every key this table knows, for the commands that must reject the others. */
+  const columnKeys = new Set(order);
+  /**
+   * The columns in display order — before visibility is applied.
+   *
+   * Kept as its own array rather than derived per render: a re-render caused by a
+   * pipeline change has to produce the *current* order, and reading it from one
+   * place is what makes that true without `renderBody` knowing F100 exists.
+   *
+   * @type {readonly BsTableColumn<Row>[]}
+   */
+  let orderedColumns = columns;
+  /** Keys hidden right now. The caller's `visible: false` is the starting set. */
+  const hidden = new Set(
+    columns.filter((column) => column.visible === false).map((column) => column.key),
+  );
+  /**
+   * The columns a render actually iterates: display order, minus what is hidden.
+   *
+   * @type {readonly BsTableColumn<Row>[]}
+   */
+  let shownColumns = columns.filter((column) => !hidden.has(column.key));
+
+  /**
+   * Every node whose children mirror the columns one-for-one — the header row,
+   * F99's `<colgroup>`, F67's filter row — with the cell each column owns in it.
+   *
+   * Registered rather than discovered, because the three differ in what precedes
+   * the column cells: the header and the `<colgroup>` carry an F95 selection cell
+   * and the filter row a spacer, and a query that had to tell those apart would
+   * be the fragile half of this feature. Body rows are deliberately absent: they
+   * are rebuilt per render, so hiding a column reaches them for free.
+   *
+   * @type {{ parent: Element, cells: Map<string, Element> }[]}
+   */
+  const mirrors = [];
+
+  /**
+   * Recompute what a render iterates, and move every mirror's cells to match.
+   *
+   * A hidden cell is **removed**, not styled away: `display: none` would leave it
+   * in the accessibility tree's row count and in every `querySelector` a caller
+   * writes, which is a table that says one thing and shows another. The nodes
+   * themselves are kept — `cells` still holds them — so showing a column re-inserts
+   * the very `<th>` that carries its F99 grip and its F100 handle.
+   *
+   * `append` of a node already in the tree **moves** it, so one pass in display
+   * order both re-inserts what came back and re-sorts what stayed, without
+   * touching the leading selection cell that is not a column's.
+   *
+   * @returns {void}
+   */
+  const applyLayout = () => {
+    shownColumns = orderedColumns.filter((column) => !hidden.has(column.key));
+    const shown = shownColumns.map((column) => column.key);
+    for (const { parent, cells } of mirrors) {
+      for (const [key, cell] of cells) if (hidden.has(key)) cell.remove();
+      parent.append(...shown.map((key) => /** @type {Element} */ (cells.get(key))));
+    }
+  };
+
+  /** @type {Set<(key: string, visible: boolean) => void>} */
+  const visibilityListeners = new Set();
+
   // The header is built once: it depends on the columns, which are fixed for
   // the life of the instance. Only the body answers to the pipeline.
   const headRow = doc.createElement('tr');
@@ -875,6 +1007,10 @@ export function bsTable(container, options) {
     headRow.append(th);
   }
   thead.append(headRow);
+  mirrors.push({
+    parent: headRow,
+    cells: new Map(columns.map((column, index) => [column.key, headerCells[index]])),
+  });
 
   if (wantsSticky) {
     // Every `th` in the row, not the `thead` and not the `tr`. Sticky on a table
@@ -938,15 +1074,6 @@ export function bsTable(container, options) {
    * @property {number} min - This column's floor in pixels.
    */
 
-  /**
-   * The `<colgroup>`, when this instance built one. Only F99 creates it — without
-   * declared widths there is nothing for a `<col>` to carry — so F100's
-   * permutation checks for it rather than assuming it.
-   *
-   * @type {Element | null}
-   */
-  let colgroupNode = null;
-
   /** @type {Map<string, ResizeEntry>} */
   const resizeState = new Map();
   /** Widths this instance has written, in pixels. @type {Map<string, number>} */
@@ -1000,6 +1127,12 @@ export function bsTable(container, options) {
     if (pinned) return;
     pinned = true;
     for (const [key, entry] of resizeState) {
+      // A hidden column has no `<th>` in the document to measure (F128 removes
+      // the cell rather than styling it away), so pinning it here would freeze it
+      // at its floor and it would come back 48 px wide. It takes its width when
+      // it is shown instead — unless the caller declared one, which needs no
+      // layout to read.
+      if (hidden.has(key) && !columnWidths.has(key)) continue;
       applyWidth(key, columnWidths.get(key) ?? measureWidth(entry.th));
     }
     if (selectionCol !== null && selectionTh !== null) {
@@ -1039,6 +1172,11 @@ export function bsTable(container, options) {
     /** @type {Record<string, number>} */
     const out = {};
     for (const [key, entry] of resizeState) {
+      // A column hidden before it ever took a width has none to report, and `0`
+      // is not one: `setColumnWidths` rejects it, so reporting it would make the
+      // round-trip this function exists for throw. Omitted instead — the restore
+      // side is partial by contract.
+      if (hidden.has(key) && !columnWidths.has(key)) continue;
       out[key] = columnWidths.get(key) ?? measureWidth(entry.th);
     }
     return out;
@@ -1071,7 +1209,8 @@ export function bsTable(container, options) {
 
   if (wantsResize) {
     const colgroup = doc.createElement('colgroup');
-    colgroupNode = colgroup;
+    /** @type {Map<string, Element>} */
+    const colOf = new Map();
     if (selectionTh !== null) {
       selectionCol = doc.createElement('col');
       colgroup.append(selectionCol);
@@ -1121,9 +1260,11 @@ export function bsTable(container, options) {
         if (!wantsSticky) /** @type {any} */ (th).style.setProperty('position', 'relative');
       }
       resizeState.set(column.key, { col, th, grip, min });
+      colOf.set(column.key, col);
       if (column.width !== undefined) columnWidths.set(column.key, column.width);
       colgroup.append(col);
     }
+    mirrors.push({ parent: colgroup, cells: colOf });
     // After any `<caption>`, which must stay the table's first child, and before
     // the sections — where the HTML parser would have put it.
     table.insertBefore(colgroup, thead);
@@ -1267,19 +1408,6 @@ export function bsTable(container, options) {
   // costs O(rows) moves rather than O(rows × columns) constructions, and a
   // selected row stays selected without anything being reflected back onto it.
 
-  /** Column keys in display order. Identity until something moves it. */
-  let order = columns.map((column) => column.key);
-  /**
-   * The columns in display order — what every render iterates.
-   *
-   * Kept as its own array rather than derived per render: a re-render caused by a
-   * pipeline change has to produce the *current* order, and reading it from one
-   * place is what makes that true without `renderBody` knowing F100 exists.
-   *
-   * @type {readonly BsTableColumn<Row>[]}
-   */
-  let orderedColumns = columns;
-
   if (wantsReorder) {
     /** @type {Map<string, Element>} */
     const headerOf = new Map(columns.map((column, index) => [column.key, headerCells[index]]));
@@ -1287,14 +1415,15 @@ export function bsTable(container, options) {
     const columnOf = new Map(columns.map((column) => [column.key, column]));
 
     /**
-     * Rearrange one row's cells into `from`, an array of source indices.
+     * Rearrange one body row's cells into `from`, an array of source indices.
      *
-     * The leading offset is **computed per row** rather than passed in: a header
-     * row and a body row carry the F95 selection cell, the F67 filter row does
-     * not, and the empty-state row is a single `colspan` cell that must be left
-     * alone. `kids.length - from.length` tells each of those apart without this
-     * function knowing which is which — and it keeps working when the filter
-     * row's own leading cell arrives (BUG-0005).
+     * The leading offset is **computed per row** rather than passed in: a body
+     * row carries the F95 selection cell and the empty-state row is a single
+     * `colspan` cell that must be left alone. `kids.length - from.length` tells
+     * those apart without this function knowing which is which — the same
+     * arithmetic that made the filter row's own leading cell a non-event
+     * (BUG-0005), back when the head was permuted here too rather than through
+     * the mirror registry.
      *
      * @param {Element} parent
      * @param {readonly number[]} from
@@ -1315,15 +1444,19 @@ export function bsTable(container, options) {
      * @returns {void}
      */
     const applyOrder = (next) => {
-      const from = next.map((key) => order.indexOf(key));
-      if (colgroupNode !== null) permute(colgroupNode, from);
-      // Every row of the head, not just the header: the F67 filter row mirrors
-      // the columns too, and leaving it behind would put each filter under its
-      // neighbour.
-      for (const tr of thead.children) permute(tr, from);
+      // Over the **visible** columns, because those are the cells a row actually
+      // has: a hidden column contributes no `<td>`, so an index computed over the
+      // full order would shift every cell after it one slot to the left (F128).
+      const before = order.filter((key) => !hidden.has(key));
+      const from = next.filter((key) => !hidden.has(key)).map((key) => before.indexOf(key));
       for (const tr of tbody.children) permute(tr, from);
       order = [...next];
       orderedColumns = next.map((key) => /** @type {BsTableColumn<Row>} */ (columnOf.get(key)));
+      // The header row, F99's `<colgroup>` and F67's filter row are registered
+      // mirrors, and one pass over them re-sorts what is there in the same move
+      // that would re-insert what came back — so this is the whole of what F100
+      // has to say about the head.
+      applyLayout();
     };
 
     /**
@@ -1335,7 +1468,11 @@ export function bsTable(container, options) {
      */
     const moveBy = (key, delta) => {
       const at = order.indexOf(key);
-      const to = at + delta;
+      // Stepping **over** hidden columns rather than into them: a slot nobody can
+      // see is not a slot, and an arrow press that visibly does nothing is how a
+      // keyboard path stops being one (F128).
+      let to = at + delta;
+      while (to >= 0 && to < order.length && hidden.has(order[to])) to += delta;
       if (to < 0 || to >= order.length) return false;
       const next = [...order];
       next.splice(to, 0, ...next.splice(at, 1));
@@ -1392,9 +1529,12 @@ export function bsTable(container, options) {
      */
     let headerWidths = [];
     const measureHeaders = () => {
-      headerWidths = order.map(
-        (key) => /** @type {any} */ (headerOf.get(key)).getBoundingClientRect().width,
-      );
+      // Visible columns only, and in display order: a hidden header is not in the
+      // document, so measuring it would put a `0` between two real neighbours and
+      // make the next swap threshold nonsense.
+      headerWidths = order
+        .filter((key) => !hidden.has(key))
+        .map((key) => /** @type {any} */ (headerOf.get(key)).getBoundingClientRect().width);
     };
 
     /** @type {{ key: string, handle: Element, moved: boolean, from: number } | null} */
@@ -1418,7 +1558,8 @@ export function bsTable(container, options) {
       'pointermove',
       (event) => {
         if (drag === null) return;
-        const at = order.indexOf(drag.key);
+        const shown = order.filter((key) => !hidden.has(key));
+        const at = shown.indexOf(drag.key);
         // **Displacement**, not absolute position: how far the pointer has
         // travelled since the gesture began, against half the neighbour's width.
         // Measuring from the pointer's own start is what makes the grab point
@@ -1428,7 +1569,7 @@ export function bsTable(container, options) {
         const travelled = /** @type {any} */ (event).clientX - drag.from;
         // `Infinity` at the ends: a column at the edge has no neighbour to pass,
         // and no threshold can be crossed.
-        const ahead = at < order.length - 1 ? headerWidths[at + 1] : Number.POSITIVE_INFINITY;
+        const ahead = at < shown.length - 1 ? headerWidths[at + 1] : Number.POSITIVE_INFINITY;
         const behind = at > 0 ? headerWidths[at - 1] : Number.POSITIVE_INFINITY;
         // Swapping live rather than drawing a drop indicator means the drag has
         // no extra node and no extra CSS, and the table shows the result instead
@@ -1537,9 +1678,10 @@ export function bsTable(container, options) {
       if (empty !== undefined) {
         const tr = doc.createElement('tr');
         const td = doc.createElement('td');
-        // The selection column counts: a colspan short by one leaves the empty
-        // message hanging under the wrong headers.
-        td.setAttribute('colspan', String(columns.length + (selection === undefined ? 0 : 1)));
+        // The selection column counts, and a hidden one does not: a colspan
+        // short by one leaves the empty message hanging under the wrong headers,
+        // and one too long stretches it past the table's last column (F128).
+        td.setAttribute('colspan', String(shownColumns.length + (selection === undefined ? 0 : 1)));
         appendContent(td, empty, contentOptions({ html, sanitize }, undefined), api);
         tr.append(td);
         fragment.append(tr);
@@ -1597,7 +1739,7 @@ export function bsTable(container, options) {
       applyRowState(tr, box, selection.hasKey(key));
     }
 
-    for (const column of orderedColumns) {
+    for (const column of shownColumns) {
       const td = doc.createElement('td');
       applyClasses(
         td,
@@ -1764,6 +1906,61 @@ export function bsTable(container, options) {
     }
   }
 
+  // --- column visibility commands (F128) ------------------------------------
+  //
+  // One chokepoint, and both the chooser and the caller's own calls go through
+  // it, so there is one way a column becomes hidden rather than two that have to
+  // agree.
+
+  /**
+   * Hide or show one column, and rebuild the body around the result.
+   *
+   * The body **is** re-rendered, unlike a resize or a reorder — and that is the
+   * honest cost rather than an oversight: adding or removing a `<td>` per row is
+   * a structural change, and the alternative every grid reaches for,
+   * `display: none`, leaves the cell in the accessibility tree and in every
+   * `querySelector` a caller writes. A visibility toggle is a user pressing a
+   * checkbox, not a frame of a drag, so O(page) once is a price nobody can feel.
+   *
+   * Nothing here touches the pipeline. The filter, the search, the sort, the page
+   * — and F99's width and F100's position — are all untouched by construction,
+   * which is why hiding the column a table is sorted by leaves the rows in that
+   * order.
+   *
+   * @param {string} key
+   * @param {boolean} next - `true` hides.
+   * @param {string} method - The command the caller invoked, for the message.
+   * @returns {void}
+   */
+  const setColumnHidden = (key, next, method) => {
+    if (!columnKeys.has(key)) {
+      throw new TypeError(`${api}: ${method}() names no such column '${key}'`);
+    }
+    if (hidden.has(key) === next) return;
+    if (next && columns.length - hidden.size === 1) {
+      throw new TypeError(
+        `${api}: ${method}() would hide '${key}', the last visible column — a table showing ` +
+          'nothing is a state the F129 chooser refuses rather than offers, and so does this',
+      );
+    }
+    if (next) hidden.add(key);
+    else hidden.delete(key);
+    applyLayout();
+    // A column shown after F99 pinned the layout carries no declared width, and
+    // under `table-layout: fixed` a column with none takes an equal share of what
+    // is left — a returning column four times the size of its neighbours.
+    // Measuring it here, after re-insertion and before anyone reads the table, is
+    // what makes it come back the width the engine would have chosen.
+    if (!next && pinned && resizeState.has(key) && !columnWidths.has(key)) {
+      applyWidth(key, measureWidth(/** @type {ResizeEntry} */ (resizeState.get(key)).th));
+    }
+    renderBody(pipeline.view());
+    reflectSelection();
+    // Copied, because a listener that unsubscribes itself would otherwise mutate
+    // the set being iterated — the F41 emitter's rule, applied to a set of two.
+    for (const listener of [...visibilityListeners]) listener(key, !next);
+  };
+
   // Controls wrap the table rather than reaching into it: `element` stays "the
   // node this instance owns", which is now the wrapper (F66/F67, ADR-0040).
   const wired =
@@ -1781,8 +1978,28 @@ export function bsTable(container, options) {
           // The F67 filter row mirrors the columns, so it has to know about the
           // one column that is not one of the caller's (BUG-0005).
           selectionClass: selection === undefined ? null : (selectionClass ?? ''),
+          // The F129 chooser writes through the same chokepoint a caller's
+          // `hideColumn` does, and reads the same set — it owns no state of its
+          // own, which is what keeps the two from disagreeing.
+          visibility: {
+            isHidden: (key) => hidden.has(key),
+            canHide: () => columns.length - hidden.size > 1,
+            toggle: (key) => setColumnHidden(key, !hidden.has(key), 'toggleColumn'),
+            subscribe: (listener) => {
+              visibilityListeners.add(listener);
+              return () => visibilityListeners.delete(listener);
+            },
+          },
         });
   if (wired !== null) element = wired.element;
+  // Registered after the controls are built, because the F67 filter row is one of
+  // the nodes that mirrors the columns and it does not exist until now.
+  if (wired?.filterCells !== undefined) {
+    mirrors.push({ parent: wired.filterCells.parent, cells: wired.filterCells.cells });
+  }
+  // The first pass: `visible: false` columns leave the head, the `<colgroup>` and
+  // the filter row here, before the body is built without them.
+  applyLayout();
 
   renderBody(pipeline.view());
   reflectSelection();
@@ -1811,6 +2028,9 @@ export function bsTable(container, options) {
     // delegated click.
     wired?.destroy();
     unsubscribeSelection?.();
+    // Ours to drop: a listener held past teardown keeps whatever it closed over
+    // alive, and there is nothing left here to notify it about.
+    visibilityListeners.clear();
     // Same borrowed/owned rule as the pipeline: a selection handed to us keeps
     // its keys and its other subscribers, because the caller may well be
     // rendering it somewhere else too. One we made goes with us.
@@ -1853,6 +2073,36 @@ export function bsTable(container, options) {
           },
         }
       : {}),
+    // Unconditional, unlike the F99/F100 pairs above: a column carries `visible`
+    // whether or not any option was passed, so there is no "asked for it" to
+    // gate on — the query answers `[]` for a table nobody has hidden anything in.
+    getHiddenColumns: () => columns.filter((column) => hidden.has(column.key)).map((c) => c.key),
+    /** @param {string} key */
+    showColumn: (key) => {
+      if (destroyed) throw new TypeError(`${api}: showColumn() was called after destroy()`);
+      setColumnHidden(key, false, 'showColumn');
+    },
+    /** @param {string} key */
+    hideColumn: (key) => {
+      if (destroyed) throw new TypeError(`${api}: hideColumn() was called after destroy()`);
+      setColumnHidden(key, true, 'hideColumn');
+    },
+    /** @param {string} key */
+    toggleColumn: (key) => {
+      if (destroyed) throw new TypeError(`${api}: toggleColumn() was called after destroy()`);
+      setColumnHidden(key, !hidden.has(key), 'toggleColumn');
+    },
+    /** @param {(key: string, visible: boolean) => void} listener */
+    onColumnVisibility: (listener) => {
+      // A subscription is a command (ADR-0049): it hands out a claim on an
+      // instance, and a destroyed instance has none to hand out.
+      if (destroyed) throw new TypeError(`${api}: onColumnVisibility() was called after destroy()`);
+      if (typeof listener !== 'function') {
+        throw new TypeError(`${api}: onColumnVisibility() expects a function`);
+      }
+      visibilityListeners.add(listener);
+      return () => visibilityListeners.delete(listener);
+    },
     setData: (rows) => {
       if (destroyed) throw new TypeError(`${api}: setData() was called after destroy()`);
       pipeline.setSource(rows);
@@ -1881,14 +2131,22 @@ export function bsTable(container, options) {
  *   pageSize: number | undefined,
  *   api: string,
  *   selectionClass: ClassOption | null,
+ *   visibility: {
+ *     isHidden: (key: string) => boolean,
+ *     canHide: () => boolean,
+ *     toggle: (key: string) => void,
+ *     subscribe: (listener: (key: string, visible: boolean) => void) => (() => void),
+ *   },
  * }} context
- * @returns {{ element: Element, parts: BsTableControlParts, reflect: (view: any) => void, destroy: () => void }}
+ * @returns {{ element: Element, parts: BsTableControlParts, reflect: (view: any) => void, destroy: () => void, filterCells?: { parent: Element, cells: Map<string, Element> } }}
  * @throws {TypeError} On a malformed control option.
  */
 function buildControls(context) {
   const { controls, columns, pipeline, doc, table, thead, pageSize, api, selectionClass } = context;
+  const { visibility } = context;
   assertPlainObject(controls, 'options.controls', api);
   const { filterRow, search, pageSize: pageSizeControl, pagination, toolbar } = controls;
+  const { columns: columnChooser } = controls;
   const { formatStatus, debounceMs, headerClass, footerClass } = controls;
 
   if (toolbar !== undefined && !isNode(toolbar)) {
@@ -1915,6 +2173,14 @@ function buildControls(context) {
 
   /** @type {BsTableControlParts} */
   const parts = { filters: {} };
+  /**
+   * The filter row's per-column cells, handed back so `bsTable` can register it
+   * as one of the nodes that mirrors the column order (F100) and the column
+   * visibility (F128). Absent when no filter row was asked for.
+   *
+   * @type {{ parent: Element, cells: Map<string, Element> } | undefined}
+   */
+  let filterCells;
   /** @type {import('./dom-table.js').TableBindings} */
   const bindings = {};
 
@@ -1986,6 +2252,127 @@ function buildControls(context) {
     parts.pageSize = select;
   }
 
+  /** Teardown for the F129 chooser: its live region and its subscription. */
+  /** @type {(() => void) | null} */
+  let disposeChooser = null;
+  if (columnChooser !== undefined && columnChooser !== false) {
+    const {
+      label: chooserLabel = 'Columns',
+      itemLabel,
+      announce,
+      class: chooserClass,
+      ...unknownChooser
+    } = columnChooser === true ? {} : opts(columnChooser, 'options.controls.columns', api);
+    assertNoUnknownOptions(unknownChooser, api, 'options.controls.columns property');
+    for (const [value, name] of [
+      [itemLabel, 'itemLabel'],
+      [announce, 'announce'],
+    ]) {
+      if (value !== undefined && typeof value !== 'function') {
+        throw new TypeError(`${api}: options.controls.columns.${name} must be a function`);
+      }
+    }
+    if (typeof chooserLabel !== 'string' || chooserLabel === '') {
+      throw new TypeError(`${api}: options.controls.columns.label must be a non-empty string`);
+    }
+
+    const group = doc.createElement('div');
+    // `role="group"` with a name, rather than a `<fieldset>`: a fieldset's legend
+    // is the only accessible name browsers agree on, and a visible legend in a
+    // toolbar band is a layout this control does not get to impose on a caller.
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', chooserLabel);
+    applyClasses(group, ['d-flex', 'flex-wrap', 'align-items-center', 'gap-2'], chooserClass, api);
+
+    /**
+     * One checkbox per **hideable** column, keyed for the reflection below.
+     *
+     * `hideable: false` withholds the control and nothing else — the column is
+     * still hidden by `hideColumn`, exactly as `movable: false` still takes a
+     * position from `setColumnOrder`. The exemption is from the user.
+     *
+     * @type {[BsTableColumn<Row>, Element][]}
+     */
+    const boxes = [];
+    for (const column of columns) {
+      if (column.hideable === false) continue;
+      const wrapper = doc.createElement('div');
+      applyClasses(wrapper, ['form-check', 'form-check-inline', 'm-0'], undefined, api);
+      const box = doc.createElement('input');
+      box.setAttribute('type', 'checkbox');
+      box.setAttribute('class', 'form-check-input');
+      box.setAttribute('data-egl-column', column.key);
+      // A real `<label for>` rather than an `aria-label`: the visible text is the
+      // accessible name, so the two cannot drift, and the text is a click target
+      // the way every other checkbox on the page is.
+      const id = uniqueId(doc, 'egl-col');
+      box.setAttribute('id', id);
+      const label = doc.createElement('label');
+      label.setAttribute('for', id);
+      label.setAttribute('class', 'form-check-label');
+      label.textContent = itemLabel === undefined ? labelText(column) : itemLabel(column);
+      wrapper.append(box, label);
+      group.append(wrapper);
+      boxes.push([column, box]);
+    }
+
+    /**
+     * Push the visibility set into the controls.
+     *
+     * The **last visible** column's box is `disabled`, which is how F129 refuses
+     * an empty table: the command behind it throws, and a user who can press a
+     * control that throws has been handed a defect rather than a refusal.
+     *
+     * @returns {void}
+     */
+    const reflectChooser = () => {
+      const canHide = visibility.canHide();
+      for (const [column, box] of boxes) {
+        const shown = !visibility.isHidden(column.key);
+        /** @type {any} */ (box).checked = shown;
+        /** @type {any} */ (box).disabled = shown && !canHide;
+      }
+    };
+    reflectChooser();
+
+    // Visually hidden and read aloud (F110): a checkbox announces its own state,
+    // and says nothing about the table that changed underneath it. Built here
+    // rather than injected, because a control that needs a region to be correct
+    // should not depend on the caller having supplied one (NFR-49).
+    const announcer = liveRegion({ document: doc });
+    const controller = controllerFor(group);
+    group.addEventListener(
+      'change',
+      (event) => {
+        const target = /** @type {Element | null} */ (event.target);
+        const key = target?.getAttribute?.('data-egl-column');
+        if (key === null || key === undefined) return;
+        visibility.toggle(key);
+      },
+      { signal: controller.signal },
+    );
+    // Through the subscription rather than from the handler above, so a caller's
+    // own `hideColumn` moves these checkboxes too — one state, read from one
+    // place, which is what "writing through the same commands" has to mean.
+    const unsubscribeVisibility = visibility.subscribe((key, visible) => {
+      reflectChooser();
+      const column = columns.find((candidate) => candidate.key === key);
+      if (column === undefined) return;
+      announcer.announce(
+        announce === undefined
+          ? `${labelText(column)} ${visible ? 'shown' : 'hidden'}`
+          : announce(column, visible),
+      );
+    });
+    disposeChooser = () => {
+      unsubscribeVisibility();
+      controller.abort();
+      announcer.destroy();
+    };
+    header.append(group);
+    parts.columns = group;
+  }
+
   if (filterRow !== undefined && filterRow !== false) {
     const {
       label: filterLabel,
@@ -2001,6 +2388,10 @@ function buildControls(context) {
     applyClasses(row, [], filterRowClass, api);
     /** @type {Record<string, Element>} */
     const filters = {};
+    // The cell, not the input: F128 hides a column by removing the cell, and a
+    // column with `filterable: false` has a cell and no input.
+    /** @type {Map<string, Element>} */
+    const filterCellOf = new Map();
     if (selectionClass !== null) {
       // A spacer under the F95 checkbox column, and the reason BUG-0005 existed:
       // the header row and every body row prepend a cell for that column and this
@@ -2035,9 +2426,11 @@ function buildControls(context) {
         cell.append(input);
         filters[column.key] = input;
       }
+      filterCellOf.set(column.key, cell);
       row.append(cell);
     }
     thead.append(row);
+    filterCells = { parent: row, cells: filterCellOf };
     bindings.filters = filters;
     parts.filters = filters;
   }
@@ -2099,10 +2492,12 @@ function buildControls(context) {
   return {
     element: wrapper,
     parts,
+    ...(filterCells === undefined ? {} : { filterCells }),
     reflect: (view) => pager?.setView(view),
     destroy: () => {
       unbind();
       pager?.destroy();
+      disposeChooser?.();
     },
   };
 }

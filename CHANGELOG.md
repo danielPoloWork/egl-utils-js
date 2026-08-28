@@ -12,6 +12,24 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **Column visibility on `bsTable`, and a chooser the user drives** — `visible` and `hideable` join
+  `resizable` and `movable` on the column descriptor; `hideColumn`, `showColumn`, `toggleColumn`,
+  `getHiddenColumns()` and `onColumnVisibility()` join the instance; `controls: { columns: true }`
+  renders a keyboard-operable group of checkboxes announced through an F110 live region. **Hiding a
+  column keeps everything else** — sort, filter, search, F99 width, F100 position — because the F42
+  derivation is never told which columns a viewer can see, which is also why hiding the column a
+  table is sorted by does not clear the sort. The cell is **removed rather than styled away**, so a
+  hidden column is absent from the accessibility tree and from `querySelectorAll` too. Hiding the
+  last visible column is a `TypeError`, and the chooser disables that checkbox so a user never
+  reaches it (spec 09 F128–F129, ROADMAP 23.2,
+  [ADR-0085](docs/adr/0085-visibility-is-rendering-and-the-clause-moved-again.md)).
+- **Visibility travels in the URL** — `tableStateToParams`/`tableStateFromParams` carry a `hidden`
+  set (repeated `hidden=` parameters, sorted and de-duplicated), and `bindTableHistory` takes a
+  `visibility` adapter that a `bsTable` instance already satisfies:
+  `bindTableHistory(table.pipeline, { visibility: table })`. A shared link now shows the columns its
+  sender was looking at. `tableStateFromParams` returns one more field, `hidden`, as a result (spec
+  09 F129, ROADMAP 23.2).
+
 - **`safeUrl` on `egl-utils-js/sanitize`, and every builder URL routed through it** — escaping
   protects a record's *content*; a record's **URL** is an instruction, and `javascript:…` in a data
   field was a live link with the page's authority. The guard **parses, then decides**: `new URL()`

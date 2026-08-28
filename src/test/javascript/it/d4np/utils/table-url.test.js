@@ -9,7 +9,7 @@ import {
   tableStateToParams,
 } from '../../../../../main/javascript/it/d4np/utils/table.js';
 
-const DEFAULTS = { filters: {}, search: '', sort: [], page: 1, pageSize: null };
+const DEFAULTS = { filters: {}, search: '', sort: [], page: 1, pageSize: null, hidden: [] };
 
 describe('tableStateToParams', () => {
   it('omits every default, so a table at rest has a clean URL', () => {
@@ -147,6 +147,47 @@ describe('tableStateToParams', () => {
   });
 });
 
+describe('the hidden columns (F128)', () => {
+  it('writes one parameter per column, sorted and de-duplicated', () => {
+    expect(tableStateToParams({ hidden: ['name', 'id', 'name'] })).toBe('hidden=id&hidden=name');
+  });
+
+  it('says nothing when nothing is hidden, so a full table has a clean URL', () => {
+    expect(tableStateToParams({ hidden: [] })).toBe('');
+  });
+
+  it('round-trips through the parser as a set', () => {
+    const params = tableStateToParams({ hidden: ['b', 'a'] });
+    expect(tableStateFromParams(params).hidden).toEqual(['a', 'b']);
+    expect(tableStateFromParams('hidden=a&hidden=a').hidden).toEqual(['a']);
+  });
+
+  it('takes the prefix every other parameter takes', () => {
+    expect(tableStateToParams({ hidden: ['a'] }, { prefix: 't' })).toBe('t.hidden=a');
+    expect(tableStateFromParams('t.hidden=a', { prefix: 't' }).hidden).toEqual(['a']);
+    expect(tableStateFromParams('t.hidden=a').hidden).toEqual([]);
+  });
+
+  it('replaces the hidden set it owns in a base rather than appending to it', () => {
+    expect(tableStateToParams({ hidden: ['b'] }, { base: '?hidden=a&tab=x' })).toBe(
+      'tab=x&hidden=b',
+    );
+  });
+
+  it('drops an empty name rather than hiding a column nobody named', () => {
+    expect(tableStateFromParams('hidden=&hidden=a').hidden).toEqual(['a']);
+  });
+
+  it('refuses a state whose hidden set is not an array of keys', () => {
+    expect(() => tableStateToParams({ hidden: 'a' })).toThrow(
+      'tableStateToParams: state.hidden must be an array',
+    );
+    expect(() => tableStateToParams({ hidden: [1] })).toThrow(
+      'tableStateToParams: state.hidden must hold non-empty column keys',
+    );
+  });
+});
+
 describe('tableStateFromParams', () => {
   it('returns a complete default state for an empty input', () => {
     expect(tableStateFromParams('')).toEqual(DEFAULTS);
@@ -167,6 +208,7 @@ describe('tableStateFromParams', () => {
       ],
       page: 3,
       pageSize: 25,
+      hidden: [],
     });
   });
 

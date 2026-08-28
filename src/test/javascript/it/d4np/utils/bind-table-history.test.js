@@ -501,3 +501,92 @@ describe('with the remote sibling', () => {
     pipeline.destroy();
   });
 });
+
+describe('column visibility in the URL (F128/F129)', () => {
+  /**
+   * The renderer half of the binding, as the smallest object that satisfies its
+   * contract. A real `bsTable` is asserted to satisfy it too, below — but the
+   * rules being tested here are this binding's, not that renderer's.
+   *
+   * @param {string[]} [initial]
+   */
+  function renderer(initial = []) {
+    const hidden = new Set(initial);
+    /** @type {Set<() => void>} */
+    const listeners = new Set();
+    const known = new Set(['id', 'name', 'status']);
+    return {
+      getHiddenColumns: () => [...hidden],
+      /** @param {string} key */
+      showColumn(key) {
+        hidden.delete(key);
+        for (const fn of listeners) fn();
+      },
+      /** @param {string} key */
+      hideColumn(key) {
+        if (!known.has(key)) throw new TypeError(`no such column '${key}'`);
+        hidden.add(key);
+        for (const fn of listeners) fn();
+      },
+      /** @param {() => void} listener */
+      onColumnVisibility(listener) {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    };
+  }
+
+  it('restores the hidden set from the URL', () => {
+    at('?hidden=status&hidden=name');
+    const visibility = renderer();
+    release.push(bindTableHistory(table(), { visibility }));
+    expect(visibility.getHiddenColumns().sort()).toEqual(['name', 'status']);
+  });
+
+  it('shows again what the URL no longer names — a restore is not a patch', () => {
+    at('?hidden=name');
+    const visibility = renderer(['status']);
+    release.push(bindTableHistory(table(), { visibility }));
+    expect(visibility.getHiddenColumns()).toEqual(['name']);
+  });
+
+  it('writes a toggle to the URL, which no pipeline change would have carried', () => {
+    const visibility = renderer();
+    release.push(bindTableHistory(table(), { visibility }));
+    visibility.hideColumn('status');
+    expect(new URLSearchParams(window.location.search).getAll('hidden')).toEqual(['status']);
+    visibility.showColumn('status');
+    expect(window.location.search).toBe('');
+  });
+
+  it('namespaces under a prefix, like every other parameter it owns', () => {
+    at('?orders.hidden=name');
+    const visibility = renderer();
+    release.push(bindTableHistory(table(), { visibility, prefix: 'orders' }));
+    expect(visibility.getHiddenColumns()).toEqual(['name']);
+  });
+
+  it('reports a column the renderer refuses, and drops it from the URL', () => {
+    at('?hidden=gone');
+    const onIgnored = vi.fn();
+    release.push(bindTableHistory(table(), { visibility: renderer(), onIgnored }));
+    expect(onIgnored).toHaveBeenCalledTimes(1);
+    expect(onIgnored.mock.calls[0][0][0]).toMatchObject({ kind: 'hidden', key: 'gone' });
+    // Normalized away rather than left as a description of a table nobody has.
+    expect(window.location.search).toBe('');
+  });
+
+  it('names the method a malformed renderer is missing', () => {
+    expect(() => bindTableHistory(table(), { visibility: {} })).toThrow(
+      'bindTableHistory: options.visibility.getHiddenColumns() is required',
+    );
+  });
+
+  it('stops writing once released', () => {
+    const visibility = renderer();
+    const unbind = bindTableHistory(table(), { visibility });
+    unbind();
+    visibility.hideColumn('status');
+    expect(window.location.search).toBe('');
+  });
+});
