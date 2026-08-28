@@ -658,6 +658,62 @@ Worth knowing:
   header row, not at the moment of the move — this library has no live region yet. The
   operability F100 asks for is there; the announcement is a known gap.
 
+### Grid keyboard navigation (`egl-utils-js/bootstrap`)
+
+Bootstrap owns the keyboard behaviour of tabs, dropdowns and navbars, which is why this library
+ships none. **A data grid has no vendor behind it**
+([ADR-0086](docs/adr/0086-one-tab-stop-and-a-clause-that-stopped-working.md)):
+
+```js
+const table = bsTable(host, {
+  columns,
+  data: rows,
+  resize: true,
+  reorder: true,
+  selection: true,
+  keyboard: true, // one tab stop for the whole grid
+});
+```
+
+Without it, that table puts **two widgets per column and one checkbox per row** into your page's tab
+order: reaching the resize grip on column nine takes seventeen `Tab` presses, and getting *past* the
+table takes a hundred. With it, the table takes **one** position in the tab order and the arrows
+move a cell focus inside it.
+
+| Key | Where it goes |
+|---|---|
+| `←` `→` `↑` `↓` | one cell, clamped at the edges |
+| `Home` / `End` | the row's first / last cell |
+| `Ctrl+Home` / `Ctrl+End` | the table's first / last cell (`Cmd` too) |
+| `PageUp` / `PageDown` | by the visible viewport |
+| `Enter` | into the cell's own control — or activate the row, if it has none |
+| `Escape` | back out to the cell |
+
+Worth knowing:
+
+- **`Enter` is how everything stays reachable.** The F95 checkbox, the F99 grip, the F100 handle,
+  the filter inputs and your own row-action buttons are demoted to `tabindex="-1"` and entered from
+  their cell. They are exactly as operable and no longer in the way of somebody tabbing past.
+- **That includes controls *you* render** — a link a `format` returned, a button in a cell. One of
+  them left in the tab order would break the single promise this option makes. Only under
+  `keyboard`, which is opt-in.
+- **The navigation never turns the page.** Movement clamps; an arrow key that fetches data is a
+  surprise, and on a remote pipeline it is a request.
+- **A row with `onRowClick` stops being a tab stop** — `Enter` on one of its cells activates it
+  instead.
+- **The grips keep their own arrow keys.** Once you have entered a header cell, `←`/`→` resize or
+  move that column exactly as before: this navigation is what makes them reachable, not a second
+  vocabulary competing with them.
+- **The browser does the scrolling and the announcing.** The moving focus is a roving `tabindex`,
+  not a painted highlight, so `focus()` scrolls the cell into view and the screen reader reads what
+  it lands on. This library calls neither — asserted on Chromium, Firefox and WebKit.
+- **`PageUp`/`PageDown` measure** the scroll container once per press. Where there is no layout to
+  read it falls back to 10 rows; `keyboard: { pageRows: 20 }` fixes it outright.
+- **The `responsive` wrapper stops being a tab stop too.** Firefox gives a scrollable container one
+  of its own so a keyboard user can reach it — which stops being necessary once moving the cell
+  focus is what scrolls it, and without declining it the grid would be two tab stops on Firefox and
+  one everywhere else.
+
 ### Column visibility (`egl-utils-js/bootstrap`)
 
 Twelve columns available, five shown — without keeping two column arrays and swapping them
@@ -2378,7 +2434,7 @@ inside their declared ranges — keeping those patched is yours. Full detail:
 | 20 | Application UX utilities | ✅ done |
 | 21 | Form engine | ✅ done |
 | 22 | Post-1.4 maintenance and distribution | 🚧 in progress |
-| 23 | Hardening: untrusted URLs, column visibility & grid keyboard navigation | 🚧 in progress |
+| 23 | Hardening: untrusted URLs, column visibility & grid keyboard navigation | ✅ done |
 
 
 ## License

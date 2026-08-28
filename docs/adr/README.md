@@ -101,3 +101,4 @@ Status transitions: `Proposed` → `Accepted` → (`Superseded by ADR-XXXX` | `D
 | [0083](0083-the-deferred-pile-re-dispositioned.md) | The deferred pile, re-dispositioned — three gaps kept, the widget catalogue closed | Accepted |
 | [0084](0084-a-url-is-not-text.md) | A URL is not text — parse before you decide, and pay for it where the measurement says | Accepted |
 | [0085](0085-visibility-is-rendering-and-the-clause-moved-again.md) | Visibility is a rendering fact, the cell goes rather than hides, and the clause moved again | Accepted |
+| [0086](0086-one-tab-stop-and-a-clause-that-stopped-working.md) | One tab stop, the browser keeps the parts that are its, and a clause that stopped working | Accepted |

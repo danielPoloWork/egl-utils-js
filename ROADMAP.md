@@ -6,7 +6,7 @@ its section with a fresh `<milestone>.<task>` number; never renumber.
 
 - **Versioning start:** pre-1.0 milestone-driven.
 - **Session journal:** see [`docs/journal/`](docs/journal/). Latest checkpoint:
-  [`2026-08-28 — a column that can hide, and say so (23.2)`](docs/journal/2026/08/2026-08-28-column-visibility.md).
+  [`2026-08-28 — one tab stop (23.3)`](docs/journal/2026/08/2026-08-28-grid-keyboard.md).
 
 ## Model & effort routing
 
@@ -421,6 +421,19 @@ one. Nothing here changes a public symbol.
   restating their own limit in the house shorthand, and all ten disagreed with the `limit` beside
   them after the re-pin; that half is checked **exactly**, since two fields of one object either
   agree or they do not. Per [ADR-0082](docs/adr/0082-a-figure-nobody-checks-is-prose.md)
+- [ ] 22.2 A clause amended every time it binds is not a clause: **ADR-0041's `/bootstrap` entry
+  ceiling has been raised in three consecutive items** — 25 → 25.5 kB (23.1, ADR-0084), → 26.75 kB
+  (23.2, ADR-0085), → 27.5 kB (23.3, ADR-0086) — each time by the minimum that restored the row's
+  margin, and each time correctly under its own rule. Three in a row says the instrument is wrong
+  rather than the changes. The diagnosis is in the measurements: **`single: bsTable` is 15 419 B of
+  the entry's 26 767 B**, so a data-grid capability and an eleventh builder move this number
+  identically, while only the second is the catalogue sprawl the clause was written against. Decide
+  the replacement and implement it — the candidate is a row measuring the catalogue **without**
+  `bsTable`, which is what ADR-0041 meant and which an explicit import list would make fail loudly
+  the moment a builder is added, with the flagship bounded by its own per-function row as it already
+  is. Whatever is chosen, ADR-0041 is superseded rather than amended a fourth time, and the
+  NFR-22 sum-of-entries derivation keeps reading the full-import row _(route: standard/high —
+  decision-heavy: the deliverable is which instrument, not the number)_
 
 
 ## Milestone 23 — Hardening: untrusted URLs, column visibility & grid keyboard navigation
@@ -459,7 +472,7 @@ does not reach as far as it claims. Spec:
   serialize, so it survives a reload and a shared link, and the chooser refuses the **last**
   hideable column rather than letting a user reach a table with nothing in it _(route:
   standard/medium)_ — `visible`/`hideable` on `BsTableColumn`, `hideColumn`/`showColumn`/`toggleColumn`/`getHiddenColumns`/`onColumnVisibility` on the instance, and `controls.columns` for the chooser. **The cell is removed, not styled away**: `display: none` leaves a hidden column in the accessibility tree's column count and in every `querySelector` a caller writes, so the `<th>`, the `<col>` and the filter cell are *detached and kept* — the very nodes carrying the F99 grip and the F100 handle — and one **mirror registry** re-inserts and re-sorts them in a single pass, which F100's `applyOrder` now goes through too. Hiding the sort column cannot clear the sort because no code path could: `/table` is never told. Arrow-key reorder **steps over** a hidden column rather than into it, and a column shown after the layout was pinned is measured on re-insertion so it does not come back at an equal share of the table. The chooser is native checkboxes and a real `<label for>` — no Bootstrap peer — announced through the F110 live region it **composes** rather than re-implements (measured: 285 B, against ~80 B for an inline `role="status"` that would have duplicated a primitive this library ships). Hiding the last visible column is a `TypeError`; the chooser `disabled`s that box so a user never reaches the refusal. The URL carries the **hidden** set (`hidden=`, repeated, sorted), which is the deviation from the default, and `bindTableHistory(pipeline, { visibility: table })` restores it — a second object rather than a pipeline field, because a toggle emits no pipeline `'change'` to ride. **ADR-0041's `/bootstrap` clause is amended a second time in two items**, 25.5 kB → 26.75 kB, by ADR-0084's own rule; `/table` +68 B, `/dom` +200 B, no new chunk on any F87 route, NFR-22 re-derived to 73 kB. Per [ADR-0085](docs/adr/0085-visibility-is-rendering-and-the-clause-moved-again.md)
-- [ ] 23.3 The one component whose keyboard story is ours (spec 09 **F130–F131**): arrow-key
+- [x] 23.3 The one component whose keyboard story is ours (spec 09 **F130–F131**): arrow-key
   navigation across `bsTable`'s rows and cells — one tab stop for the grid, a roving `tabindex`
   rather than a rendered highlight, `Home`/`End`, `Ctrl+Home`/`Ctrl+End` and `PageUp`/`PageDown`,
   and `Enter`/`Escape` to enter and leave a cell's own control so the F95 checkbox, the row actions
@@ -469,7 +482,27 @@ does not reach as far as it claims. Spec:
   found arrow-key handling in exactly one file of `src/main`** (the two grips), so a free-standing
   primitive would have had nothing to call it. Proved in the browser suite, since "where did focus
   go" and "was the cell scrolled into view" are questions about an engine _(route: standard/high —
-  a11y, and the movement matrix is the hard part)_
+  a11y, and the movement matrix is the hard part)_ — `keyboard: true | { pageRows }` on `bsTable`,
+  `role="grid"` on the table and nowhere else (a `<td>` inside a grid already exposes as a
+  `gridcell`, so stamping one per cell would be O(rows × columns) of attributes to say what the
+  mapping says for free). **The tab stop is the feature.** A table with resize and reorder on twelve
+  columns and a selection checkbox per row has hundreds of stops before this runs and **one** after
+  it: every control the table renders is demoted to `tabindex="-1"`, the caller's own included,
+  because the pattern is about the table rather than about who authored what sits in it — and each
+  is reached by `Enter` on its cell instead (F131). The `onRowClick` row stops being a tab stop
+  under `keyboard`, and `Enter` on a cell with no control of its own activates the row in its place.
+  Movement clamps at every edge, which is what makes "the navigation does not turn pages" true by
+  construction: there is no branch that reaches for the next page. `PageUp`/`PageDown` **measure**
+  the viewport once per key press — the F98/F99 layout-read rule applied to a keyboard — and fall
+  back to a documented 10 where there is no layout, rather than to a `0` that makes the key do
+  nothing. Inside an entered cell the keyboard is the control's and this grid takes only `Escape`,
+  which is also what leaves the F99 grip and the F100 handle their own arrow keys: the event's
+  target is the widget, never the cell. The scroll into view is `focus()`'s, asserted on real
+  engines rather than owned here. **ADR-0041's `/bootstrap` clause is amended a THIRD time in three
+  items** (26.75 → 27.5 kB, measured 26 767 B — 17 B over the clause 23.2 had just set), and that
+  pattern is the finding rather than the footnote: 22.2 is filed to replace the instrument instead
+  of bumping it again. NFR-22's derivation moved (72 679 B) and its bound did **not** — still 73 kB.
+  Per [ADR-0086](docs/adr/0086-one-tab-stop-and-a-clause-that-stopped-working.md)
 
 
 ---
@@ -554,12 +587,12 @@ _Spec 03 is complete as of M13 (v0.6.0): F42–F51 all delivered._
 
 | Spec § | Requirement | Roadmap items | Status |
 |--------|-------------|---------------|--------|
-| §1 (09) | Objective & business context | 23.1, 23.2, 23.3 | 🚧 |
-| §2 (09) | Functional requirements F126–F131 | 23.1, 23.2, 23.3 | 🚧 |
-| §3 (09) | Non-functional requirements | 23.1, 23.2, 23.3 | 🚧 |
-| §4 (09) | Logical architecture | 23.1, 23.2, 23.3 | 🚧 |
-| §5 (09) | Public interface | 23.1, 23.2, 23.3 | 🚧 |
-| §6 (09) | Verification & test strategy | 23.1, 23.2, 23.3 | 🚧 |
+| §1 (09) | Objective & business context | 23.1, 23.2, 23.3 | ✅ |
+| §2 (09) | Functional requirements F126–F131 | 23.1, 23.2, 23.3 | ✅ |
+| §3 (09) | Non-functional requirements | 23.1, 23.2, 23.3 | ✅ |
+| §4 (09) | Logical architecture | 23.1, 23.2, 23.3 | ✅ |
+| §5 (09) | Public interface | 23.1, 23.2, 23.3 | ✅ |
+| §6 (09) | Verification & test strategy | 23.1, 23.2, 23.3 | ✅ |
 
 ### Spec 05 — browser distribution (F82–F87)
 

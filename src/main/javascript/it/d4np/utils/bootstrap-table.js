@@ -152,6 +152,13 @@ import {
  *   authoritative** — `getColumnOrder()` / `setColumnOrder()` mean a caller can
  *   build their own affordance, or restore a saved layout, without touching the
  *   DOM. Purely presentational: the F42 derivation never sees the order.
+ * @property {boolean | BsTableKeyboardOptions} [keyboard] - Opt-in grid keyboard
+ *   navigation (F130): the table takes **one** position in the page's tab order
+ *   and the arrow keys move a *cell* focus inside it, which is what the ARIA grid
+ *   pattern asks for and what a keyboard user needs before the F99 grip or the
+ *   F100 handle is reachable in a realistic table. Opt-in for the same reason
+ *   `sticky`, `resize`, `reorder` and `selection` are: a table that does not want
+ *   a single tab stop must not silently get one.
  * @property {boolean | BsTableSelectionOptions<Row>} [selection] - Opt-in row
  *   selection (F95): a leading column of checkboxes, a select-all header with a
  *   real **indeterminate** state, and `data-egl-selected` plus `table-active` on
@@ -326,6 +333,16 @@ import {
  */
 
 /**
+ * @typedef {object} BsTableKeyboardOptions
+ * @property {number} [pageRows] - Rows moved by `PageUp`/`PageDown`. Omitted, the
+ *   jump is **measured**: the scroll container's height divided by a row's, read
+ *   once per key press rather than per frame, which is the F98/F99 rule about
+ *   layout reads applied to a keyboard. Where there is no layout to read — jsdom,
+ *   a detached tree, a server render — it falls back to 10, and a caller who
+ *   wants a fixed jump says so here.
+ */
+
+/**
  * @template Row
  * @typedef {object} BsTableSelectionOptions
  * @property {'single' | 'multiple'} [mode='multiple'] - `'multiple'` renders
@@ -402,6 +419,50 @@ import {
 
 /** Alignment values, checked so a typo cannot ship a silently unaligned column. */
 const ALIGNMENTS = /* @__PURE__ */ new Set(['start', 'center', 'end']);
+
+/**
+ * What counts as a tab stop inside a cell (F130-F131).
+ *
+ * `[tabindex]` rather than `[tabindex="0"]` on purpose: a caller's positive
+ * `tabindex` is a tab stop too, and a worse one. The list is the platform's
+ * focusable set minus the things a table cell does not contain — no `iframe`, no
+ * `audio`/`video` controls, no `contenteditable` — because a selector that has to
+ * be read is better short than exhaustive, and anything it misses keeps the
+ * behaviour tables have today rather than gaining a broken one.
+ */
+const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]';
+
+/**
+ * Rows `PageUp`/`PageDown` moves where there is no layout to measure — jsdom, a
+ * detached tree, a server render. A number, because the alternative is a `0` that
+ * makes the key silently do nothing.
+ */
+const DEFAULT_PAGE_ROWS = 10;
+
+/**
+ * Take the tab stops out of one row's cells, leaving them reachable by script.
+ *
+ * The grid pattern's central claim is *one* tab stop; a table with a checkbox per
+ * row and two grips per column has hundreds. `tabindex="-1"` is what turns each
+ * of them from a stop in the page's tab order into something `Enter` on its cell
+ * reaches (F131) — the control is exactly as operable, and it is no longer in the
+ * way of a user tabbing past the table.
+ *
+ * The caller's own controls are demoted too. That is deliberate rather than
+ * overreach: the pattern is about the table, not about who authored what sits
+ * inside it, and a row-action button that stayed a tab stop would break the one
+ * promise F130 makes. It happens only under `keyboard`, which is opt-in.
+ *
+ * @param {Element} row
+ * @returns {void}
+ */
+function demoteTabStops(row) {
+  // One query per row rather than per cell: the rows are the render's unit, and
+  // this runs inside the loop that builds them.
+  for (const control of row.querySelectorAll(FOCUSABLE)) {
+    control.setAttribute('tabindex', '-1');
+  }
+}
 
 /**
  * A complete Bootstrap table over an F42 pipeline (spec 04 F66).
@@ -481,6 +542,7 @@ export function bsTable(container, options) {
     sticky: stickyOption,
     resize: resizeOption,
     reorder: reorderOption,
+    keyboard: keyboardOption,
     controls,
     empty,
     caption,
@@ -680,6 +742,25 @@ export function bsTable(container, options) {
       if (value !== undefined && typeof value !== 'function') {
         throw new TypeError(`${api}: options.reorder.${name} must be a function`);
       }
+    }
+  }
+
+  // --- grid keyboard navigation (F130-F131) ---------------------------------
+  /** @type {BsTableKeyboardOptions} */
+  let keyboardConfig = {};
+  const wantsKeyboard = keyboardOption !== undefined && keyboardOption !== false;
+  if (wantsKeyboard && keyboardOption !== true) {
+    assertPlainObject(keyboardOption, 'options.keyboard', api);
+    keyboardConfig = /** @type {BsTableKeyboardOptions} */ (keyboardOption);
+  }
+  const { pageRows, ...unknownKeyboard } = keyboardConfig;
+  if (wantsKeyboard) {
+    assertNoUnknownOptions(unknownKeyboard, `${api}.keyboard`);
+    if (
+      pageRows !== undefined &&
+      (!Number.isInteger(pageRows) || /** @type {number} */ (pageRows) < 1)
+    ) {
+      throw new TypeError(`${api}: options.keyboard.pageRows must be an integer >= 1`);
     }
   }
 
@@ -1231,7 +1312,11 @@ export function bsTable(container, options) {
         grip = doc.createElement('span');
         grip.setAttribute('role', 'separator');
         grip.setAttribute('aria-orientation', 'vertical');
-        grip.setAttribute('tabindex', '0');
+        // A tab stop of its own, unless F130 owns the tab order — in which case
+        // one grip per column would be one tab stop per column, which is the
+        // thing that pattern exists to prevent. Reachable by entering the header
+        // cell instead (F131), and its arrow keys are unchanged either way.
+        grip.setAttribute('tabindex', wantsKeyboard ? '-1' : '0');
         grip.setAttribute('aria-valuemin', String(min));
         grip.setAttribute('data-egl-resize', column.key);
         grip.setAttribute(
@@ -1489,7 +1574,7 @@ export function bsTable(container, options) {
       // (ADR-0068).
       const handle = doc.createElement('span');
       handle.setAttribute('role', 'button');
-      handle.setAttribute('tabindex', '0');
+      handle.setAttribute('tabindex', wantsKeyboard ? '-1' : '0');
       handle.setAttribute('data-egl-move', column.key);
       handle.setAttribute(
         'aria-label',
@@ -1664,6 +1749,26 @@ export function bsTable(container, options) {
   }
 
   /**
+   * Put the roving tab stop back after a render, when F130 is on.
+   *
+   * A holder rather than a direct call, because the navigation is installed
+   * further down — it has to see the F99 grips and the F100 handles first — and a
+   * table without `keyboard` should pay one no-op call per render rather than a
+   * branch in three places.
+   *
+   * @type {() => void}
+   */
+  let refreshRoving = () => {};
+
+  /**
+   * Row activation, as F130 reaches it: `null` until `onRowClick` publishes it
+   * below. Declared here because the block that assigns it runs first.
+   *
+   * @type {((event: Event, rowEl: Element) => void) | null}
+   */
+  let activateFromCell = null;
+
+  /**
    * Rebuild the body from a derived view — one fragment, one insertion,
    * whatever the page size (F52).
    *
@@ -1692,6 +1797,9 @@ export function bsTable(container, options) {
       }
     }
     tbody.replaceChildren(fragment);
+    // The cell that held the tab stop was just replaced, so the grid would have
+    // none at all — and a grid with no tab stop is unreachable.
+    refreshRoving();
   };
 
   /**
@@ -1714,7 +1822,10 @@ export function bsTable(container, options) {
     // A row that responds to a pointer and not to a keyboard is a control only
     // some users have (NFR-21). Where a row carries real actions, put a real
     // control in a cell instead — this covers the "open the record" case.
-    if (interactive) tr.setAttribute('tabindex', '0');
+    //
+    // Not under F130: one tab stop per row is what the grid pattern replaces,
+    // and `Enter` on a cell activates the row there instead.
+    if (interactive && !wantsKeyboard) tr.setAttribute('tabindex', '0');
 
     if (selection !== undefined) {
       const key = selection.keyOf(row, index);
@@ -1756,6 +1867,12 @@ export function bsTable(container, options) {
       appendContent(td, content, contentOptions({ html, sanitize }, column), api);
       tr.append(td);
     }
+    // One query per row, not per cell, and only under F130: a grid with a tab
+    // stop per control is not a grid. This takes the caller's own controls too —
+    // a link a `format` returned, a row-action button — because the pattern is
+    // about the table and not about who authored what is in it. `Enter` on the
+    // cell is how each of them is reached (F131).
+    if (wantsKeyboard) demoteTabStops(tr);
     return tr;
   };
 
@@ -1771,6 +1888,9 @@ export function bsTable(container, options) {
       if (row === undefined) return;
       onRowClick(row, event);
     };
+    // Published to F130, which activates a row from the cell that holds focus
+    // rather than from the row itself — the row is no longer a tab stop there.
+    activateFromCell = activate;
 
     /**
      * @param {Event} event
@@ -1997,6 +2117,218 @@ export function bsTable(container, options) {
   if (wired?.filterCells !== undefined) {
     mirrors.push({ parent: wired.filterCells.parent, cells: wired.filterCells.cells });
   }
+  // --- grid keyboard navigation (F130-F131) ---------------------------------
+  //
+  // Installed here, after the F99 grips, the F100 handles and the F67 filter row
+  // exist, because the first thing it does is take their tab stops away. That
+  // ordering is the feature: a table with resize and reorder on twelve columns
+  // has twenty-four tab stops before this runs and **one** after it, and all
+  // twenty-four are reached through the grid instead (F131).
+  //
+  // Everything below is `tabindex` and `focus()`. The scroll into view is the
+  // browser's — `focus()` already does it — and so is what a screen reader reads
+  // when a cell takes focus. A rendered highlight of our own would have been a
+  // second, competing source of truth for both.
+  if (wantsKeyboard) {
+    // The ARIA role, on the table and nowhere else. A `<td>` inside a `grid`
+    // already exposes as a `gridcell` and a `<tr>` as a `row`, so stamping either
+    // per node would be one attribute per cell — O(rows x columns) of writes and
+    // of bytes — to say what the mapping says for free.
+    table.setAttribute('role', 'grid');
+    // The F71 wrapper, when this instance owns one, and this line exists because
+    // a three-engine suite said so: **Firefox gives a scrollable container its own
+    // place in the tab order**, so `Tab` reached the wrapper and the grid was two
+    // tab stops there while Chromium and WebKit made it one. Firefox does that so
+    // a keyboard user can scroll a region they could not otherwise reach — a
+    // reason that stops applying the moment this navigation exists, because
+    // moving the cell focus is what scrolls this container now. An explicit
+    // `-1` is how that is declined.
+    scrollContainer?.setAttribute('tabindex', '-1');
+    // The head's own focusables, once: the grips, the handles, and the F67 filter
+    // inputs. The body's are demoted per row as it is built.
+    for (const tr of thead.children) demoteTabStops(tr);
+
+    /** Rows the navigation walks: the head's, then the body's, in document order. */
+    const rowsOf = () => [...thead.children, ...tbody.children];
+    /** @param {Element} tr @returns {Element[]} */
+    const cellsOf = (tr) => [...tr.children];
+
+    /**
+     * The cell holding the tab stop. Kept as a node rather than as a pair of
+     * indices: a re-render replaces the node, and a stale pair would point at
+     * whatever moved into that position — the wrong cell, silently.
+     *
+     * @type {Element | null}
+     */
+    let active = null;
+
+    /**
+     * Give one cell the tab stop, and take it from the last one that had it.
+     *
+     * @param {Element | null} cell
+     * @param {boolean} [move=false] - Whether to move focus there as well.
+     * @returns {void}
+     */
+    const setActive = (cell, move = false) => {
+      if (cell === null || cell === undefined) return;
+      if (active !== null && active !== cell) active.setAttribute('tabindex', '-1');
+      active = cell;
+      cell.setAttribute('tabindex', '0');
+      // `focus()` scrolls the cell into view on its own, which is the whole
+      // reason F130 asks for a roving tabindex rather than a painted highlight.
+      if (move) /** @type {any} */ (cell).focus?.();
+    };
+
+    refreshRoving = () => {
+      // A body render replaces every row, so the node that held the tab stop is
+      // gone unless it was in the head. Falling back to the first cell keeps the
+      // grid reachable; an active head cell survives, which keeps a user who was
+      // reading the header where they were.
+      if (active !== null && active.isConnected) return;
+      active = null;
+      setActive(rowsOf()[0]?.children[0] ?? null);
+    };
+
+    /**
+     * How many rows `PageUp`/`PageDown` moves.
+     *
+     * Measured once per key press, never per frame — the F98/F99 rule about
+     * layout reads, applied to a keyboard. Where there is no layout to read the
+     * answer is a documented constant rather than a zero that would make the key
+     * do nothing at all.
+     *
+     * @returns {number}
+     */
+    const pageStep = () => {
+      if (pageRows !== undefined) return pageRows;
+      const rowHeight = Math.round(
+        /** @type {any} */ (tbody.children[0])?.getBoundingClientRect?.().height ?? 0,
+      );
+      const viewport = Math.round(
+        /** @type {any} */ (scrollContainer ?? table)?.getBoundingClientRect?.().height ?? 0,
+      );
+      if (rowHeight <= 0 || viewport <= 0) return DEFAULT_PAGE_ROWS;
+      return Math.max(1, Math.floor(viewport / rowHeight));
+    };
+
+    /**
+     * Move the cell focus, clamping at every edge.
+     *
+     * Clamping is what makes F130's "the navigation does not turn pages" true:
+     * there is no branch that reaches for the next page, because an arrow key
+     * that fetches data is a surprise. A row shorter than the one above it — the
+     * empty-state row is a single `colspan` cell — clamps the column too, rather
+     * than landing on nothing.
+     *
+     * @param {number} rowDelta
+     * @param {number} colDelta
+     * @param {'row' | 'grid' | null} [edge] - `'row'` for `Home`/`End`, `'grid'`
+     *   for the `Ctrl` pair, `null` for an ordinary step.
+     * @returns {void}
+     */
+    const move = (rowDelta, colDelta, edge = null) => {
+      if (active === null) return;
+      const rows = rowsOf();
+      const tr = /** @type {Element} */ (active.parentElement);
+      const rowAt = rows.indexOf(tr);
+      if (rowAt === -1) return;
+      const colAt = cellsOf(tr).indexOf(active);
+
+      let nextRow = rowAt;
+      if (edge === 'grid') nextRow = rowDelta < 0 ? 0 : rows.length - 1;
+      else if (edge === null) nextRow = Math.min(rows.length - 1, Math.max(0, rowAt + rowDelta));
+
+      const cells = cellsOf(rows[nextRow]);
+      if (cells.length === 0) return;
+      const wanted = edge === null ? colAt + colDelta : colDelta < 0 ? 0 : cells.length - 1;
+      setActive(cells[Math.min(cells.length - 1, Math.max(0, wanted))], true);
+    };
+
+    table.addEventListener(
+      'keydown',
+      (event) => {
+        const target = /** @type {Element | null} */ (event.target);
+        if (target === null) return;
+        const pressed = /** @type {KeyboardEvent} */ (event).key;
+
+        // Inside an entered cell the keyboard is the control's, not ours — `Tab`
+        // included, which is F131's requirement and is met by doing nothing at
+        // all. `Escape` is the way back out, and the only key taken there. This
+        // is also what leaves the F99 grip and the F100 handle their own arrow
+        // keys: the event's target is the widget, never the cell.
+        if (target !== active) {
+          if (pressed !== 'Escape' || active === null || !active.contains(target)) return;
+          event.preventDefault();
+          /** @type {any} */ (active).focus?.();
+          return;
+        }
+
+        const ctrl =
+          /** @type {any} */ (event).ctrlKey === true ||
+          /** @type {any} */ (event).metaKey === true;
+        switch (pressed) {
+          case 'ArrowRight':
+            move(0, 1);
+            break;
+          case 'ArrowLeft':
+            move(0, -1);
+            break;
+          case 'ArrowDown':
+            move(1, 0);
+            break;
+          case 'ArrowUp':
+            move(-1, 0);
+            break;
+          case 'Home':
+            move(ctrl ? -1 : 0, -1, ctrl ? 'grid' : 'row');
+            break;
+          case 'End':
+            move(ctrl ? 1 : 0, 1, ctrl ? 'grid' : 'row');
+            break;
+          case 'PageDown':
+            move(pageStep(), 0);
+            break;
+          case 'PageUp':
+            move(-pageStep(), 0);
+            break;
+          case 'Enter': {
+            const control = target.querySelector(FOCUSABLE);
+            if (control !== null) {
+              /** @type {any} */ (control).focus?.();
+              break;
+            }
+            // A cell with no control of its own activates its row, where there
+            // is something to activate: F130 took the row's own tab stop away,
+            // so this is the keyboard path `onRowClick` has left.
+            const tr = target.parentElement;
+            if (tr !== null && tr.parentElement === tbody) activateFromCell?.(event, tr);
+            break;
+          }
+          default:
+            return;
+        }
+        // Only for a key this grid consumed. The arrows would scroll the F71
+        // wrapper sideways, `Home`/`End` and the page keys would scroll the
+        // document, and `Enter` on a cell inside a form would submit it.
+        event.preventDefault();
+      },
+      { signal: controller.signal },
+    );
+
+    // A pointer, or a `Tab` pressed inside a cell the user has entered, puts
+    // focus somewhere this model did not choose. Following it is what makes
+    // `Escape` return to the cell the user is actually in rather than to the last
+    // one an arrow key visited.
+    table.addEventListener(
+      'focusin',
+      (event) => {
+        const cell = /** @type {any} */ (event.target)?.closest?.('td, th') ?? null;
+        if (cell !== null && cell !== active && table.contains(cell)) setActive(cell);
+      },
+      { signal: controller.signal },
+    );
+  }
+
   // The first pass: `visible: false` columns leave the head, the `<colgroup>` and
   // the filter row here, before the body is built without them.
   applyLayout();
