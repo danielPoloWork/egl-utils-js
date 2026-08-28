@@ -88,6 +88,14 @@ implementation.
   gate (`publint --strict`, `attw`, `agadoo`, the no-runtime-deps assertion) stays green
   (NFR-23). Deep ESM paths (`/dist/esm/<entry>.js`) remain the documented module-consumer
   route.
+  - **Amended (roadmap 22.3, [ADR-0087](../adr/0087-the-release-carries-what-the-registry-would-have.md)):**
+    the same files are additionally attached to the drafted GitHub Release as downloadable
+    assets — the `npm pack` tarball, `egl-utils-js-<version>-dist.zip` (the `dist/` tree plus
+    `LICENSE` under one version-stamped folder), and `SHA256SUMS` — because both CDN fields
+    resolve **through the npm registry**, and the registry has its own human gate (the publish
+    dispatch). The release assets are the acquisition channel that involves no registry at
+    all, which the boundary table in `docs/workflow/release.md` ("Build & attach artifacts —
+    CI") had promised since M7 without a workflow implementing it.
 - F85 No-bundler documentation: a README section ("Use from a browser, without npm")
   documenting, with copy-pasteable version-pinned URLs: the deep ESM route per entry; the
   F83 global artifact route; how each optional peer is supplied on each route (a Bootstrap
@@ -255,6 +263,16 @@ surface, and the error taxonomy.
 - **F84** — a packaging test asserts the `unpkg`/`jsdelivr` fields name a file present in
   the packed tarball (`files` array); `publint --strict` and `attw` remain in
   `check:package` and must stay green.
+  - **Amended (roadmap 22.3, ADR-0087):** `tools/build-release-assets.mjs` builds the
+    release assets and gates them **in the PR packaging job**, not first at tag time (the
+    ADR-0082 placement rule): the zip's `dist/**` file set must equal the tarball's, every
+    advertised path — one derivation shared with the tarball gate through
+    `tools/advertised-paths.mjs` — must be present in the tarball and, for paths under
+    `dist/`, in the zip, and the zip must carry `LICENSE` and nothing outside its
+    version-stamped root. `release.yml` runs the same script on the tag and attaches what it
+    produced. The README's download-route snippets exercise the same two load shapes the F86
+    fixtures already prove — a classic `<script src>` and a deep ESM import — differing only
+    in the version-stamped folder prefix.
 - **F85** — the documentation rule is structural: every README no-bundler snippet names a
   URL shape that an F86 fixture loads; the journal for 18.4 records the
   snippet-to-fixture correspondence so a reviewer can check it mechanically.

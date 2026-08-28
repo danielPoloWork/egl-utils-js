@@ -110,6 +110,17 @@ def check_version_lockstep():
         if badge != source:
             fail(name, f"README badge v{badge} != version file {vf} ({source})")
 
+    # README pinned examples (roadmap 22.3, ADR-0087): every `egl-utils-js@X.Y.Z`
+    # CDN pin and `egl-utils-js-X.Y.Z` release-asset filename in the README must
+    # be the released version. tools/sync-version.mjs rewrites them at each bump;
+    # this verifies — a figure nobody checks is prose (ADR-0082).
+    stale_pins = sorted({m.group(0) for m in
+                         re.finditer(r"egl-utils-js[@-](\d+\.\d+\.\d+)", readme)
+                         if m.group(1) != source})
+    for pin in stale_pins:
+        fail(name, f"README pins `{pin}` but the source version is {source} "
+                   "(node tools/sync-version.mjs rewrites these)")
+
     # Latest released changelog file (per-version split), if any exist.
     cl_dir = os.path.join(ROOT, "docs", "changelog")
     cl = []

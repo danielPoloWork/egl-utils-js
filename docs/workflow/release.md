@@ -33,7 +33,9 @@ Versioning and the changelog are driven by **changesets** (roadmap 7.4, [ADR-001
    --check` must both pass.
 5. **Merge the Version PR** — *the maintainer*. Merging does **not** publish anything.
 6. **Tag** — the agent runs `git tag -a v<X.Y.Z>` and pushes it; `release.yml` drafts the
-   GitHub Release.
+   GitHub Release **with the assets attached**: the packed tarball, the `dist/` zip and
+   `SHA256SUMS`, built and verified by `tools/build-release-assets.mjs` (roadmap 22.3,
+   [ADR-0087](../adr/0087-the-release-carries-what-the-registry-would-have.md)).
 7. **Publish the GitHub Release** — *the maintainer*.
 8. **Publish to npm** — *the maintainer*, via the **publish** workflow (`workflow_dispatch`).
    Run it once with `dry-run` left **checked** to see exactly what would ship, then re-run with

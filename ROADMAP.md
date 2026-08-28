@@ -434,6 +434,27 @@ one. Nothing here changes a public symbol.
   is. Whatever is chosen, ADR-0041 is superseded rather than amended a fourth time, and the
   NFR-22 sum-of-entries derivation keeps reading the full-import row _(route: standard/high —
   decision-heavy: the deliverable is which instrument, not the number)_
+- [x] 22.3 The release carries what the registry would have ([#181](https://github.com/danielPoloWork/egl-utils-js/issues/181)):
+  `release.yml` drafts every release with **zero assets** while `docs/workflow/release.md`'s
+  boundary table has promised "Build & attach artifacts — CI" since M7, npm has never been
+  published, and `dist/` is gitignored — so the no-bundler consumer M18 made first-class had
+  **no acquisition channel at all**: every README CDN URL resolves through a registry entry
+  that 404s. Attach the `npm pack` tarball, a `dist/` zip and `SHA256SUMS` to the drafted
+  release, gate the asset set on **every PR** (the 22.1/ADR-0082 lesson: a gate only a release
+  runs has never run), and document the download-and-self-host route _(route: standard/medium —
+  packaging and workflow wiring on the 18.3 template; the gate is the part that must not be
+  skipped)_ — done per [ADR-0087](docs/adr/0087-the-release-carries-what-the-registry-would-have.md):
+  **one script builds and gates** (`tools/build-release-assets.mjs`) — the zip's `dist/**` set
+  must **equal** the tarball's (one derivation of "what ships", shared with the F84 gate
+  through `tools/advertised-paths.mjs`), every advertised path must be present in both
+  archives, and the zip must carry `LICENSE` and nothing outside its version-stamped root. The
+  gate's **first run caught a real case**: `./package.json` is an advertised exports target a
+  static page can never ask for, so the zip-side assertion is scoped to `dist/` with the
+  reason written down. The archiver is the **OS toolchain** (zip/unzip on the runners, bsdtar
+  on Windows), not a new devDependency. README pins stopped being prose: `sync-version.mjs`
+  rewrites every `egl-utils-js@X.Y.Z` pin at each bump and `consistency_lint.py` fails on a
+  stale one — retiring the `@1.2.0` fossils the no-bundler section had carried through two
+  releases. npm publish remains the owner's dispatch, untouched. Spec 05 F84 amended (§2, §6)
 
 
 ## Milestone 23 — Hardening: untrusted URLs, column visibility & grid keyboard navigation

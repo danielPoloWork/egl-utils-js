@@ -2258,8 +2258,9 @@ without npm](#use-from-a-browser-without-npm).
 
 No Node, no bundler, no `package.json` — a static file server or a CDN, and a `<script>`
 tag. Nine of the ten entries have loaded this way from day one; `/sanitize` closed the tenth
-once its DOMPurify peer stopped being a bare `import` (ADR-0055). Two routes, both
-build-free:
+once its DOMPurify peer stopped being a bare `import` (ADR-0055). Three routes, all
+build-free — two resolve through a CDN, and the third is the same files as downloadable
+release assets, for when a registry or a CDN is not an option:
 
 ### Deep ESM — one entry at a time
 
@@ -2267,9 +2268,9 @@ Each entry is a plain ES module. Load only what you use:
 
 ```html
 <script type="module">
-  import { retry, groupBy } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.2.0/dist/esm/index.js';
-  import { truncate } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.2.0/dist/esm/text.js';
-  import { bsButton } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.2.0/dist/esm/bootstrap.js';
+  import { retry, groupBy } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.4.0/dist/esm/index.js';
+  import { truncate } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.4.0/dist/esm/text.js';
+  import { bsButton } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.4.0/dist/esm/bootstrap.js';
 </script>
 ```
 
@@ -2281,7 +2282,7 @@ free. Several of those chunks are **shared across entries** — `errors.js`, `ta
 version and the same CDN share one cached download; that is also why the rule below matters.
 
 **Pin one version for every `egl-utils-js` URL on the page.** Entries share content-hashed
-chunks *within a version*, not across one: a page mixing `@1.2.0` and `@1.3.0` URLs
+chunks *within a version*, not across one: a page mixing `@1.3.0` and `@1.4.0` URLs
 downloads the overlapping code twice and can end up running two separate copies of the same
 class (the classic dual-instance hazard ADR-0003 already documents for the ESM/CJS build —
 branch on `.code`, never cross-instance `instanceof`, and that advice applies here too).
@@ -2297,8 +2298,8 @@ all, `dist/global/egl-utils.global.js` is the whole public surface in one IIFE, 
 global `egl` (ROADMAP 18.2, spec 05 F83). This is also what the bare CDN URL resolves to:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/egl-utils-js@1.2.0"></script>
-<!-- equivalently: https://unpkg.com/egl-utils-js@1.2.0 -->
+<script src="https://cdn.jsdelivr.net/npm/egl-utils-js@1.4.0"></script>
+<!-- equivalently: https://unpkg.com/egl-utils-js@1.4.0 -->
 <script>
   const rows = egl.table.paginate(data, { page: 1, pageSize: 20 });
   document.body.append(egl.bootstrap.bsBadge(`${rows.total} results`));
@@ -2312,6 +2313,45 @@ Nothing is renamed, and loading the file has no effect beyond defining `egl` —
 bundled into it, and no other global appears alongside it (ADR-0059). The one cost stated
 plainly: you download the whole surface, roughly 31 kB min+brotli today, including
 components you may not use — the trade the deep-ESM route above exists to avoid.
+
+### Download and self-host — no npm, no CDN, no registry
+
+Every GitHub Release attaches the same files the registry would receive (ROADMAP 22.3,
+[ADR-0087](docs/adr/0087-the-release-carries-what-the-registry-would-have.md)):
+
+| Asset | What it is |
+|---|---|
+| `egl-utils-js-1.4.0-dist.zip` | the built `dist/` tree plus `LICENSE`, under one version-stamped folder |
+| `egl-utils-js-1.4.0.tgz` | the `npm pack` tarball — byte-identical to what an npm publish ships |
+| `SHA256SUMS` | checksums for both (`sha256sum -c SHA256SUMS`, or `CertUtil -hashfile` on Windows) |
+
+Download the zip from the
+[latest release](https://github.com/danielPoloWork/egl-utils-js/releases/latest), verify it,
+unzip it beside your page, and the two routes above work unchanged — relative URLs instead of
+CDN ones:
+
+```html
+<script src="./egl-utils-js-1.4.0/dist/global/egl-utils.global.js"></script>
+```
+
+```html
+<script type="module">
+  import { retry } from './egl-utils-js-1.4.0/dist/esm/index.js';
+</script>
+```
+
+- **Serve the ESM route over HTTP.** Module scripts do not load from `file://`; any static
+  file server does. The one-file artifact route works anywhere a `<script src>` resolves.
+- **The tarball is for registries and Node tooling**: mirror it into a private registry
+  (Verdaccio, Artifactory), or `npm install ./egl-utils-js-1.4.0.tgz` with no registry in the
+  path. `tar -xf` unpacks it on Windows 10+, macOS and Linux if you only want the files.
+- **The asset set is gated, not hoped** (ADR-0082): on every pull request — not first at tag
+  time — the zip's `dist/` file set is asserted equal to the tarball's, and every path
+  `package.json` advertises is asserted present in both.
+
+The CDN routes above resolve through the npm registry; these assets are the same files with no
+registry in the path — for a first install, an air-gapped network, or a proxy that cannot
+reach a CDN.
 
 ### Supplying the optional peers
 
@@ -2336,7 +2376,7 @@ never a load-time failure.
 ```html
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
 <script type="module">
-  import { sanitizeHtml } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.2.0/dist/esm/sanitize.js';
+  import { sanitizeHtml } from 'https://cdn.jsdelivr.net/npm/egl-utils-js@1.4.0/dist/esm/sanitize.js';
   element.innerHTML = sanitizeHtml(userSuppliedHtml); // window.DOMPurify is the peer
 </script>
 ```
