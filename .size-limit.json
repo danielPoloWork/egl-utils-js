@@ -66,7 +66,7 @@
     "limit": "0.87 kB"
   },
   {
-    "name": "/table - full import (NFR-12: measured 6861 B; +585 B for tableCsv, spec 06 F96 / ADR-0066, on top of 19.1-19.3. Five siblings behind one entry now, and the per-function rows below are what bound each one)",
+    "name": "/table - full import (NFR-12: measured 6929 B; +68 B in 23.2 for the F128 `hidden` set the F92 pair now carries - two parameters and a Set, which is what column visibility costs the entry that serializes it. Limit 7.3 kB unchanged, now measured + 5.4%. Five siblings behind one entry, and the per-function rows below are what bound each one)",
     "path": "dist/esm/table.js",
     "limit": "7.3 kB"
   },
@@ -113,16 +113,16 @@
     "limit": "1 kB"
   },
   {
-    "name": "single: tableStateToParams (spec 06 F92: measured 780 B - the serializer, including the ownership rule that lets it merge into a URL it does not own)",
+    "name": "single: tableStateToParams (spec 06 F92: measured 849 B - +69 B in 23.2 for the F128 hidden set, which is sorted and de-duplicated on the way out because the F93 binding compares serializations to decide whether to push a history entry. Includes the ownership rule that lets it merge into a URL it does not own. Re-pinned at 905 B, the 55 B margin the row had)",
     "path": "dist/esm/table.js",
     "import": "{ tableStateToParams }",
-    "limit": "835 B"
+    "limit": "905 B"
   },
   {
-    "name": "single: tableStateFromParams (spec 06 F92: measured 539 B - the parser, which never throws on its input and therefore carries a default for every field)",
+    "name": "single: tableStateFromParams (spec 06 F92: measured 569 B - +30 B in 23.2 for the F128 hidden set, read into a Set because `?hidden=a&hidden=a` is one hidden column. Never throws on its input and therefore carries a default for every field. Re-pinned at 605 B, the 36 B margin the row had)",
     "path": "dist/esm/table.js",
     "import": "{ tableStateFromParams }",
-    "limit": "575 B"
+    "limit": "605 B"
   },
   {
     "name": "single: tableSelection (spec 06 F94: measured 1434 B — a Set of keys, an emitter and the page/off-page arithmetic. The whole model, and the figure a /table consumer pays for selection without bsTable)",
@@ -137,9 +137,9 @@
     "limit": "850 B"
   },
   {
-    "name": "/dom - full import (NFR-12: measured 7878 B, +108 B in 21.1 for the F113 `getValue` read primitive - the twin `setValue` never had (ADR-0077). Small on purpose, and it stays that way because the form ENGINE went to /forms while only the single-element read came here. Limit 8.3 kB unchanged, now measured + 5.3%: a ceiling that still holds is not re-pinned upward for the sake of the formula)",
+    "name": "/dom - full import (NFR-12: measured 8078 B, +200 B in 23.2 for the F93 binding learning about column visibility - a second subscription, because a hidden column emits no pipeline change - and +108 B in 21.1 for the F113 `getValue` read primitive. Small on purpose, and it stays that way because the form ENGINE went to /forms while only the single-element read came here. Re-pinned from 8.3 kB at the 422 B margin the row had, rather than at measured+7%)",
     "path": "dist/esm/dom.js",
-    "limit": "8.3 kB"
+    "limit": "8.5 kB"
   },
   {
     "name": "single: bindElements (NFR-12 <= 1 kB / NFR-02)",
@@ -220,10 +220,10 @@
     "limit": "1.2 kB"
   },
   {
-    "name": "single: bindTableHistory (2.05 kB - NFR-12 composing-facade row, ADR-0063: measured 1924 B, which includes the F92 pair it composes. Named and measured, per the ADR-0058 rule for this clause)",
+    "name": "single: bindTableHistory (NFR-12 composing-facade row, ADR-0063: measured 2137 B - +213 B in 23.2 for the F128 visibility adapter, which is a whole second half of the restore: a set to apply key by key, its own refusal reporting, and its own subscription for the write. Includes the F92 pair it composes. Named and measured, per the ADR-0058 rule for this clause; re-pinned at the 126 B margin the row had)",
     "path": "dist/esm/dom.js",
     "import": "{ bindTableHistory }",
-    "limit": "2.05 kB"
+    "limit": "2.27 kB"
   },
   {
     "name": "single: copyToClipboard (spec 06 F97: measured 477 B — a permission-gated write and four classified refusals. Most of it is the classification, which is the whole requirement)",
@@ -232,9 +232,9 @@
     "limit": "510 B"
   },
   {
-    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header, the F99 column resize, the F100 reorder, the F120 feedback class map and the F127 URL routing - measured 24902 B. **ADR-0041 25 kB entry clause is AMENDED to 25.5 kB by ADR-0084**, and the arithmetic is the reason it had to be. The honest routing - one guard, validated everywhere - measured 25003 B, **3 B over** the old clause: there was no version of it that fitted. Splitting the guard hot half from its option-validation half brought this entry to 24902 B, 98 B under the old clause, which is not a margin to ship on - so the clause moves by the minimum that restores the 368 B this row had at 24632 B, and the split is kept because it also saves ~150 B on each of five per-function rows. Pinned at 25.4 kB rather than measured+7%: the clause still binds first, and a row above its own clause is a gate that cannot fail)",
+    "name": "/bootstrap - full import (NFR-17: the complete Bootstrap 5 catalogue plus the F95 selection column, the F98 sticky header, the F99 column resize, the F100 reorder, the F120 feedback class map, the F127 URL routing and the F128/F129 column visibility - measured 26120 B. **ADR-0041 entry clause is AMENDED again, from the 25.5 kB ADR-0084 set to 26.75 kB, by ADR-0085**: +1218 B, of which 285 B is the F110 live region NFR-49 asks for. Two amendments in two items is worth naming rather than burying - and both were the same kind of change, a capability added to components that already exist rather than new components, which is the sprawl the clause was sized to prevent. Pinned at 26.62 kB, the minimum that restores the 498 B margin this row had at 24902 B - the same rule ADR-0084 used, so the clause still binds first and a row above its own clause is a gate that cannot fail)",
     "path": "dist/esm/bootstrap.js",
-    "limit": "25.4 kB"
+    "limit": "26.62 kB"
   },
   {
     "name": "single: bsIcon (NFR-17 <= 1.2 kB per ADR-0037; measured 950 B incl. the ADR-0047 option-key contract. Re-pinned at the row own +2.9% margin, comfortably inside ADR-0037 1.2 kB clause. It had reached 10 B of headroom while its text still advertised 933 B, which is the 22.1 audit finding in one row: ADR-0056 put a descriptor check in front of every builder and wrapper, #115's esbuild 0.28 security override moved the same family again, and neither showed up here because only a failing LIMIT has ever triggered a re-pin (ADR-0082))",
@@ -321,10 +321,10 @@
     "limit": "1.58 kB"
   },
   {
-    "name": "single: bsTable (14.2 kB - documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065, ADR-0067, ADR-0068 and ADR-0069: measured 13412 B: +765 B in 19.7 for the F100 column reorder, +119 B in 19.9 for the BUG-0005 filter-row spacer. Cheaper than the F99 resize it sits beside (1155 B) because it reuses that item's decisions rather than restating them - one handle for pointer and keyboard, pointer capture, the same click guard - and because moving nodes needs no markup of its own)",
+    "name": "single: bsTable (documented NFR-17 composing-facade row, ADR-0040, amended by ADR-0065, ADR-0067, ADR-0068, ADR-0069 and ADR-0085: measured 14775 B: +1363 B in 23.2 for F128 column visibility and the F129 chooser, of which 280 B is the F110 live region it composes rather than re-implements (measured both ways - an inline `role=\"status\"` would have saved it and duplicated a primitive this library already ships); +765 B in 19.7 for the F100 column reorder, +119 B in 19.9 for the BUG-0005 filter-row spacer. Re-pinned at 15.6 kB, the 788 B margin the row had)",
     "path": "dist/esm/bootstrap.js",
     "import": "{ bsTable }",
-    "limit": "14.2 kB"
+    "limit": "15.6 kB"
   },
   {
     "name": "single: bsToast (2.55 kB - NFR-17 composing row amended from 2.32 kB by ADR-0049: measured 2462 B, +152 B for on() + isShown() + element, the members the readiness review found missing)",
@@ -690,8 +690,8 @@
     "limit": "1.32 kB"
   },
   {
-    "name": "global artifact (F83: the whole public surface in one IIFE - measured 50932 B, re-pinned for 23.1 (+384 B for the F126-F127 URL guard and its routing), and for 21.5 before it (+843 B for the F124-F125 tracker). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1), 47174 (21.2), 48452 (21.3), 49763 (21.4), 50606 (21.5), 50932 (23.1). NFR-22 is recomputed by the same sum-of-entry-figures method and reads 70546 B, which re-derives the clause to **71 kB** - exactly as 21.5 predicted when it landed 20 B under 70 kB and said the next byte would move it. THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 19 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
+    "name": "global artifact (F83: the whole public surface in one IIFE - measured 52152 B, re-pinned for 23.2 (+1220 B for F128/F129 column visibility, the chooser and its live region), for 23.1 before it (+384 B for the F126-F127 URL guard and its routing), and for 21.5 (+843 B for the F124-F125 tracker). **The trajectory**: 31444 B at M18, 38786 (19.7), 38897 (19.9), 39609 (20.5), 41119 (20.1), 42398 (20.2), 43460 (20.3), 44210 (20.4), 44390 (20.6), 45514 (21.1), 47174 (21.2), 48452 (21.3), 49763 (21.4), 50606 (21.5), 50932 (23.1), 52152 (23.2). NFR-22 is recomputed by the same sum-of-entry-figures method and reads 72032 B, which re-derives the clause to **73 kB** - up from the 71 kB of 23.1, and the second re-derivation in two items. THIS ROW IS STILL THE GATE: pinned at measured + 2.0%, because a clause with 20 kB of slack does no per-PR work while a tight row does. Two instruments, different jobs - the ADR-0041 split, applied to the artifact (ADR-0059/0061))",
     "path": "dist/global/egl-utils.global.js",
-    "limit": "52 kB"
+    "limit": "53.2 kB"
   }
 ]

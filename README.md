@@ -658,6 +658,60 @@ Worth knowing:
   header row, not at the moment of the move — this library has no live region yet. The
   operability F100 asks for is there; the announcement is a known gap.
 
+### Column visibility (`egl-utils-js/bootstrap`)
+
+Twelve columns available, five shown — without keeping two column arrays and swapping them
+([ADR-0085](docs/adr/0085-visibility-is-rendering-and-the-clause-moved-again.md)):
+
+```js
+const table = bsTable(host, {
+  columns: [
+    { key: 'host', label: 'Host', hideable: false }, // your user cannot lose this one
+    { key: 'ip', label: 'Address' },
+    { key: 'notes', label: 'Notes', visible: false }, // available, not shown
+  ],
+  data: rows,
+  controls: { columns: true }, // a checkbox per column, in the header band
+});
+
+table.hideColumn('ip');
+table.getHiddenColumns(); // → ['ip', 'notes']
+table.onColumnVisibility((key, visible) => save(key, visible));
+```
+
+**Hiding a column keeps everything else.** The sort, the filters, the search, the resize width and
+the reorder position all survive being hidden and come back with it — because the F42 pipeline is
+**never told** which columns a viewer can see. That is also why hiding the column a table is sorted
+by does not clear the sort: there is no code path that could have.
+
+Worth knowing:
+
+- **The cell is removed, not styled away.** `display: none` would leave a hidden column in the
+  accessibility tree's column count and in every `querySelectorAll` you write — a table that reports
+  four columns and shows three. The `<th>`, the `<col>` and the filter cell are *detached and kept*,
+  so showing the column re-inserts the very nodes carrying its resize grip and its move handle.
+- **The last visible column cannot be hidden.** `hideColumn` throws for it, and the chooser
+  `disabled`s that checkbox so a user never meets the refusal.
+- **`hideable: false`** withholds the control from your user and not from you: `hideColumn` still
+  works, exactly as `movable: false` still takes a position from `setColumnOrder`.
+- **The chooser needs no Bootstrap peer.** It is native checkboxes with real `<label for>` text in a
+  `role="group"`, so the keyboard path is the platform's; each change is announced through a live
+  region. `label`, `itemLabel` and `announce` are injectable, because the defaults are English.
+- **Arrow-key reorder steps over a hidden column** rather than into it — a slot nobody can see is
+  not a slot.
+- **The body is re-rendered on a toggle**, unlike a resize or a reorder: adding a `<td>` per row is
+  structural. Once per checkbox press, not once per frame of a drag.
+
+Visibility travels in the URL too, so a shared link shows the columns its sender was looking at:
+
+```js
+bindTableHistory(table.pipeline, { visibility: table }); // → ?hidden=ip&hidden=notes
+```
+
+The **hidden** set is what is serialized, not the visible one — so a table showing everything still
+has a clean URL, and adding a column to your code never silently hides it for someone holding an
+old link.
+
 ### Export: CSV and the clipboard (`egl-utils-js/table`, `egl-utils-js/dom`)
 
 **A CSV is not an inert document.** Every mainstream spreadsheet evaluates a cell whose text

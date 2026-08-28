@@ -38,6 +38,7 @@ const hostile = fc.oneof(
     'sort',
     'page',
     'size',
+    'hidden',
     '%20',
     '%',
     '+',
@@ -58,6 +59,13 @@ const state = fc.record({
   sort: fc.array(fc.record({ key, direction: fc.constantFrom('asc', 'desc') }), { maxLength: 4 }),
   page: fc.integer({ min: 1, max: 5000 }),
   pageSize: fc.oneof(fc.constant(null), fc.integer({ min: 1, max: 500 })),
+  // Unique and sorted at the source, because that is what the round-trip law can
+  // promise about a **set**: the serializer sorts and de-duplicates deliberately
+  // (a repeated `hidden=a` is one hidden column, and an unstable encoding would
+  // make the F93 binding push a history entry for a change that changed nothing).
+  // Generating unsorted arrays here would be asserting an order the encoding is
+  // documented not to carry.
+  hidden: fc.uniqueArray(key, { maxLength: 4 }).map((keys) => [...keys].sort()),
 });
 
 const prefix = fc.oneof(fc.constant(''), fc.constantFrom('t', 'orders', 'a.b', 'q', 'filter'));
