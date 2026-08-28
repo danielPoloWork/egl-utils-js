@@ -16,6 +16,7 @@
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { advertisedPaths, exportsTargets, normalizePath } from './advertised-paths.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('package.json', ROOT)), 'utf8'));
@@ -49,15 +50,15 @@ const packed = JSON.parse(
 );
 const shipped = new Set(packed[0].files.map((/** @type {{path: string}} */ f) => f.path));
 
-/** `"./dist/x.js"` and `"dist/x.js"` are the same file to a tarball. */
-const normalize = (/** @type {string} */ path) => path.replace(/^\.\//, '');
-
 /**
  * @param {string} target
  * @param {string} advertisedBy
  */
 function mustShip(target, advertisedBy) {
-  check(shipped.has(normalize(target)), `${advertisedBy} names \`${target}\`, which is not packed`);
+  check(
+    shipped.has(normalizePath(target)),
+    `${advertisedBy} names \`${target}\`, which is not packed`,
+  );
 }
 
 // --- 1. The CDN fields (F84) ------------------------------------------------
@@ -70,36 +71,22 @@ check(typeof jsdelivr === 'string', 'package.json has no `jsdelivr` field');
 check(unpkg === jsdelivr, `\`unpkg\` (${unpkg}) and \`jsdelivr\` (${jsdelivr}) disagree`);
 
 if (typeof unpkg === 'string') {
-  mustShip(unpkg, '`unpkg`');
   // The reason the fields point at the artifact and not at dist/esm/index.js.
   check(
     unpkg.endsWith('.global.js'),
     `\`unpkg\` names \`${unpkg}\`, which is not the IIFE artifact — a bare CDN URL is ` +
       'fetched by a classic <script src>, where an ESM file is a syntax error',
   );
-  // A `sourceMappingURL` that 404s on a CDN is a papercut every consumer's
-  // devtools reports, so the map ships with the file that references it.
-  mustShip(`${unpkg}.map`, "the artifact's `sourceMappingURL`");
-}
-if (typeof jsdelivr === 'string') mustShip(jsdelivr, '`jsdelivr`');
-
-// --- 2. Every exports-map target (NFR-23) -----------------------------------
-
-/**
- * Collect the string leaves of the exports map — each one a file a consumer can
- * reach through some condition.
- *
- * @param {unknown} node
- * @returns {string[]}
- */
-function targets(node) {
-  if (typeof node === 'string') return [node];
-  if (node === null || typeof node !== 'object') return [];
-  return Object.values(node).flatMap(targets);
 }
 
-for (const target of new Set(targets(pkg.exports))) {
-  mustShip(target, '`exports`');
+// --- 2. Every advertised path (F84 + NFR-23) ---------------------------------
+
+// One derivation of "advertised", shared with the release-asset gate
+// (build-release-assets.mjs) so the tarball and the release zip can never be
+// held to two different lists (roadmap 22.3, ADR-0087). Covers the CDN fields,
+// the artifact's sourcemap, and every exports-map target.
+for (const { path, advertisedBy } of advertisedPaths(pkg)) {
+  mustShip(path, advertisedBy);
 }
 
 // --- 3. The fields this package deliberately does NOT declare ---------------
@@ -127,6 +114,6 @@ if (failures.length > 0) {
 
 console.log(
   `F84 OK: ${shipped.size} files packed; the CDN default \`${unpkg}\` and all ` +
-    `${new Set(targets(pkg.exports)).size} exports-map targets are among them, ` +
+    `${new Set(exportsTargets(pkg.exports)).size} exports-map targets are among them, ` +
     'and no main/module/browser field competes with the map',
 );

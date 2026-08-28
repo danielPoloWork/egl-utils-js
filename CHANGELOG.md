@@ -12,6 +12,18 @@ PR. A release PR moves the `[Unreleased]` entries into a new per-version file un
 
 ### Added
 
+- **Every GitHub Release now carries the package as downloadable assets** — the `npm pack`
+  tarball (byte-identical to a registry publish), `egl-utils-js-<version>-dist.zip` (the built
+  `dist/` tree plus `LICENSE` under one version-stamped folder), and `SHA256SUMS`. This is the
+  acquisition channel with no registry in the path: download, verify, unzip beside your page,
+  and the two no-bundler routes work with relative URLs — documented in the README's new
+  "Download and self-host" section, whose CDN pins also stopped being able to go stale
+  (`sync-version.mjs` rewrites them, the consistency lint verifies them). The asset set is
+  gated on every pull request, not first at tag time: the zip's `dist/` file set must equal
+  the tarball's, and every path `package.json` advertises must be present in both (ROADMAP
+  22.3, [#181](https://github.com/danielPoloWork/egl-utils-js/issues/181),
+  [ADR-0087](docs/adr/0087-the-release-carries-what-the-registry-would-have.md)).
+
 - **Grid keyboard navigation on `bsTable`** — `keyboard: true` gives the table **one** position in
   the page's tab order and moves a cell focus inside it with the arrows, `Home`/`End`,
   `Ctrl+Home`/`Ctrl+End` and `PageUp`/`PageDown` (measured against the viewport, or a fixed

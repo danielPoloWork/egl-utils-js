@@ -179,6 +179,12 @@ jobs:
         run: pnpm check:global
       - name: Assert the packaged file list (F84)
         run: pnpm check:packed
+      # The release assets are built and verified on every PR, not first at tag
+      # time (roadmap 22.3, ADR-0087) — the 22.1 lesson applied to the asset
+      # builder itself: release.yml runs this same script and attaches what it
+      # produced, so a release is never the first time it runs.
+      - name: Build and verify the release assets (22.3)
+        run: pnpm check:release-assets
       - name: Enforce the served-bytes budgets (F87)
         run: pnpm check:transfer
 

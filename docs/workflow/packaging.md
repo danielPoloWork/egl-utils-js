@@ -8,6 +8,11 @@ because the project is distributed via a package registry (`capabilities.packagi
 - **What ships:** the package produced by `tsup (esbuild) — dual ESM/CJS + .d.ts generated from JSDoc types (ADR-001)` (and its contents — runtime only,
   no tests/benches).
 - **Consumers import it via:** `import { parallelLimit, retry } from 'egl-utils-js';`.
+- **Release assets:** every GitHub Release attaches the packed tarball,
+  `egl-utils-js-<version>-dist.zip` (the `dist/` tree plus `LICENSE`) and `SHA256SUMS`
+  (roadmap 22.3, [ADR-0087](../adr/0087-the-release-carries-what-the-registry-would-have.md)) —
+  the acquisition channel that involves no registry, built and gated by
+  `tools/build-release-assets.mjs` on every PR.
 - **Metadata:** name, version (from `version.js`), license `MIT`, and the
   links a registry expects (repo, docs, changelog).
 

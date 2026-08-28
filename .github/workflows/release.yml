@@ -45,6 +45,16 @@ jobs:
         shell: bash
         run: pnpm build
 
+      # docs/workflow/release.md's boundary table has said "Build & attach
+      # artifacts | CI" since M7 — this step is that promise, honoured (roadmap
+      # 22.3, ADR-0087). The script both BUILDS the assets (the `npm pack`
+      # tarball, the dist zip, SHA256SUMS) and GATES them: the zip's dist/**
+      # must equal the tarball's, and every advertised path must be in both.
+      # It also runs in the PR packaging job, so a tag is never its first run.
+      - name: Build and verify the release assets (roadmap 22.3)
+        shell: bash
+        run: pnpm check:release-assets
+
       # release.md step 3 mandates hand-written notes at docs/releases/v<X.Y.Z>.md.
       # Fail loudly if they are missing rather than silently shipping only the
       # auto-generated PR list: an absent file means the release process was
@@ -69,5 +79,14 @@ jobs:
           # the v0.1.0 draft came out as a bare 61-item PR list.
           body_path: docs/releases/${{ github.ref_name }}.md
           generate_release_notes: true
+          # The verified assets from the step above (roadmap 22.3, ADR-0087):
+          # the registry's own tarball, the dist zip for download-and-link
+          # consumers, and their checksums. Named explicitly rather than as
+          # `release-assets/*` so an unexpected file in that directory can
+          # never ride along into a release.
+          files: |
+            release-assets/egl-utils-js-*.tgz
+            release-assets/egl-utils-js-*-dist.zip
+            release-assets/SHA256SUMS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

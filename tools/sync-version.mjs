@@ -57,6 +57,33 @@ const problems = [];
 /** @type {string[]} */
 const updated = [];
 
+// README pinned examples (roadmap 22.3, ADR-0087). The CDN snippets and the
+// release-asset filenames pin a concrete version so they are copy-pasteable —
+// and a pin is data, so a stale one is the ADR-0082 failure mode. The release
+// flow rewrites every one of them here; tools/consistency_lint.py verifies
+// them, which is what makes the convention mechanical rather than a habit.
+const PIN = /egl-utils-js([@-])(\d+\.\d+\.\d+)/g;
+{
+  const file = 'README.md';
+  const text = read(file);
+  const stale = [...text.matchAll(PIN)].filter((m) => m[2] !== pkgVersion);
+  if (stale.length > 0) {
+    if (check) {
+      const versions = [...new Set(stale.map((m) => m[2]))].join(', ');
+      problems.push(
+        `${file}: ${stale.length} pinned example(s) at v${versions} but package.json is v${pkgVersion}`,
+      );
+    } else {
+      writeFileSync(
+        resolve(ROOT, file),
+        text.replace(PIN, (_all, sep) => `egl-utils-js${sep}${pkgVersion}`),
+        'utf8',
+      );
+      updated.push(`${file} (pinned examples): ${stale.length} pin(s) -> v${pkgVersion}`);
+    }
+  }
+}
+
 for (const target of TARGETS) {
   const text = read(target.file);
   const match = text.match(target.pattern);
